@@ -574,6 +574,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "gb-sim"
+version = "0.1.0"
+dependencies = [
+ "gb-analytic",
+ "gb-config",
+ "gb-crypto-tests",
+ "gb-protocol",
+ "gb-runlog",
+ "libm",
+ "num-traits",
+ "rand_chacha",
+ "rand_core 0.10.1",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"

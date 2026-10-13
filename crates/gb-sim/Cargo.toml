@@ -1,0 +1,25 @@
+[package]
+name = "gb-sim"
+description = "Tier 1 discrete-event simulator of GrahamBell PoW-ID issuance (M3)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+gb-config.workspace = true
+gb-runlog.workspace = true
+gb-analytic.workspace = true
+gb-protocol.workspace = true
+gb-crypto-tests.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+rand_core.workspace = true
+rand_chacha.workspace = true
+libm.workspace = true
+thiserror.workspace = true
+num-traits.workspace = true
+
+[lints]
+workspace = true

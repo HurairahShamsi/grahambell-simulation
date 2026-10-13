@@ -1,0 +1,1032 @@
+//! Blocks, difficulty, per-node views, the validator panel and the network chain.
+//!
+//! - **Views.** A node accepts a block when it has received it and its parent, and the block
+//!   passes the node's timing checks (`check_received` for early blocks, `check_powit_deadline`
+//!   for late PoWits, on the node's own clock). Arrival times are drawn lazily by key.
+//! - **Panel.** 101 ideal validators, spread over regions like the population, stand for the
+//!   network: the network chain is the longest chain that more than half of them hold (their
+//!   tips and the tips' ancestors). An ID passes confirmation depth when 6 blocks are built on
+//!   its block on the network chain, and placements take effect at the beacon block
+//!   (SPEC §4.2).
+//! - **Fork choice** at every node uses the gb-protocol comparator of the run's rule.
+
+use crate::engine::{Micros, SECOND, micros};
+use crate::job::ForkRule;
+use crate::rng::Purpose;
+use crate::sim::{Ev, Sim};
+use crate::world::NONE;
+use gb_config::protocol::{DifficultyCountRule, DifficultyVariant};
+use gb_protocol::encoding::Header;
+use gb_protocol::hash::{Hash, tagged};
+use gb_protocol::issuance::{
+    PPM, count_based_target, update_correction_ppm, variant_a_retarget, variant_b_target,
+};
+use gb_protocol::validate::{
+    ForkCandidate, accepts_chain_through_late_block, check_powit_deadline, check_received,
+    fork_choice, fork_choice_first_seen, fork_choice_lower_hash, reevaluates_early_block,
+};
+use std::cmp::Ordering;
+
+/// Not accepted (never received, or invalid at that node).
+pub(crate) const INF: Micros = u64::MAX;
+
+/// A PoW-ID block in the simulation.
+#[derive(Debug, Clone)]
+pub(crate) struct Block {
+    pub parent: u32,
+    pub height: u64,
+    pub timestamp: u64,
+    pub hash: Hash,
+    pub miner: u32,
+    pub group: u8,
+    pub region: u8,
+    pub household: u32,
+    pub broadcast: Micros,
+    pub withheld: bool,
+    pub child_target: Hash,
+    pub factor_ppm: u64,
+    pub panel: Vec<Micros>,
+    pub panel_late: Vec<bool>,
+    pub settled: bool,
+    pub canonical: bool,
+    pub confirmed: bool,
+    pub hop_active: bool,
+    pub beyond_horizon: bool,
+}
+
+/// A view: the node whose acceptance is computed.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct Node {
+    pub key: u64,
+    pub household: u32,
+    pub region: usize,
+    pub access: f64,
+    pub skew: f64,
+}
+
+/// A round: the candidates on one parent.
+#[derive(Debug, Clone)]
+pub(crate) struct Group {
+    pub parent: u32,
+    pub height: u64,
+    pub t0: u64,
+    pub target: Hash,
+    pub p: f64,
+    pub slots: u32,
+    pub generator: crate::round::Generator,
+    pub extras: Vec<(u64, u32)>,
+    pub held: Option<(u64, Vec<u32>)>,
+    pub entropies: Vec<Hash>,
+    pub headers: Vec<Header>,
+    pub real: Vec<Option<crate::real::RealEntropy>>,
+    pub closed: bool,
+    pub horizon_at: Micros,
+    pub first_recorded: bool,
+    pub eligible: u64,
+}
+
+/// A miner's candidate block, between its winning step and its decision to broadcast.
+#[derive(Debug, Clone)]
+pub(crate) struct Candidate {
+    pub miner: u32,
+    pub group: u32,
+    pub step: u64,
+    pub timestamp: u64,
+    pub broadcast: Micros,
+    pub header: Header,
+    pub entropy: Hash,
+    pub hash: Hash,
+    pub kwc: u32,
+    pub beyond_horizon: bool,
+    pub done: bool,
+    pub release_at: Micros,
+    pub signers: Vec<u32>,
+    pub members: Vec<u32>,
+    pub entropy_signers: Vec<bool>,
+}
+
+impl Sim<'_> {
+    // ------------------------------------------------------------------ genesis
+
+    pub(crate) fn start_chain(&mut self) {
+        let hash = tagged(b"GB/sim-genesis-block", &[&self.spec.seed.to_be_bytes()]);
+        let n = self.count_for_difficulty();
+        let target = match self.spec.frozen_target {
+            Some(t) => t,
+            None => match self.spec.difficulty {
+                DifficultyVariant::CountBased => {
+                    count_based_target(n, self.p.interval_s, self.spec.correction.as_ref(), PPM)
+                }
+                DifficultyVariant::BitcoinRetarget => variant_b_target(n, self.p.interval_s),
+            },
+        };
+        let panel = self.panel.len();
+        self.blocks.push(Block {
+            parent: NONE,
+            height: 0,
+            timestamp: 0,
+            hash,
+            miner: NONE,
+            group: 0,
+            region: 0,
+            household: NONE,
+            broadcast: 0,
+            withheld: false,
+            child_target: target,
+            factor_ppm: PPM,
+            panel: vec![0; panel],
+            panel_late: vec![false; panel],
+            settled: true,
+            canonical: true,
+            confirmed: true,
+            hop_active: false,
+            beyond_horizon: false,
+        });
+        self.settled_ids.push(0);
+        self.network_tip = 0;
+        self.open_group(0, 0);
+        self.q
+            .push(micros(self.p.interval_s as f64), Ev::PanelUpdate);
+    }
+
+    /// Variant B's admitted online count under the run's count rule (SPEC §3.8).
+    pub(crate) fn count_for_difficulty(&self) -> u64 {
+        match self.spec.count_rule {
+            DifficultyCountRule::AfterPostAdmissionWait => self.counts.after_wait,
+            DifficultyCountRule::AllGloballyActive => self.counts.all,
+        }
+        .max(1)
+    }
+
+    // ------------------------------------------------------------------ views
+
+    /// The node of a household.
+    pub(crate) fn node_of(&self, h: u32) -> Node {
+        let hh = &self.hh[h as usize];
+        Node {
+            key: u64::from(h),
+            household: h,
+            region: hh.region as usize,
+            access: hh.access,
+            skew: hh.skew,
+        }
+    }
+
+    /// The node of panel validator `i`.
+    pub(crate) fn panel_node(&self, i: usize) -> Node {
+        let v = &self.panel[i];
+        Node {
+            key: (1 << 24) - 1 - i as u64,
+            household: NONE,
+            region: v.region,
+            access: v.access,
+            skew: v.skew,
+        }
+    }
+
+    /// When `node` receives block `b` (true time), before its own timing checks.
+    fn arrival(&mut self, node: &Node, b: u32) -> Micros {
+        let block = &self.blocks[b as usize];
+        if node.household != NONE && node.household == block.household {
+            return block.broadcast;
+        }
+        let (src, sent) = (block.region as usize, block.broadcast);
+        let u = self.keyed.uniforms(
+            Purpose::Gossip,
+            (u64::from(b) << 24) | (node.key & 0xff_ffff),
+            0,
+        );
+        let delay = self.net.gossip_delay(src, node.region, node.access, u[0]);
+        self.net.deliver(sent, src, node.region, delay)
+    }
+
+    /// When `node` accepts block `b` as valid, or [`INF`]; also whether its PoWit was late
+    /// there (a late block is never extended; under the soft scope a longer chain through it
+    /// is still accepted).
+    pub(crate) fn accept(&mut self, node: &Node, b: u32) -> (Micros, bool) {
+        let block = &self.blocks[b as usize];
+        if block.settled {
+            return (if block.canonical { 0 } else { INF }, false);
+        }
+        let parent = block.parent;
+        let (parent_at, _) = self.accept(node, parent);
+        if parent_at == INF {
+            return (INF, false);
+        }
+        let arrived = self.arrival(node, b);
+        let (at, late) = self.judge(node, b, arrived);
+        if at == INF {
+            return (INF, late);
+        }
+        (at.max(parent_at), late)
+    }
+
+    /// The node's timing checks on a block that arrived at `arrived` (true time): returns the
+    /// acceptance time (or [`INF`]) and whether the PoWit was late.
+    fn judge(&self, node: &Node, b: u32, arrived: Micros) -> (Micros, bool) {
+        let block = &self.blocks[b as usize];
+        if block.household == node.household && node.household != NONE {
+            return (arrived, false);
+        }
+        let clock = arrived as f64 / SECOND as f64 + node.skew;
+        let mut at = arrived;
+        if check_received(clock, block.timestamp, self.spec.delta).is_err() {
+            if !reevaluates_early_block(self.spec.early_block) {
+                return (INF, false);
+            }
+            // Re-requested once the node's clock passes timestamp − δ.
+            let ready = block.timestamp as f64 - self.spec.delta - node.skew;
+            at = micros(ready + 0.2).max(arrived);
+        }
+        // The PoWit travels with the block.
+        let late = check_powit_deadline(clock, block.timestamp, self.spec.deadline).is_err();
+        if late && !accepts_chain_through_late_block(self.spec.deadline_scope) {
+            return (INF, true);
+        }
+        (at, late)
+    }
+
+    /// True when `a` is preferred to `b` at a node that saw them at `a_seen`, `b_seen`.
+    pub(crate) fn prefer_block(&self, a: u32, a_seen: Micros, b: u32, b_seen: Micros) -> bool {
+        let (x, y) = (&self.blocks[a as usize], &self.blocks[b as usize]);
+        let fa = ForkCandidate {
+            height: x.height,
+            timestamp: x.timestamp,
+            hash: x.hash,
+        };
+        let fb = ForkCandidate {
+            height: y.height,
+            timestamp: y.timestamp,
+            hash: y.hash,
+        };
+        let order = match self.spec.fork_rule {
+            ForkRule::V06 => fork_choice(&fa, &fb),
+            ForkRule::FirstSeen => fork_choice_first_seen(&fa, a_seen as f64, &fb, b_seen as f64),
+            ForkRule::LowerHashOnly => fork_choice_lower_hash(&fa, &fb),
+        };
+        order == Ordering::Less
+    }
+
+    // ------------------------------------------------------------------ blocks
+
+    /// Records a broadcast block and opens its round.
+    pub(crate) fn add_block(&mut self, now: Micros, c: u32, withheld: bool) -> u32 {
+        let cand = self.candidates[c as usize].clone();
+        let parent = self.groups[cand.group as usize].parent;
+        let miner = cand.miner;
+        let h = self.miners[miner as usize].household;
+        let id = self.blocks.len() as u32;
+        let height = self.blocks[parent as usize].height + 1;
+        let hop_active = self
+            .hop_state
+            .get(self.miners[miner as usize].group as usize)
+            .copied()
+            == Some(2);
+        self.blocks.push(Block {
+            parent,
+            height,
+            timestamp: cand.timestamp,
+            hash: cand.hash,
+            miner,
+            group: self.miners[miner as usize].group,
+            region: self.hh[h as usize].region,
+            household: h,
+            broadcast: now,
+            withheld,
+            child_target: [0; 32],
+            factor_ppm: PPM,
+            panel: Vec::new(),
+            panel_late: Vec::new(),
+            settled: false,
+            canonical: false,
+            confirmed: false,
+            hop_active,
+            beyond_horizon: cand.beyond_horizon,
+        });
+        self.unsettled.push(id);
+        self.set_difficulty(id);
+        self.panel_accept(id);
+        self.res.blocks += 1;
+        if self.res.hash_uniforms.len() < 50_000 {
+            let top = u64::from_be_bytes(cand.hash[..8].try_into().unwrap_or([0; 8]));
+            self.res.hash_uniforms.push(crate::rng::unit(top));
+        }
+        if self.res.wins_by_slot.len() < self.miners.len() {
+            self.res.wins_by_slot.resize(self.miners.len(), 0);
+        }
+        self.res.wins_by_slot[miner as usize] += 1;
+        // The panel has the block once every panel node has received it.
+        let latest = self.blocks[id as usize]
+            .panel
+            .iter()
+            .copied()
+            .filter(|t| *t != INF)
+            .max()
+            .unwrap_or(now);
+        self.q.push(latest + 1, Ev::PanelUpdate);
+        self.open_group(id, now);
+        id
+    }
+
+    /// The timestamp of the ancestor of `b` at `height`.
+    fn ancestor_timestamp(&self, b: u32, height: u64) -> u64 {
+        let id = self.ancestor(b, height);
+        self.blocks[id as usize].timestamp
+    }
+
+    /// The ancestor of `b` at `height` (or `b` itself).
+    pub(crate) fn ancestor(&self, b: u32, height: u64) -> u32 {
+        let mut x = b;
+        loop {
+            let block = &self.blocks[x as usize];
+            if block.height <= height {
+                return x;
+            }
+            if block.settled && block.canonical {
+                return self.settled_ids[height as usize];
+            }
+            x = block.parent;
+        }
+    }
+
+    /// The difficulty a block passes to its children (SPEC §3.8).
+    fn set_difficulty(&mut self, b: u32) {
+        let block = &self.blocks[b as usize];
+        let parent = &self.blocks[block.parent as usize];
+        let height = block.height;
+        let k = u64::from(self.spec.window_blocks.max(1));
+        let window =
+            (height >= k).then(|| block.timestamp - self.ancestor_timestamp(b, height - k));
+        let parent_factor = parent.factor_ppm;
+        let parent_target = parent.child_target;
+        let (target, factor) = if let Some(t) = self.spec.frozen_target {
+            (t, PPM)
+        } else {
+            match self.spec.difficulty {
+                DifficultyVariant::CountBased => {
+                    let n = self.count_for_difficulty();
+                    let factor = match &self.spec.correction {
+                        Some(c) => update_correction_ppm(
+                            c,
+                            parent_factor,
+                            height,
+                            window,
+                            self.p.interval_s,
+                        ),
+                        None => PPM,
+                    };
+                    (
+                        count_based_target(
+                            n,
+                            self.p.interval_s,
+                            self.spec.correction.as_ref(),
+                            factor,
+                        ),
+                        factor,
+                    )
+                }
+                DifficultyVariant::BitcoinRetarget => {
+                    if height % k == 0 {
+                        let clamp = self
+                            .spec
+                            .clamp
+                            .map_or(1_000_000, |c| c.round().max(1.0) as u64);
+                        let w = window.unwrap_or(k * self.p.interval_s);
+                        (
+                            variant_a_retarget(&parent_target, w, k, self.p.interval_s, clamp),
+                            PPM,
+                        )
+                    } else {
+                        (parent_target, PPM)
+                    }
+                }
+            }
+        };
+        let block = &mut self.blocks[b as usize];
+        block.child_target = target;
+        block.factor_ppm = factor;
+        if self.spec.correction.is_some() && height % k == 0 && self.res.factor_ppm.len() < 100_000
+        {
+            self.res.factor_ppm.push(factor);
+        }
+    }
+
+    /// Acceptance times of a new block at every panel node.
+    fn panel_accept(&mut self, b: u32) {
+        let parent = self.blocks[b as usize].parent;
+        let n = self.panel.len();
+        let mut times = Vec::with_capacity(n);
+        let mut lates = Vec::with_capacity(n);
+        let (mut early, mut late_count) = (0u64, 0u64);
+        for i in 0..n {
+            let node = self.panel_node(i);
+            let parent_at = {
+                let pb = &self.blocks[parent as usize];
+                if pb.settled {
+                    if pb.canonical { 0 } else { INF }
+                } else {
+                    pb.panel[i]
+                }
+            };
+            let arrived = self.arrival(&node, b);
+            let (at, late) = self.judge(&node, b, arrived);
+            let clock = arrived as f64 / SECOND as f64 + node.skew;
+            if check_received(clock, self.blocks[b as usize].timestamp, self.spec.delta).is_err() {
+                early += 1;
+            }
+            if late {
+                late_count += 1;
+            }
+            let t = if at == INF || parent_at == INF {
+                INF
+            } else {
+                at.max(parent_at)
+            };
+            times.push(t);
+            lates.push(late);
+        }
+        self.res.panel_pairs += n as u64;
+        self.res.early_pairs += early;
+        self.res.late_pairs += late_count;
+        if 2 * early > n as u64 {
+            self.res.early_majority += 1;
+        }
+        let region = self.blocks[b as usize].region as usize;
+        if self.blocks[b as usize].broadcast >= self.p.warmup {
+            self.res.blocks_by_region[region] += 1;
+            if 2 * late_count > n as u64 {
+                self.res.late_majority_by_region[region] += 1;
+            }
+        }
+        if 2 * late_count > n as u64 {
+            self.res.late_majority += 1;
+        }
+        let block = &mut self.blocks[b as usize];
+        block.panel = times;
+        block.panel_late = lates;
+    }
+
+    /// The tip of panel node `i` at `t`, from the stored acceptance times.
+    fn panel_tip(&self, i: usize, t: Micros) -> u32 {
+        let mut best = *self.settled_ids.last().unwrap_or(&0);
+        let mut best_seen = 0;
+        for &b in &self.unsettled {
+            let block = &self.blocks[b as usize];
+            let at = block.panel[i];
+            if at == INF || at > t || block.panel_late[i] {
+                continue;
+            }
+            if self.prefer_block(b, at, best, best_seen) {
+                best = b;
+                best_seen = at;
+            }
+        }
+        best
+    }
+
+    // ------------------------------------------------------------------ network chain
+
+    /// The network tip: the highest block on the chains (tips and their ancestors) of more than
+    /// half of the panel nodes that are not split off. A block that only a minority holds, such
+    /// as the tip of a partitioned region, is never on the network chain.
+    fn majority_tip(&self, tips: &[u32]) -> u32 {
+        let settled = *self.settled_ids.last().unwrap_or(&0);
+        let base = self.blocks[settled as usize].height;
+        // Each voting node's chain above the settled height, lowest block first.
+        let chains: Vec<Vec<u32>> = tips
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| !self.panel_split[*i])
+            .map(|(_, t)| {
+                let mut chain = Vec::new();
+                let mut x = *t;
+                while self.blocks[x as usize].height > base {
+                    chain.push(x);
+                    x = self.blocks[x as usize].parent;
+                }
+                chain.reverse();
+                chain
+            })
+            .collect();
+        let need = chains.len() / 2 + 1;
+        let mut tip = settled;
+        for level in 0.. {
+            let mut counts: Vec<(u32, usize)> = Vec::new();
+            for chain in &chains {
+                if let Some(b) = chain.get(level) {
+                    match counts.iter_mut().find(|(x, _)| x == b) {
+                        Some(c) => c.1 += 1,
+                        None => counts.push((*b, 1)),
+                    }
+                }
+            }
+            match counts.iter().find(|(_, c)| *c >= need) {
+                Some((b, _)) => tip = *b,
+                None => break,
+            }
+        }
+        tip
+    }
+
+    /// Moves the network tip to the majority tip of `tips`, unless that is an ancestor of the
+    /// current tip: a majority that has only become unsure (no majority above some block, as
+    /// while large regions are partitioned) has not chosen another branch, so nothing is
+    /// reorganised.
+    fn update_network_tip(&mut self, now: Micros, tips: &[u32]) {
+        let new_tip = self.majority_tip(tips);
+        if new_tip != self.network_tip && !self.is_ancestor(new_tip, self.network_tip) {
+            self.switch_network_tip(now, new_tip);
+        }
+    }
+
+    /// True when `a` is `b` or one of its ancestors.
+    fn is_ancestor(&self, a: u32, b: u32) -> bool {
+        let height = self.blocks[a as usize].height;
+        height <= self.blocks[b as usize].height && self.ancestor(b, height) == a
+    }
+
+    pub(crate) fn on_panel_update(&mut self, now: Micros) {
+        let n = self.panel.len();
+        let tips: Vec<u32> = (0..n).map(|i| self.panel_tip(i, now)).collect();
+        self.update_network_tip(now, &tips);
+        self.settle(now, &tips);
+        self.confirm(now);
+        self.place_pending();
+        self.apply_hops(now);
+        if now >= self.invariants_due {
+            self.check_invariants();
+            self.invariants_due = now + 86_400 * SECOND;
+        }
+        if self.panel_update_at <= now || self.panel_update_at == u64::MAX {
+            self.panel_update_at = now + micros(self.p.interval_s as f64);
+            self.q.push(self.panel_update_at, Ev::PanelUpdate);
+        }
+    }
+
+    fn switch_network_tip(&mut self, _now: Micros, new_tip: u32) {
+        let old = self.network_tip;
+        // Common ancestor.
+        let (mut a, mut b) = (old, new_tip);
+        while a != b {
+            let (ha, hb) = (
+                self.blocks[a as usize].height,
+                self.blocks[b as usize].height,
+            );
+            if ha >= hb {
+                a = self.parent_or_settled(a);
+            } else {
+                b = self.parent_or_settled(b);
+            }
+        }
+        let fork = self.blocks[a as usize].height;
+        let depth = self.blocks[old as usize].height.saturating_sub(fork);
+        if depth > 0 && fork < self.blocks[old as usize].height {
+            self.res.max_reorg = self.res.max_reorg.max(depth);
+            if fork < self.confirmed_height {
+                self.res.deep_reorgs += 1;
+                self.confirmed_height = fork;
+            }
+        }
+        self.network_tip = new_tip;
+    }
+
+    fn parent_or_settled(&self, b: u32) -> u32 {
+        let block = &self.blocks[b as usize];
+        if block.parent == NONE {
+            b
+        } else {
+            block.parent
+        }
+    }
+
+    /// The height of the network tip.
+    pub(crate) fn network_height(&self) -> u64 {
+        self.blocks[self.network_tip as usize].height
+    }
+
+    /// The network chain's block at `height`.
+    pub(crate) fn network_block_at(&self, height: u64) -> Option<u32> {
+        if height > self.network_height() {
+            return None;
+        }
+        Some(self.ancestor(self.network_tip, height))
+    }
+
+    /// Settles heights deep below the panel's tips: their network-chain block is final and
+    /// competing blocks are orphans. A height settles when a majority of the panel nodes that
+    /// are not split off hold the network chain's block there, at least `settle_depth` blocks
+    /// below every such node's tip, and no partition is open. A node whose tip is still on
+    /// another branch then has rejected that block for good (a late PoWit under the literal
+    /// deadline rule): it is counted as split and no longer votes.
+    fn settle(&mut self, now: Micros, tips: &[u32]) {
+        if self
+            .net
+            .partition_open(now.saturating_sub(self.d_max))
+            .is_some()
+            || self.net.partition_open(now).is_some()
+        {
+            return;
+        }
+        loop {
+            let next = self.settled_ids.len() as u64;
+            let active: Vec<usize> = (0..tips.len()).filter(|i| !self.panel_split[*i]).collect();
+            if active.is_empty() {
+                return;
+            }
+            // Depth is measured on the network chain: a node that rejected a block for good
+            // stays behind on its own branch and must not hold settling back.
+            if self.network_height() < next + self.p.settle_depth {
+                return;
+            }
+            let Some(chosen) = self.network_block_at(next) else {
+                return;
+            };
+            let disagreeing: Vec<usize> = active
+                .iter()
+                .copied()
+                .filter(|i| self.ancestor(tips[*i], next) != chosen)
+                .collect();
+            if 2 * disagreeing.len() >= active.len() {
+                return;
+            }
+            for i in disagreeing {
+                self.panel_split[i] = true;
+            }
+            self.settled_ids.push(chosen);
+            for &b in &self.unsettled {
+                let block = &mut self.blocks[b as usize];
+                if block.height == next {
+                    block.settled = true;
+                    block.canonical = b == chosen;
+                    block.panel = Vec::new();
+                    block.panel_late = Vec::new();
+                }
+            }
+            // Descendants of orphans can never be canonical: they settle as orphans too.
+            let mut changed = true;
+            while changed {
+                changed = false;
+                for &b in &self.unsettled {
+                    let parent = self.blocks[b as usize].parent;
+                    let orphaned = {
+                        let pb = &self.blocks[parent as usize];
+                        pb.settled && !pb.canonical
+                    };
+                    let block = &mut self.blocks[b as usize];
+                    if orphaned && !block.settled {
+                        block.settled = true;
+                        block.canonical = false;
+                        block.panel = Vec::new();
+                        block.panel_late = Vec::new();
+                        changed = true;
+                    }
+                }
+            }
+            let blocks = &self.blocks;
+            self.unsettled.retain(|b| !blocks[*b as usize].settled);
+        }
+    }
+
+    /// Confirms blocks at confirmation depth on the network chain: their winners become
+    /// registered IDs, to be placed at their beacon block.
+    fn confirm(&mut self, now: Micros) {
+        let tip_height = self.network_height();
+        let depth = self.p.confirmation_depth;
+        while self.confirmed_height + depth < tip_height {
+            let h = self.confirmed_height + 1;
+            let Some(b) = self.network_block_at(h) else {
+                break;
+            };
+            if !self.blocks[b as usize].confirmed {
+                self.blocks[b as usize].confirmed = true;
+                self.confirmed.push(b);
+                self.register_winner(now, b);
+                self.after_confirmation(now, b);
+            }
+            self.confirmed_height = h;
+        }
+    }
+
+    /// V1: the attacker's share of active IDs after each confirmed block.
+    fn after_confirmation(&mut self, _now: Micros, b: u32) {
+        let Some(threshold) = self.spec.threshold else {
+            return;
+        };
+        let group = self.blocks[b as usize].group;
+        if group == 1 {
+            self.v1_attacker += 1;
+        } else {
+            // An honest ID is active with probability f (M1 A-3, realistic online fraction).
+            let f = self.spec.honest_id_online.unwrap_or(1.0);
+            let u = self
+                .keyed
+                .uniforms(Purpose::Sampling, 7_000 + u64::from(b), 0);
+            if f >= 1.0 || u[0] < f {
+                self.res.v1_honest_active += 1;
+            }
+        }
+        let genesis_active = (self.spec.honest_id_online.unwrap_or(1.0)
+            * self.spec.threshold_genesis as f64)
+            .round() as u64;
+        let active = genesis_active + self.v1_attacker + self.res.v1_honest_active;
+        // Integer comparison of attacker/active ≥ threshold (threshold as a decimal).
+        if (self.v1_attacker as f64) >= threshold * active as f64 - 1e-9 {
+            self.res.threshold_blocks = Some(self.blocks[b as usize].height);
+            self.res.v1_attacker_blocks = self.v1_attacker;
+            self.stopped = true;
+        }
+    }
+
+    // ------------------------------------------------------------------ the end
+
+    /// Final measurements from the network chain at the end of the run.
+    pub(crate) fn finish(&mut self, now: Micros) {
+        self.check_invariants();
+        self.advance_area(now);
+        // Let the last blocks reach the panel before reading the final chain.
+        let horizon = now + self.d_max;
+        let n = self.panel.len();
+        let tips: Vec<u32> = (0..n).map(|i| self.panel_tip(i, horizon)).collect();
+        let tip = self.majority_tip(&tips);
+        let top = self.blocks[tip as usize].height;
+        let last = top.saturating_sub(12);
+        // Canonical chain by height.
+        let mut chain = vec![NONE; (top + 1) as usize];
+        let mut x = tip;
+        loop {
+            let block = &self.blocks[x as usize];
+            chain[block.height as usize] = x;
+            if block.height == 0 {
+                break;
+            }
+            if block.settled && block.canonical {
+                for (h, id) in self.settled_ids.iter().enumerate() {
+                    if (h as u64) <= block.height {
+                        chain[h] = *id;
+                    }
+                }
+                break;
+            }
+            x = block.parent;
+        }
+        let groups = self.res.ids_by_group.len();
+        let mut per_height: std::collections::BTreeMap<u64, Vec<u32>> = Default::default();
+        for (id, block) in self.blocks.iter().enumerate().skip(1) {
+            if block.height <= last && block.broadcast >= self.p.warmup {
+                per_height.entry(block.height).or_default().push(id as u32);
+            }
+        }
+        for (height, ids) in &per_height {
+            let canonical = chain[*height as usize];
+            if ids.len() >= 2 {
+                self.res.fork_heights += 1;
+            }
+            for id in ids {
+                let block = &self.blocks[*id as usize];
+                if *id == canonical {
+                    self.res.canonical += 1;
+                    self.res.ids_by_group[block.group as usize] += 1;
+                    self.res.ids_by_region[block.region as usize] += 1;
+                    let day = (block.broadcast / (86_400 * SECOND)) as usize;
+                    if self.res.daily_ids.len() <= day {
+                        self.res.daily_ids.resize(day + 1, 0);
+                        self.res.daily_ids_by_group.resize(day + 1, vec![0; groups]);
+                    }
+                    self.res.daily_ids[day] += 1;
+                    self.res.daily_ids_by_group[day][block.group as usize] += 1;
+                    if self.res.daily_ids_by_region.len() <= day {
+                        self.res
+                            .daily_ids_by_region
+                            .resize(day + 1, vec![0; self.res.ids_by_region.len()]);
+                    }
+                    self.res.daily_ids_by_region[day][block.region as usize] += 1;
+                    let half = (block.broadcast / (43_200 * SECOND)) as usize;
+                    if self.res.halfday_ids.len() <= half {
+                        self.res.halfday_ids.resize(half + 1, 0);
+                    }
+                    self.res.halfday_ids[half] += 1;
+                    if block.withheld {
+                        self.res.withheld_won += 1;
+                    }
+                    if block.hop_active {
+                        self.res.hop_ids += 1;
+                    }
+                    if block.beyond_horizon {
+                        self.res.horizon_hits += 1;
+                    }
+                    let parent = &self.blocks[block.parent as usize];
+                    let interval = block.timestamp.saturating_sub(parent.timestamp) as f64;
+                    self.res.interval_sum_s += interval;
+                    self.res.interval_sq_sum_s += interval * interval;
+                    self.res.interval_count += 1;
+                } else {
+                    self.res.orphans += 1;
+                    if canonical != NONE && block.hash < self.blocks[canonical as usize].hash {
+                        self.res.loser_lower_hash += 1;
+                    }
+                    if !block.withheld
+                        && ids
+                            .iter()
+                            .any(|i| self.blocks[*i as usize].withheld && *i == canonical)
+                    {
+                        self.res.displaced_by_withheld += 1;
+                    }
+                }
+            }
+        }
+        // Windows of K blocks on the final chain, and global pauses.
+        let k = u64::from(self.spec.window_blocks.max(1));
+        let mut previous: Option<u64> = None;
+        let mut h = k;
+        while h <= last {
+            let id = chain[h as usize];
+            if id != NONE {
+                let ts = self.blocks[id as usize].timestamp;
+                if let Some(p) = previous {
+                    self.res.window_s.push(ts.saturating_sub(p) as f64);
+                }
+                previous = Some(ts);
+            }
+            h += k;
+        }
+        let mut last_broadcast: Option<Micros> = None;
+        for height in 1..=last {
+            let id = chain[height as usize];
+            if id == NONE {
+                continue;
+            }
+            let b = self.blocks[id as usize].broadcast;
+            if let Some(p) = last_broadcast {
+                if p >= self.p.warmup && b > p + 120 * SECOND {
+                    self.res.pauses += 1;
+                    self.res.pause_s += (b - p) as f64 / SECOND as f64;
+                }
+            }
+            last_broadcast = Some(b);
+        }
+        let split = &self.panel_split;
+        self.res.split_panel_nodes = tips
+            .iter()
+            .enumerate()
+            .filter(|(i, t)| {
+                if split[*i] {
+                    return true;
+                }
+                let h = self.blocks[**t as usize].height.min(top);
+                chain.get(h as usize).copied() != Some(self.ancestor(**t, h))
+            })
+            .count() as u64;
+        self.res.waiting_newcomers = self
+            .miners
+            .iter()
+            .filter(|m| m.newcomer && !m.first_id && m.phase != crate::world::Phase::Gone)
+            .count() as u64;
+        // Witness ID-time by region and device.
+        let end = now;
+        for w in &self.witnesses {
+            let hh = &self.hh[w.household as usize];
+            let from = w.registered_at.max(self.p.warmup);
+            if end > from && w.seat != NONE {
+                self.res.witness_id_s[hh.region as usize][hh.device as usize] +=
+                    (end - from) as f64 / SECOND as f64;
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::job::JobSpec;
+    use gb_protocol::issuance::variant_a_retarget;
+
+    fn spec(cfg: &gb_config::Config) -> JobSpec {
+        let mut spec = JobSpec::from_config(cfg, "chain-test", "T", 7).idealised();
+        spec.miners = 4;
+        spec.registered_ids = 400;
+        spec
+    }
+
+    /// Adds a block on `parent` that every panel node holds from time 0, with its difficulty.
+    fn block(sim: &mut Sim<'_>, parent: u32, timestamp: u64, tag: u8) -> u32 {
+        let n = sim.panel.len();
+        let height = sim.blocks[parent as usize].height + 1;
+        sim.blocks.push(Block {
+            parent,
+            height,
+            timestamp,
+            hash: [tag; 32],
+            miner: NONE,
+            group: 0,
+            region: 0,
+            household: NONE,
+            broadcast: 0,
+            withheld: false,
+            child_target: [0; 32],
+            factor_ppm: PPM,
+            panel: vec![0; n],
+            panel_late: vec![false; n],
+            settled: false,
+            canonical: false,
+            confirmed: false,
+            hop_active: false,
+            beyond_horizon: false,
+        });
+        let id = (sim.blocks.len() - 1) as u32;
+        sim.unsettled.push(id);
+        sim.set_difficulty(id);
+        id
+    }
+
+    /// Panel tips: `n` nodes on each block, 101 in all.
+    fn tips(groups: &[(u32, usize)]) -> Vec<u32> {
+        let tips: Vec<u32> = groups
+            .iter()
+            .flat_map(|(b, n)| std::iter::repeat_n(*b, *n))
+            .collect();
+        assert_eq!(tips.len(), 101);
+        tips
+    }
+
+    /// Genesis, branch A (3 blocks) and a longer branch B (4 blocks) from genesis.
+    fn two_branches(sim: &mut Sim<'_>) -> ([u32; 3], [u32; 4]) {
+        sim.start_chain();
+        let a1 = block(sim, 0, 31, 1);
+        let a2 = block(sim, a1, 62, 2);
+        let a3 = block(sim, a2, 93, 3);
+        let b1 = block(sim, 0, 40, 4);
+        let b2 = block(sim, b1, 80, 5);
+        let b3 = block(sim, b2, 120, 6);
+        let b4 = block(sim, b3, 160, 7);
+        ([a1, a2, a3], [b1, b2, b3, b4])
+    }
+
+    #[test]
+    fn a_longer_branch_held_by_a_minority_is_not_the_network_chain() {
+        let cfg = gb_config::Config::default();
+        let spec = spec(&cfg);
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        let ([a1, a2, a3], [.., b4]) = two_branches(&mut sim);
+        // B4 is the most common tip (40 of 101), but 61 nodes hold A1 and A2.
+        let t = tips(&[(b4, 40), (a3, 35), (a2, 26)]);
+        assert_eq!(sim.majority_tip(&t), a2);
+        // Without a majority above genesis the network tip is genesis.
+        let t = tips(&[(b4, 50), (a1, 51)]);
+        assert_eq!(sim.majority_tip(&t), a1);
+        let t = tips(&[(b4, 50), (a1, 50), (0, 1)]);
+        assert_eq!(sim.majority_tip(&t), 0);
+    }
+
+    #[test]
+    fn losing_the_majority_view_is_not_a_reorg() {
+        let cfg = gb_config::Config::default();
+        let spec = spec(&cfg);
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        let ([a1, _, a3], [.., b4]) = two_branches(&mut sim);
+        sim.update_network_tip(0, &tips(&[(a3, 101)]));
+        assert_eq!(sim.network_tip, a3);
+        // Only A1 is still held by a majority: the network has not chosen another branch.
+        sim.update_network_tip(0, &tips(&[(a3, 50), (b4, 30), (a1, 21)]));
+        assert_eq!(sim.network_tip, a3);
+        assert_eq!(sim.res.max_reorg, 0);
+    }
+
+    #[test]
+    fn a_majority_on_another_branch_reorganises_and_counts_confirmed_ids() {
+        let cfg = gb_config::Config::default();
+        let spec = spec(&cfg);
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        let ([.., a3], [.., b4]) = two_branches(&mut sim);
+        sim.update_network_tip(0, &tips(&[(a3, 101)]));
+        sim.confirmed_height = 2;
+        sim.update_network_tip(0, &tips(&[(b4, 60), (a3, 41)]));
+        assert_eq!(sim.network_tip, b4);
+        // Fork at genesis: three blocks abandoned, two of them confirmed.
+        assert_eq!(sim.res.max_reorg, 3);
+        assert_eq!(sim.res.deep_reorgs, 1);
+        assert_eq!(sim.confirmed_height, 0);
+    }
+
+    #[test]
+    fn difficulty_follows_each_branch() {
+        let cfg = gb_config::Config::default();
+        let mut spec = spec(&cfg);
+        spec.difficulty = DifficultyVariant::BitcoinRetarget;
+        spec.window_blocks = 2;
+        spec.clamp = Some(4.0);
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start_chain();
+        // Branch A keeps the 30 s pace; branch B is three times slower.
+        let a1 = block(&mut sim, 0, 30, 1);
+        let a2 = block(&mut sim, a1, 60, 2);
+        let a3 = block(&mut sim, a2, 90, 3);
+        let b1 = block(&mut sim, 0, 90, 4);
+        let b2 = block(&mut sim, b1, 180, 5);
+        let target = |b: u32| sim.blocks[b as usize].child_target;
+        assert_eq!(target(a2), variant_a_retarget(&target(a1), 60, 2, 30, 4));
+        assert_eq!(target(b2), variant_a_retarget(&target(b1), 180, 2, 30, 4));
+        assert_ne!(target(a2), target(b2));
+        // Height 3 is not a retarget height: A3 passes on A2's target.
+        assert_eq!(target(a3), target(a2));
+    }
+}
