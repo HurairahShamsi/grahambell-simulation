@@ -615,10 +615,11 @@ impl Sim<'_> {
 
     /// Settles heights deep below the panel's tips: their network-chain block is final and
     /// competing blocks are orphans. A height settles when a majority of the panel nodes that
-    /// are not split off hold the network chain's block there, at least `settle_depth` blocks
-    /// below every such node's tip, and no partition is open. A node whose tip is still on
-    /// another branch then has rejected that block for good (a late PoWit under the literal
-    /// deadline rule): it is counted as split and no longer votes.
+    /// are not split off hold the network chain's block there, `settle_depth` blocks below the
+    /// network tip, and no partition is open. A node that can never accept that block (it
+    /// rejected it or an ancestor for good, as with a late PoWit under the literal deadline
+    /// rule) is counted as split and no longer votes; a node merely still on another branch
+    /// keeps voting and follows the network chain once it holds it.
     fn settle(&mut self, now: Micros, tips: &[u32]) {
         if self
             .net
@@ -650,7 +651,16 @@ impl Sim<'_> {
             if 2 * disagreeing.len() >= active.len() {
                 return;
             }
-            for i in disagreeing {
+            // A validator that disagrees only because it is still on another branch follows the
+            // network chain once it holds it, and keeps voting. Only one that can never accept
+            // the chosen block (it rejected it, or an ancestor, for good, as with a late PoWit
+            // under the permanent deadline) is split off.
+            let chosen_panel = &self.blocks[chosen as usize].panel;
+            let split: Vec<usize> = disagreeing
+                .into_iter()
+                .filter(|i| chosen_panel.get(*i).copied() == Some(INF))
+                .collect();
+            for i in split {
                 self.panel_split[i] = true;
             }
             self.settled_ids.push(chosen);
