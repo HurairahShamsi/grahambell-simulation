@@ -17,9 +17,11 @@ mod error;
 mod param;
 pub mod protocol;
 pub mod registry;
+pub mod sim;
 
 pub use analytic::{AnalyticConfig, ModelConstants, MonteCarloConfig, RunConfig};
 pub use config::Config;
 pub use crypto_tests::CryptoTestsConfig;
 pub use error::ConfigError;
 pub use param::{Param, Status, Sweep};
+pub use sim::SimConfig;

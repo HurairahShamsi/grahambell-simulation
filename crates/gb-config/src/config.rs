@@ -7,6 +7,7 @@ use crate::protocol::{
     Admission, Cac, Capacity, CountBasedCorrection, Crypto, Entropy, Genesis, Issuance, Network,
     Offline, Pacing, Penalties, Quorum, Timing, Transactions, Witness,
 };
+use crate::sim::SimConfig;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use toml::{Table, Value};
@@ -52,6 +53,8 @@ pub struct Config {
     pub analytic: AnalyticConfig,
     /// M2 measurement settings (`gb crypto`).
     pub crypto_tests: CryptoTestsConfig,
+    /// M3 simulator settings (`gb sim`).
+    pub sim: SimConfig,
     /// Seed and Monte Carlo sample sizes.
     pub run: RunConfig,
 }
@@ -105,6 +108,7 @@ impl Config {
         self.validate_protocol(&mut problems);
         self.validate_grids(&mut problems);
         problems.extend(self.crypto_tests.problems());
+        problems.extend(self.sim.problems());
         if problems.is_empty() {
             Ok(())
         } else {
