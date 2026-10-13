@@ -128,6 +128,20 @@ pub fn below_target(hash: &Hash, target: &Hash) -> bool {
     hash < target
 }
 
+/// 2⁻²⁵⁶ as an `f64` (exactly representable: biased exponent 1023 − 256).
+const TWO_POW_MINUS_256: f64 = f64::from_bits((1023 - 256) << 52);
+
+/// The probability that one step wins against `target`, `T / 2²⁵⁶`, as an `f64`. A uniformly
+/// random 256-bit hash is below `T` with exactly this probability, so a simulator can draw
+/// winning steps from it instead of hashing (ARCHITECTURE §3).
+pub fn step_win_probability(target: &Hash) -> f64 {
+    use num_traits::ToPrimitive;
+    num_bigint::BigUint::from_bytes_be(target)
+        .to_f64()
+        .unwrap_or(f64::MAX)
+        * TWO_POW_MINUS_256
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -165,6 +179,17 @@ mod tests {
                 .take(n as usize)
                 .all(|(_, x)| !below_target(&x, &target))
         );
+    }
+
+    #[test]
+    fn step_win_probability_is_the_target_over_two_to_the_256() {
+        let mut target = [0u8; 32];
+        target[0] = 0x10;
+        assert_eq!(step_win_probability(&target), 1.0 / 16.0);
+        let t = crate::issuance::variant_b_target(1_000, 30);
+        let p = step_win_probability(&t);
+        assert!((p * 30_000.0 - 1.0).abs() < 1e-12, "{p}");
+        assert_eq!(step_win_probability(&[0; 32]), 0.0);
     }
 
     #[test]

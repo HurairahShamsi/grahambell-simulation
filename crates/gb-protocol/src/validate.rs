@@ -12,6 +12,7 @@ use crate::entropy::{
 use crate::error::ProtocolError;
 use crate::hash::Hash;
 use gb_config::Config;
+use gb_config::protocol::{DeadlineScope, EarlyBlockRule, EquivocationScope, WitnessSigning};
 use std::cmp::Ordering;
 
 /// Which miners a quorum applies to.
@@ -264,6 +265,70 @@ pub fn fork_choice(a: &ForkCandidate, b: &ForkCandidate) -> Ordering {
 /// preferred.
 pub fn prefer(a: (u64, &Hash), b: (u64, &Hash)) -> Ordering {
     a.0.cmp(&b.0).then(a.1.cmp(b.1))
+}
+
+/// First-seen fork choice, the comparison to SPEC §3.7 (M3 C2): the longer chain; at the same
+/// height, the tip this node received first (`a_seen`, `b_seen` on its own clock); then the
+/// lower block hash. Returns `Ordering::Less` when `a` is preferred.
+pub fn fork_choice_first_seen(
+    a: &ForkCandidate,
+    a_seen: f64,
+    b: &ForkCandidate,
+    b_seen: f64,
+) -> Ordering {
+    b.height
+        .cmp(&a.height)
+        .then(a_seen.total_cmp(&b_seen))
+        .then(a.hash.cmp(&b.hash))
+}
+
+/// Lower-hash-only fork choice, the comparison of M3 C2 (iii): the longer chain, then the
+/// lower block hash, ignoring timestamps. Returns `Ordering::Less` when `a` is preferred.
+pub fn fork_choice_lower_hash(a: &ForkCandidate, b: &ForkCandidate) -> Ordering {
+    b.height.cmp(&a.height).then(a.hash.cmp(&b.hash))
+}
+
+/// The tolerance an honest witness applies in [`may_sign`] (SPEC §3.6; architect,
+/// 2026-10-12): zero when it signs on time, at its own clock `t0 + N` (the default); δ under
+/// the earlier reading of ASSUMPTIONS P-4, at `t0 + N − δ`.
+pub fn witness_signing_tolerance(rule: WitnessSigning, clock_tolerance_s: f64) -> f64 {
+    match rule {
+        WitnessSigning::OnTime => 0.0,
+        WitnessSigning::EarliestWithinTolerance => clock_tolerance_s,
+    }
+}
+
+/// SPEC §3.4: whether signing `new` after `previous`, with the same candidate key, would be
+/// equivocation. Under the SPEC as written any two different headers at one height are; under
+/// the \[P\] comparison only two different headers on the same parent are. An honest miner
+/// asks this before signing a second header.
+pub fn equivocates(scope: EquivocationScope, previous: &Header, new: &Header) -> bool {
+    previous != new
+        && previous.height == new.height
+        && previous.candidate_pk == new.candidate_pk
+        && match scope {
+            EquivocationScope::SameHeight => true,
+            EquivocationScope::SameParent => previous.prev_hash == new.prev_hash,
+        }
+}
+
+/// SPEC §3.7 PoWit deadline at a node that received a block's PoWit late. The node never
+/// extends that block; this returns whether it still accepts a longer chain that contains it
+/// (never under the literal rule; yes under the comparison).
+pub fn accepts_chain_through_late_block(scope: DeadlineScope) -> bool {
+    match scope {
+        DeadlineScope::Permanent => false,
+        DeadlineScope::NotExtendedOnly => true,
+    }
+}
+
+/// SPEC §3.7: whether a node that received a block before its timestamp minus δ accepts it
+/// when it arrives again later (never under the literal rule; yes under the comparison).
+pub fn reevaluates_early_block(rule: EarlyBlockRule) -> bool {
+    match rule {
+        EarlyBlockRule::Permanent => false,
+        EarlyBlockRule::ReevaluateLater => true,
+    }
 }
 
 /// SPEC §4.6 witness double-signing \[D\]: the seats that signed valid PoWits for two
@@ -873,6 +938,70 @@ pub(crate) mod tests {
         );
         assert_eq!(prefer((1_005, &[9; 32]), (1_006, &[1; 32])), Ordering::Less);
         assert_eq!(prefer((1_005, &[1; 32]), (1_005, &[2; 32])), Ordering::Less);
+    }
+
+    #[test]
+    fn comparison_fork_rules_order_by_arrival_or_hash_alone() {
+        let c = |height, timestamp, h: u8| ForkCandidate {
+            height,
+            timestamp,
+            hash: [h; 32],
+        };
+        // First-seen: same height, the earlier arrival wins even with a later timestamp.
+        assert_eq!(
+            fork_choice_first_seen(&c(10, 1_009, 9), 5.0, &c(10, 1_002, 1), 6.0),
+            Ordering::Less
+        );
+        // Length still comes first.
+        assert_eq!(
+            fork_choice_first_seen(&c(10, 1_002, 1), 1.0, &c(11, 1_009, 9), 9.0),
+            Ordering::Greater
+        );
+        // Lower hash only: timestamps are ignored.
+        assert_eq!(
+            fork_choice_lower_hash(&c(10, 1_009, 1), &c(10, 1_002, 2)),
+            Ordering::Less
+        );
+        assert_eq!(
+            fork_choice_lower_hash(&c(10, 1_009, 9), &c(11, 1_002, 2)),
+            Ordering::Greater
+        );
+    }
+
+    #[test]
+    fn equivocation_scope_decides_whether_a_parent_switch_is_allowed() {
+        let f = fixture(4, pool(4, 3));
+        let first = f.block.header;
+        let mut other_parent = first;
+        other_parent.prev_hash = [8; 32];
+        let mut same_parent = first;
+        same_parent.reward_wallet[0] ^= 1;
+        let mut next_height = first;
+        next_height.height += 1;
+        use EquivocationScope::{SameHeight, SameParent};
+        assert!(equivocates(SameHeight, &first, &other_parent));
+        assert!(!equivocates(SameParent, &first, &other_parent));
+        assert!(equivocates(SameParent, &first, &same_parent));
+        assert!(!equivocates(SameHeight, &first, &first));
+        assert!(!equivocates(SameHeight, &first, &next_height));
+    }
+
+    #[test]
+    fn honest_signing_tolerance_and_node_rules_follow_the_configuration() {
+        assert_eq!(witness_signing_tolerance(WitnessSigning::OnTime, 2.0), 0.0);
+        assert_eq!(
+            witness_signing_tolerance(WitnessSigning::EarliestWithinTolerance, 2.0),
+            2.0
+        );
+        // On time: not before t0 + N.
+        assert!(!may_sign(1_009.9, 1_001, 9, 0.0));
+        assert!(may_sign(1_010.0, 1_001, 9, 0.0));
+        assert!(!accepts_chain_through_late_block(DeadlineScope::Permanent));
+        assert!(accepts_chain_through_late_block(
+            DeadlineScope::NotExtendedOnly
+        ));
+        assert!(!reevaluates_early_block(EarlyBlockRule::Permanent));
+        assert!(reevaluates_early_block(EarlyBlockRule::ReevaluateLater));
     }
 
     #[test]

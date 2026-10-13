@@ -13,6 +13,7 @@
 //! | [`issuance`] — difficulty and issuance rate | §3.8–§3.9 |
 //! | [`allocation`] — registration index, seats, the KWC ring, the seat rule | §3.11, §4.2, §4.7 |
 //! | [`committee`] — the committee lottery | §4.3 |
+//! | [`offline`] — One Chance outcomes and penalties | §4.5–§4.8 |
 //!
 //! Cryptography comes only from `blst` (BLS12-381) and `sha2` (SHA-256); this crate contains
 //! no hand-written cryptographic arithmetic.
@@ -25,6 +26,7 @@ pub mod entropy;
 pub mod error;
 pub mod hash;
 pub mod issuance;
+pub mod offline;
 pub mod validate;
 pub mod vectors;
 
