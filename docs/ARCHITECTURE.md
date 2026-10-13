@@ -70,6 +70,8 @@ Each M1 table becomes a check that a later simulator must pass.
 | F1 same-step tie rate | M3 fork/orphan rate |
 | G1–G3 quorum trade-off (stall, sign alone, conflicting approvals) | M4 S15–S21 under whichever quorums the architect chooses; conflicting approvals also need the proposer rules |
 | G4 ten-year episodes under each seat rule | M4 with M3 household downtime profiles |
+| H1–H3 quorum feasibility under honest downtime, minimum uptime, absent seats per L | M3 household profiles (H7), M4 with the forced-signing and ban rules (§4.5–§4.6) |
+| I1–I4 KWC size trade-off: security, liveness, load, on-demand connections | M2 threshold BLS key setup at each size, M4, M5 household limits (router tables, upload) |
 | M2 `gb-protocol` test vectors (`vectors/protocol_v1.json`) | the M3 simulator and the Stage 3 node reproduce every hash, signature and verdict |
 | M2 allocation reproduces M1's 4.7 and 4.6 compositions per insertion and removal | M4 allocation simulation (S15) |
 | M2 C1 grinding advantages (old flows grow with G; current flow 1) | M3 S11/H3 under network timing |
@@ -90,8 +92,6 @@ Each M1 table becomes a check that a later simulator must pass.
   M4 also measures the online-set grinding lever (S11(f)) and the witness double-signing rule.
 - **M5** benchmarks household load at 30, 40, 60, 100 and 200 seats.
 - **M6** reruns the analysis and simulations with the chosen configuration, and publishes the selection trade-offs alongside the final results.
-| H1–H3 quorum feasibility under honest downtime, minimum uptime, absent seats per L | M3 household profiles (H7), M4 with the forced-signing and ban rules (§4.5–§4.6) |
-| I1–I4 KWC size trade-off: security, liveness, load, on-demand connections | M2 threshold BLS key setup at each size, M4, M5 household limits (router tables, upload) |
 
 **[P] proposals recorded in SPEC v0.4 §12 and where they are tested:**
 
@@ -217,11 +217,11 @@ Development and publication use two repositories.
 | Remote | Repository | Pushing |
 |---|---|---|
 | `origin` | the private development repository | the default: all work, CI runs and reviews happen here |
-| `public` | `github.com/Hurairah1/grahambell-simulation` | disabled: its push URL is set to `DISABLED` (`git remote set-url --push public DISABLED`), so a plain push can never reach it |
+| `public` | `github.com/HurairahShamsi/grahambell-simulation` | disabled: its push URL is set to `DISABLED` (`git remote set-url --push public DISABLED`), so a plain push can never reach it |
 
 - **Day to day:** commits are pushed to `origin` only; `main` tracks `origin/main`.
 - **Release:** only when the architect writes the exact words "push to public":
-  1. restore the push URL: `git remote set-url --push public https://github.com/Hurairah1/grahambell-simulation.git`;
+  1. restore the push URL: `git remote set-url --push public https://github.com/HurairahShamsi/grahambell-simulation.git`;
   2. push `main` only, with `git push public main`: never another branch, never `--force`;
   3. disable it again with `git remote set-url --push public DISABLED`, and check with `git remote -v`.
 - **Reference results:** `results/` is ignored by git except a release's reference run in `results/analytic/reference/`. It is produced by `gb analytic` from a clean commit, and its `run.json` records that commit and a SHA-256 of every file, so anyone can check out the commit, rerun the analysis and compare.
