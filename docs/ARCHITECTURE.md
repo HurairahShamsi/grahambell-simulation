@@ -147,6 +147,12 @@ Each M1 table becomes a check that a later simulator must pass.
   - `libm` (pure Rust) for transcendental functions, so results do not depend on the platform math library.
   - No hash-map iteration in output paths.
 - **Parallelism.** Tier 1 runs execute in parallel on scoped threads, but each run is single-threaded and seeded and its result is stored by its index in the job list, so the thread count never changes an output. Within a run, random numbers are drawn by key (purpose, entity, index) through ChaCha20 random access, so a value does not depend on the order in which the simulation asks for it. Tier 2 will use deterministic partitioning and ordered reductions only.
+- **Speed without changing results.** Each of these was checked to leave every output byte-identical:
+  - timers set a constant delay after the current time (One Chance retries, deactivation and long-absence checks) wait in FIFO lanes that share the event heap's sequence numbers;
+  - the canonical active list is a Fenwick tree, so the committee lottery reads it without copying it;
+  - a keyed draw computes only the ChaCha20 block it needs, bit-identical to `rand_chacha` (a test compares them);
+  - each node's acceptance of an unsettled block is cached: its own reception for good, the acceptance through the parent chain until the next height settles.
+- **Resuming.** `gb sim` saves each finished job's result, with its specification, in the run directory's `checkpoint/`. `gb sim --resume <run-dir>` continues an interrupted run from the same commit and configuration and reuses every saved result whose specification matches exactly (floats round-trip exactly). The checkpoints and `resume.json` are removed when the run finishes, so a resumed run's outputs equal those of a run done in one go.
 - **Run directory:** `results/<analysis>/<run-id>/` holds the tables (CSV), charts (PNG), `SUMMARY.md`, `config.resolved.toml` and `run.json`. `run.json` records commit, dirty flag, seed, config hash, toolchain and a SHA-256 for every output file. Machine-dependent timings go to a sub-directory that reproduction checks leave out (`bench/` for `gb crypto`, `perf/` for `gb sim`); `gb sim --trace` adds sampled event traces in `trace/`.
 - **Front ends** read these outputs only (SPEC §11.6).
 

@@ -85,6 +85,10 @@ cargo run --release -p gb-cli -- sim --profile quick    # tiny sizes, for tests;
 | `--threads N` | Worker threads (default `sim.threads`, 4); results do not depend on it |
 | `--only V1,C2,…` | Run only these sections; V0 always runs |
 | `--trace F` | Also write a sampled trace of a fraction F of every run's events to `trace/` |
+| `--resume DIR` | Continue an interrupted run in its run directory (same commit; its own configuration and sections) |
+| `--quiet` | Do not print a line per finished job |
+
+While it runs, `gb sim` prints a line per finished job with an estimate of the time left. It saves each finished job's result in the run directory's `checkpoint/`; if the run is interrupted (the machine sleeps, the process is killed), `gb sim --resume results/sim/<run-id>` continues it, and the finished run is the same as one done in one go.
 
 Every run is single-threaded and seeded and is stored by its index, so the tables are byte-identical whatever the thread count. Wall times depend on the machine, so they go to `perf/` and are left out of reproducibility checks, as `bench/` is for `gb crypto`.
 
