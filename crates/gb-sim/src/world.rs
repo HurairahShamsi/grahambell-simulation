@@ -2075,3 +2075,33 @@ fn placeholder_household() -> Household {
         independent: None,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::job::JobSpec;
+
+    #[test]
+    fn a_round_keeps_its_kwc_members_when_a_placement_changes_the_kwc() {
+        let cfg = gb_config::Config::default();
+        let mut spec = JobSpec::from_config(&cfg, "round-members", "T", 3).idealised();
+        spec.miners = 4;
+        spec.registered_ids = 400;
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start_chain();
+        let before = sim.round_members(0, 0);
+        assert_eq!(before.len(), 40);
+        // Place 40 new IDs: KWC 0 changes, but round 0 keeps the list it first used.
+        for i in 0..40u64 {
+            let h = sim.miners[0].household;
+            let id = tagged(b"test-id", &[&i.to_be_bytes()]);
+            let w = sim.add_witness(h, id, 0);
+            sim.insert_seat(w, &tagged(b"test-beacon", &[&i.to_be_bytes()]));
+        }
+        assert_ne!(sim.kwc_members(0), before);
+        assert_eq!(sim.round_members(0, 0), before);
+        // The next round reads the allocation afresh.
+        sim.open_group(0, 0);
+        assert_eq!(sim.round_members(1, 0), sim.kwc_members(0));
+    }
+}

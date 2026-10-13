@@ -40,7 +40,8 @@ pub(crate) fn v0_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
     };
     let mut real = small(ctx.job("V0-real-32", V0, 0), ctx.pick(32, 8));
     real.crypto = CryptoMode::Real;
-    real.days = ctx.days(500.0 * 30.5 / 86_400.0, 12.0 * 30.5 / 86_400.0);
+    // Quick runs still pass 12 blocks, where placements (confirmation + beacon delay) begin.
+    real.days = ctx.days(500.0 * 30.5 / 86_400.0, 40.0 * 30.5 / 86_400.0);
     jobs.push(real);
     let mut standin = small(ctx.job("V0-standin-32", V0, 0), ctx.pick(32, 8));
     standin.crypto = CryptoMode::StandIn;

@@ -83,6 +83,8 @@ pub(crate) struct Group {
     pub horizon_at: Micros,
     pub first_recorded: bool,
     pub eligible: u64,
+    /// Member lists of the KWCs this round has used, fixed at first use (`round_members`).
+    pub kwc_members: Vec<(u32, Vec<u32>)>,
 }
 
 /// A miner's candidate block, between its winning step and its decision to broadcast.
@@ -96,7 +98,6 @@ pub(crate) struct Candidate {
     pub header: Header,
     pub entropy: Hash,
     pub hash: Hash,
-    pub kwc: u32,
     pub beyond_horizon: bool,
     pub done: bool,
     pub release_at: Micros,

@@ -158,7 +158,8 @@ pub(crate) fn validate_real(sim: &mut Sim<'_>, c: u32, tip: &Tip) {
         return;
     };
     let seed = sim.spec.seed;
-    let members = sim.kwc_members(cand.kwc);
+    // The member list the round used for this block's entropy and PoWit.
+    let members = cand.members.clone();
     let keys: Vec<Keypair> = members.iter().map(|w| witness_key(seed, *w)).collect();
     let refs: Vec<&Keypair> = keys.iter().collect();
     let seats: Vec<usize> = members

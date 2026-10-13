@@ -66,7 +66,9 @@ impl Sim<'_> {
         let target = block.child_target;
         let p = step_win_probability(&target);
         let slots = self.miners.len() as u32;
-        let mut group = Group {
+        // The round exists before its candidates are drawn, so that drawing them can use the
+        // round's KWC member lists (`round_members`).
+        self.groups.push(Group {
             parent,
             height,
             t0,
@@ -86,8 +88,9 @@ impl Sim<'_> {
             horizon_at: INF,
             first_recorded: false,
             eligible: self.counts.after_wait,
-        };
-        group.generator = match self.spec.crypto {
+            kwc_members: Vec::new(),
+        });
+        let generator = match self.spec.crypto {
             CryptoMode::Fast => match self.spec.sampler {
                 Sampler::Gap => Generator::Gap {
                     next_step: 0,
@@ -115,12 +118,14 @@ impl Sim<'_> {
             CryptoMode::StandIn | CryptoMode::Real => {
                 let (items, entropies, headers, real) =
                     self.chain_list(g, parent, height, t0, &target);
+                let group = &mut self.groups[g as usize];
                 group.entropies = entropies;
                 group.headers = headers;
                 group.real = real;
                 Generator::List { items, pos: 0 }
             }
         };
+        self.groups[g as usize].generator = generator;
         // Slots drawn individually (S5 restarters) and removed from the generator.
         let mut extras = Vec::new();
         for m in 0..slots {
@@ -166,9 +171,27 @@ impl Sim<'_> {
             }
         }
         extras.sort_by(|a, b| b.cmp(a));
-        group.extras = extras;
-        self.groups.push(group);
+        self.groups[g as usize].extras = extras;
         self.schedule_wake(now, g);
+    }
+
+    /// The members of KWC `k` in round `g`: read from the allocation when the round first needs
+    /// them and kept for the rest of the round. A miner's entropy, its PoWit and the checks of
+    /// its block then refer to one member list even when a placement changes the KWC during the
+    /// round; in the protocol a round's KWC is fixed by the chain it builds on.
+    pub(crate) fn round_members(&mut self, g: u32, k: u32) -> Vec<u32> {
+        if let Some((_, members)) = self.groups[g as usize]
+            .kwc_members
+            .iter()
+            .find(|(x, _)| *x == k)
+        {
+            return members.clone();
+        }
+        let members = self.kwc_members(k);
+        self.groups[g as usize]
+            .kwc_members
+            .push((k, members.clone()));
+        members
     }
 
     /// Real SHA-256 chains for every slot (stand-in or real entropy).
@@ -190,7 +213,7 @@ impl Sim<'_> {
             let k = self.miners[m as usize].kwc;
             let header = self.header_for(m, height, prev, k, target);
             let (entropy, r) = if self.spec.crypto == CryptoMode::Real && k != NONE {
-                let members = self.kwc_members(k);
+                let members = self.round_members(g, k);
                 let rec = crate::real::entropy_for(self, m, &header, &members);
                 (rec.entropy, Some(rec))
             } else {
@@ -408,7 +431,10 @@ impl Sim<'_> {
         }
         let beyond = self.groups[g as usize].horizon_at != INF;
         if beyond && (!self.spec.audit || self.horizon_reached(height + 3, now)) {
-            self.groups[g as usize].closed = true;
+            let group = &mut self.groups[g as usize];
+            group.closed = true;
+            // Candidates keep their own member lists; the round needs none any more.
+            group.kwc_members = Vec::new();
             return;
         }
         if !self.groups[g as usize].first_recorded {
@@ -571,7 +597,7 @@ impl Sim<'_> {
                 return None;
             }
         }
-        let entropy_members = self.kwc_members(k);
+        let entropy_members = self.round_members(g, k);
         let entropy_flags: Vec<bool> = entropy_members
             .iter()
             .map(|w| {
@@ -610,7 +636,6 @@ impl Sim<'_> {
             header,
             entropy,
             hash,
-            kwc: k,
             beyond_horizon: false,
             done: false,
             release_at: INF,
@@ -645,7 +670,7 @@ impl Sim<'_> {
         parent: u32,
         g: u32,
     ) -> Option<(Micros, bool)> {
-        let members = self.kwc_members(k);
+        let members = self.round_members(g, k);
         let recorded: Vec<u32> = members
             .iter()
             .copied()
@@ -700,7 +725,7 @@ impl Sim<'_> {
         e_ready: Micros,
         g: u32,
     ) -> Option<(Micros, Vec<u32>)> {
-        let members = self.kwc_members(k);
+        let members = self.round_members(g, k);
         let mut arrivals: Vec<(Micros, u32)> = Vec::with_capacity(members.len());
         for (i, w) in members.iter().enumerate() {
             if self.witnesses[*w as usize].banned {
