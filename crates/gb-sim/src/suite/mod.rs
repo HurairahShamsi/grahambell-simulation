@@ -622,6 +622,61 @@ pub(crate) fn quantile(values: &[f64], q: f64) -> f64 {
 mod tests {
     use super::*;
 
+    /// Runs one job of the full profile and prints its digest: the SHA-256 of its result as
+    /// JSON, without the event count (an implementation detail). Used to profile a job and to
+    /// check that a performance change leaves results byte-identical.
+    #[test]
+    #[ignore = "harness: GB_JOB_SECTION (V0, V1, … A6), GB_JOB_INDEX, GB_JOB_DAYS"]
+    fn run_one_full_job() {
+        let cfg = Config::default();
+        let ctx = Ctx {
+            cfg: &cfg,
+            quick: false,
+            seed: cfg.run.seed,
+            days_scale: 1.0,
+            replicate_scale: 1.0,
+            k: cfg.run.monte_carlo.tolerance_standard_errors,
+        };
+        let var = |name: &str| std::env::var(name).unwrap_or_default();
+        let jobs = match var("GB_JOB_SECTION").as_str() {
+            "V1" => v::v1_jobs(&ctx),
+            "V2" => v::v2_jobs(&ctx),
+            "V3" => v::v3_jobs(&ctx),
+            "C1" => c::c1_jobs(&ctx),
+            "C2" => c::c2_jobs(&ctx),
+            "C3" => c::c3_jobs(&ctx),
+            "C4" => c::c4_jobs(&ctx),
+            "C5" => c::c5_jobs(&ctx),
+            "C6" => c::c6_jobs(&ctx),
+            "C7" => c::c7_jobs(&ctx),
+            "A6" => c::a6_jobs(&ctx),
+            _ => v::v0_jobs(&ctx),
+        };
+        if var("GB_JOB_INDEX") == "list" {
+            for (i, j) in jobs.iter().enumerate() {
+                println!(
+                    "LIST {i} {} days {} miners {} ids {} crypto {:?} idealised {}",
+                    j.id, j.days, j.miners, j.registered_ids, j.crypto, j.idealised
+                );
+            }
+            return;
+        }
+        let mut job = jobs[var("GB_JOB_INDEX").parse::<usize>().unwrap_or(0)].clone();
+        if let Ok(days) = var("GB_JOB_DAYS").parse::<f64>() {
+            job.days = days;
+        }
+        let started = std::time::Instant::now();
+        let mut res = run_job(&job, &cfg).unwrap();
+        let wall = started.elapsed().as_secs_f64();
+        let events = res.events;
+        res.events = 0;
+        let digest = gb_runlog::sha256_hex(serde_json::to_string(&res).unwrap().as_bytes());
+        println!(
+            "JOB {} days {} miners {} ids {} events {events} blocks {} wall {wall:.1}s digest {digest}",
+            job.id, job.days, job.miners, job.registered_ids, res.blocks
+        );
+    }
+
     #[test]
     fn helpers_format_and_summarise() {
         assert_eq!(f(0.5), "0.5");

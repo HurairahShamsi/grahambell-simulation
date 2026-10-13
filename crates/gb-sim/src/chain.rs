@@ -30,6 +30,44 @@ use std::cmp::Ordering;
 /// Not accepted (never received, or invalid at that node).
 pub(crate) const INF: Micros = u64::MAX;
 
+/// Hashes the 64-bit node keys of [`OwnCache`] with one multiplication. The keys are
+/// distinct integers, and the map is only looked up, never iterated, so the hash cannot
+/// change a result.
+#[derive(Debug, Default)]
+pub(crate) struct NodeKeyHasher(u64);
+
+impl std::hash::Hasher for NodeKeyHasher {
+    fn finish(&self) -> u64 {
+        self.0
+    }
+
+    fn write(&mut self, bytes: &[u8]) {
+        for b in bytes {
+            self.0 = (self.0.rotate_left(8) ^ u64::from(*b)).wrapping_mul(0x9e37_79b9_7f4a_7c15);
+        }
+    }
+
+    fn write_u64(&mut self, x: u64) {
+        self.0 = x.wrapping_mul(0x9e37_79b9_7f4a_7c15);
+    }
+}
+
+/// What a node's acceptance of one block is known to be (see [`OwnCache`]).
+#[derive(Debug, Clone, Copy, Default)]
+pub(crate) struct Seen {
+    /// The node's own reception: `judge` on its arrival, before the parent is taken into
+    /// account. A pure function of the node and the block.
+    own: Option<(Micros, bool)>,
+    /// The full acceptance, with the parent chain, and the settled height it was computed
+    /// at. It can change only when a block settles, which always raises the settled height.
+    full: Option<(usize, Micros, bool)>,
+}
+
+/// Nodes' acceptances of a block, by node key, kept while the block is unsettled. Every value
+/// is what the computation would give again, so caching it changes no result.
+pub(crate) type OwnCache =
+    std::collections::HashMap<u64, Seen, std::hash::BuildHasherDefault<NodeKeyHasher>>;
+
 /// A PoW-ID block in the simulation.
 #[derive(Debug, Clone)]
 pub(crate) struct Block {
@@ -47,6 +85,8 @@ pub(crate) struct Block {
     pub factor_ppm: u64,
     pub panel: Vec<Micros>,
     pub panel_late: Vec<bool>,
+    /// Nodes' own receptions of this block, kept while it is unsettled.
+    pub own: OwnCache,
     pub settled: bool,
     pub canonical: bool,
     pub confirmed: bool,
@@ -137,6 +177,7 @@ impl Sim<'_> {
             factor_ppm: PPM,
             panel: vec![0; panel],
             panel_late: vec![false; panel],
+            own: OwnCache::default(),
             settled: true,
             canonical: true,
             confirmed: true,
@@ -209,17 +250,42 @@ impl Sim<'_> {
         if block.settled {
             return (if block.canonical { 0 } else { INF }, false);
         }
+        let epoch = self.settled_ids.len();
+        let seen = block.own.get(&node.key).copied().unwrap_or_default();
+        if let Some((at_epoch, at, late)) = seen.full {
+            if at_epoch == epoch {
+                return (at, late);
+            }
+        }
         let parent = block.parent;
         let (parent_at, _) = self.accept(node, parent);
-        if parent_at == INF {
-            return (INF, false);
-        }
-        let arrived = self.arrival(node, b);
-        let (at, late) = self.judge(node, b, arrived);
-        if at == INF {
-            return (INF, late);
-        }
-        (at.max(parent_at), late)
+        let mut own = seen.own;
+        let result = if parent_at == INF {
+            (INF, false)
+        } else {
+            let (at, late) = match own {
+                Some(o) => o,
+                None => {
+                    let arrived = self.arrival(node, b);
+                    let o = self.judge(node, b, arrived);
+                    own = Some(o);
+                    o
+                }
+            };
+            if at == INF {
+                (INF, late)
+            } else {
+                (at.max(parent_at), late)
+            }
+        };
+        self.blocks[b as usize].own.insert(
+            node.key,
+            Seen {
+                own,
+                full: Some((epoch, result.0, result.1)),
+            },
+        );
+        result
     }
 
     /// The node's timing checks on a block that arrived at `arrived` (true time): returns the
@@ -298,6 +364,7 @@ impl Sim<'_> {
             factor_ppm: PPM,
             panel: Vec::new(),
             panel_late: Vec::new(),
+            own: OwnCache::default(),
             settled: false,
             canonical: false,
             confirmed: false,
@@ -671,6 +738,7 @@ impl Sim<'_> {
                     block.canonical = b == chosen;
                     block.panel = Vec::new();
                     block.panel_late = Vec::new();
+                    block.own = OwnCache::default();
                 }
             }
             // Descendants of orphans can never be canonical: they settle as orphans too.
@@ -689,6 +757,7 @@ impl Sim<'_> {
                         block.canonical = false;
                         block.panel = Vec::new();
                         block.panel_late = Vec::new();
+                        block.own = OwnCache::default();
                         changed = true;
                     }
                 }
@@ -937,6 +1006,7 @@ mod tests {
             factor_ppm: PPM,
             panel: vec![0; n],
             panel_late: vec![false; n],
+            own: OwnCache::default(),
             settled: false,
             canonical: false,
             confirmed: false,

@@ -33,6 +33,7 @@ pub mod samplers;
 pub mod stats;
 pub mod suite;
 
+mod active;
 mod chain;
 mod round;
 mod sim;

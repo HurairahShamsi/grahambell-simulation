@@ -10,7 +10,7 @@ use crate::network::{
 };
 use crate::rng::{Keyed, Purpose};
 use crate::samplers::{exponential, lognormal, normal};
-use crate::sim::{Ev, Params, Sim};
+use crate::sim::{Ev, Params, Sim, lane};
 use gb_config::sim::{GridProfile, LatencySource};
 use gb_protocol::allocation::{IdStatus, kwc_wcs};
 use gb_protocol::hash::{Hash, tagged};
@@ -305,7 +305,7 @@ impl<'a> Sim<'a> {
             ),
             registry: gb_protocol::allocation::Registry::default(),
             committee: gb_protocol::committee::Committee::new(cfg.cac.size.value as usize),
-            active: std::collections::BTreeSet::new(),
+            active: crate::active::ActiveSet::default(),
             wc: Vec::new(),
             kwc_load: Vec::new(),
             counts: Counts {
@@ -494,7 +494,7 @@ impl<'a> Sim<'a> {
             self.insert_seat(w, &launch);
         }
         // The committee starts full (lottery draws from setup beacons).
-        let list: Vec<usize> = self.active.iter().copied().collect();
+        let list: Vec<usize> = self.active.iter().collect();
         for i in 0..self.p.cac_size as u64 {
             let beacon = tagged(
                 b"GB/sim-cac-setup",
@@ -1350,7 +1350,11 @@ impl<'a> Sim<'a> {
                 miner.ghost = true;
                 let token = miner.token;
                 self.commit_miner(now, m, old);
-                self.q.push(now + self.p.grace, Ev::MinerGrace { m, token });
+                self.q.push_lane(
+                    lane::MINER_GRACE,
+                    now + self.p.grace,
+                    Ev::MinerGrace { m, token },
+                );
             }
             Phase::Admitting => self.release_slot_recorded(now, m, old),
             _ => self.commit_miner(now, m, old),
@@ -1471,14 +1475,17 @@ impl<'a> Sim<'a> {
             if short {
                 self.res.short_glitches += 1;
             }
-            self.q.push(check, Ev::WitnessCheck { w, token });
+            self.q
+                .push_lane(lane::FIRST_CHECK, check, Ev::WitnessCheck { w, token });
         }
         self.commit_witness(w, old);
-        self.q.push(
+        self.q.push_lane(
+            lane::DEACTIVATE,
             now + self.p.deactivation,
             Ev::WitnessDeactivate { w, token },
         );
-        self.q.push(
+        self.q.push_lane(
+            lane::LONG_ABSENCE,
             now + self.p.long_absence,
             Ev::WitnessLongAbsence { w, token },
         );
@@ -1527,7 +1534,8 @@ impl<'a> Sim<'a> {
         }
         // The record needs a vote of two-thirds of one of its KWCs (27 of 40 online).
         if !self.witness_vote_possible(w) {
-            self.q.push(
+            self.q.push_lane(
+                lane::RECHECK,
                 now + micros(self.p.interval_s as f64),
                 Ev::WitnessCheck { w, token },
             );
@@ -1585,13 +1593,14 @@ impl<'a> Sim<'a> {
             return true;
         }
         // The four KWCs this WC sits in: led by wc, and by wc − offset for each offset.
-        let mut leaders = vec![wc];
-        for o in &self.p.offsets {
-            leaders.push((wc + wcs - o % wcs) % wcs);
-        }
-        leaders
-            .into_iter()
-            .any(|k| self.kwc_counts(k as u32).online as usize >= self.p.quorum_unregistered)
+        let can_vote =
+            |k: u64| self.kwc_counts(k as u32).online as usize >= self.p.quorum_unregistered;
+        can_vote(wc)
+            || self
+                .p
+                .offsets
+                .iter()
+                .any(|o| can_vote((wc + wcs - o % wcs) % wcs))
     }
 
     fn ban_witness(&mut self, w: u32, region: usize, device: usize) {
@@ -1601,7 +1610,7 @@ impl<'a> Sim<'a> {
         self.witnesses[w as usize].banned = true;
         self.commit_witness(w, old);
         self.registry.set_status(reg, IdStatus::Banned);
-        self.active.remove(&reg);
+        self.active.remove(reg);
         self.committee.depart(reg);
         self.remove_seat(w);
     }
@@ -1614,7 +1623,7 @@ impl<'a> Sim<'a> {
         let reg = wit.reg as usize;
         self.witnesses[w as usize].deactivated = true;
         self.registry.set_status(reg, IdStatus::Deactivated);
-        self.active.remove(&reg);
+        self.active.remove(reg);
         self.committee.depart(reg);
     }
 
@@ -1803,7 +1812,7 @@ impl<'a> Sim<'a> {
     /// fails adds one to `invariant_failures`.
     pub(crate) fn check_invariants(&mut self) {
         let mut failures = 0u64;
-        let cached: Vec<usize> = self.active.iter().copied().collect();
+        let cached: Vec<usize> = self.active.iter().collect();
         failures += u64::from(cached != self.registry.canonical_active_list());
         // Seats: each filled seat's owner holds that seat and that ID, and no other witness
         // holds a seat (together a bijection between seated witnesses and the allocation).
@@ -1882,8 +1891,9 @@ impl<'a> Sim<'a> {
                 &self.committee_ticks.to_be_bytes(),
             ],
         );
-        let list: Vec<usize> = self.active.iter().copied().collect();
-        self.committee.refresh(&list, &beacon);
+        let active = &self.active;
+        self.committee
+            .refresh_with(active.len(), |i| active.nth(i), &beacon);
         self.q
             .push(now + self.p.pow_tx * self.p.cac_every, Ev::Committee);
     }

@@ -94,6 +94,21 @@ impl Ev {
     }
 }
 
+/// FIFO lanes of the event queue: timers scheduled a constant delay after the current time,
+/// so their times never decrease within a lane (`Queue::push_lane`).
+pub(crate) mod lane {
+    /// The first One Chance check after an unannounced disappearance.
+    pub const FIRST_CHECK: usize = 0;
+    /// One Chance retried a round later, when no KWC could vote.
+    pub const RECHECK: usize = 1;
+    /// Deactivation of a witness absent past the threshold.
+    pub const DEACTIVATE: usize = 2;
+    /// Seat vacated after an absence longer than L.
+    pub const LONG_ABSENCE: usize = 3;
+    /// A miner recorded offline after the grace epoch.
+    pub const MINER_GRACE: usize = 4;
+}
+
 /// Protocol settings a run reads often, resolved once.
 #[derive(Debug, Clone)]
 pub(crate) struct Params {
@@ -137,7 +152,7 @@ pub(crate) struct Sim<'a> {
     pub alloc: Allocation,
     pub registry: Registry,
     pub committee: Committee,
-    pub active: std::collections::BTreeSet<usize>,
+    pub active: crate::active::ActiveSet,
     pub wc: Vec<WcCount>,
     pub kwc_load: Vec<u32>,
     pub counts: Counts,
