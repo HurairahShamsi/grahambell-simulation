@@ -79,6 +79,13 @@ enum Command {
         /// Write a sampled trace of every run's events, this fraction of them, to trace/.
         #[arg(long)]
         trace: Option<f64>,
+        /// Continue an interrupted run in this run directory: finished jobs are taken from its
+        /// checkpoints; the configuration, seed, profile and sections are the run's own.
+        #[arg(long, conflicts_with_all = ["config", "seed", "only", "trace"])]
+        resume: Option<PathBuf>,
+        /// Do not print a line per finished job.
+        #[arg(long)]
+        quiet: bool,
     },
     /// Write the gb-protocol test vectors (SPEC Appendix A) to a directory.
     Vectors {
@@ -183,6 +190,8 @@ fn main() -> anyhow::Result<ExitCode> {
             threads,
             only,
             trace,
+            resume,
+            quiet,
         } => {
             let outcome = run_sim(&SimOptions {
                 config_path: config,
@@ -198,6 +207,8 @@ fn main() -> anyhow::Result<ExitCode> {
                 threads,
                 only,
                 trace,
+                resume,
+                progress: !quiet,
             })?;
             println!("Wrote {}", outcome.run_dir.display());
             println!(

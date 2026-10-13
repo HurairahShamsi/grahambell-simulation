@@ -513,6 +513,7 @@ dependencies = [
  "libm",
  "plotters",
  "serde",
+ "serde_json",
  "tempfile",
 ]
 

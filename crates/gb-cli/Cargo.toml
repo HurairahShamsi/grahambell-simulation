@@ -19,6 +19,7 @@ gb-protocol.workspace = true
 gb-crypto-tests.workspace = true
 gb-sim.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 csv.workspace = true
 clap.workspace = true
 anyhow.workspace = true

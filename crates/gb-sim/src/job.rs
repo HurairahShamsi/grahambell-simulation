@@ -6,7 +6,7 @@ use gb_config::protocol::{
 };
 use gb_config::sim::{CryptoMode, LatencySource};
 use gb_protocol::hash::Hash;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// Fork choice used by every node in a run (M3 C2).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -215,8 +215,9 @@ pub struct TraceRow {
 pub const TRACE_ROWS_MAX: usize = 1_000_000;
 
 /// Counts and sums a run produces. Everything a table needs is here, so tables never rerun a
-/// simulation.
-#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+/// simulation. Results round-trip through JSON exactly (checkpoints), apart from the wall
+/// time and the trace, which are not serialised.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct JobResult {
     /// Job identifier.
     pub id: String,

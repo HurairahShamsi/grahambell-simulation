@@ -35,6 +35,68 @@ pub struct SuiteOptions {
     pub threads: usize,
     /// Sections to run (empty: all). V0 always runs, because the others rely on its gate.
     pub only: Vec<String>,
+    /// How runs report progress and keep finished results.
+    pub control: RunControl,
+}
+
+/// How [`run_jobs`] reports progress and keeps finished results. Neither changes a result.
+#[derive(Debug, Clone, Default)]
+pub struct RunControl {
+    /// Print a line to standard error as each job finishes, with an estimate of the time left.
+    pub progress: bool,
+    /// Directory where each finished job's result is saved with its specification. A later
+    /// run of the same specification takes the saved result instead of running the job, so an
+    /// interrupted suite can resume.
+    pub checkpoint: Option<std::path::PathBuf>,
+}
+
+/// A saved job result (checkpoint file).
+#[derive(serde::Serialize, serde::Deserialize)]
+struct Checkpoint {
+    spec: serde_json::Value,
+    wall_s: f64,
+    result: JobResult,
+}
+
+/// Rough relative cost of a job, to start the longest first and to estimate the time left.
+fn job_cost(job: &JobSpec) -> f64 {
+    let crypto = match job.crypto {
+        gb_config::sim::CryptoMode::Real => 2_000.0,
+        gb_config::sim::CryptoMode::StandIn => 20.0,
+        gb_config::sim::CryptoMode::Fast => 1.0,
+    };
+    job.days * (f64::from(job.miners) + job.registered_ids as f64 / 3.0 + 100.0) * crypto
+}
+
+/// The saved result of `job` in `dir`, if one exists for exactly this specification.
+fn load_checkpoint(dir: &std::path::Path, file: &str, job: &JobSpec) -> Option<JobResult> {
+    let text = std::fs::read_to_string(dir.join(file)).ok()?;
+    let saved: Checkpoint = serde_json::from_str(&text).ok()?;
+    if saved.spec != serde_json::to_value(job).ok()? {
+        return None;
+    }
+    let mut result = saved.result;
+    result.wall_s = saved.wall_s;
+    Some(result)
+}
+
+/// Saves `result` for `job` in `dir` (written to a temporary file, then renamed).
+fn save_checkpoint(dir: &std::path::Path, file: &str, job: &JobSpec, result: &JobResult) {
+    let Ok(spec) = serde_json::to_value(job) else {
+        return;
+    };
+    let saved = Checkpoint {
+        spec,
+        wall_s: result.wall_s,
+        result: result.clone(),
+    };
+    let Ok(text) = serde_json::to_string(&saved) else {
+        return;
+    };
+    let tmp = dir.join(format!("{file}.tmp"));
+    if std::fs::write(&tmp, text).is_ok() {
+        let _ = std::fs::rename(&tmp, dir.join(file));
+    }
 }
 
 /// A table written as CSV.
@@ -187,11 +249,14 @@ impl Ctx<'_> {
     }
 }
 
-/// Runs jobs on `threads` workers; results come back in job order.
+/// Runs jobs on `threads` workers; results come back in job order. `pool` names this set of
+/// jobs in progress lines and checkpoint files.
 pub fn run_jobs(
     config: &Config,
     jobs: &[JobSpec],
     threads: usize,
+    control: &RunControl,
+    pool: &str,
 ) -> Result<Vec<JobResult>, SimError> {
     let next = AtomicUsize::new(0);
     let slots: Vec<Mutex<Option<Result<JobResult, SimError>>>> =
@@ -199,9 +264,16 @@ pub fn run_jobs(
     // Longest jobs first, so threads finish together; the order does not affect results.
     let mut order: Vec<usize> = (0..jobs.len()).collect();
     order.sort_by(|a, b| {
-        let cost = |j: &JobSpec| j.days * (f64::from(j.miners) + j.registered_ids as f64 / 3.0);
-        cost(&jobs[*b]).total_cmp(&cost(&jobs[*a])).then(a.cmp(b))
+        job_cost(&jobs[*b])
+            .total_cmp(&job_cost(&jobs[*a]))
+            .then(a.cmp(b))
     });
+    if let Some(dir) = &control.checkpoint {
+        std::fs::create_dir_all(dir).map_err(|e| SimError::Setup(e.to_string()))?;
+    }
+    let total_cost: f64 = jobs.iter().map(job_cost).sum();
+    let done = Mutex::new((0usize, 0.0f64));
+    let started = std::time::Instant::now();
     std::thread::scope(|scope| {
         for _ in 0..threads.max(1).min(jobs.len().max(1)) {
             scope.spawn(|| {
@@ -211,7 +283,50 @@ pub fn run_jobs(
                         break;
                     }
                     let j = order[i];
-                    let result = run_job(&jobs[j], config);
+                    let file = format!("{pool}-{j:05}.json");
+                    let saved = control
+                        .checkpoint
+                        .as_deref()
+                        .and_then(|dir| load_checkpoint(dir, &file, &jobs[j]));
+                    let resumed = saved.is_some();
+                    let result = match saved {
+                        Some(result) => Ok(result),
+                        None => {
+                            let result = run_job(&jobs[j], config);
+                            if let (Some(dir), Ok(r)) = (&control.checkpoint, &result) {
+                                save_checkpoint(dir, &file, &jobs[j], r);
+                            }
+                            result
+                        }
+                    };
+                    if control.progress {
+                        if let Ok(mut d) = done.lock() {
+                            d.0 += 1;
+                            d.1 += job_cost(&jobs[j]);
+                            let elapsed = started.elapsed().as_secs_f64();
+                            let left = if d.1 > 0.0 {
+                                elapsed * (total_cost - d.1) / d.1
+                            } else {
+                                0.0
+                            };
+                            eprintln!(
+                                "[{pool} {}/{}] {} {}; elapsed {:.0} min, about {:.0} min left",
+                                d.0,
+                                jobs.len(),
+                                jobs[j].id,
+                                if resumed {
+                                    "taken from its checkpoint".to_string()
+                                } else {
+                                    match &result {
+                                        Ok(r) => format!("{:.0} s", r.wall_s),
+                                        Err(e) => format!("failed: {e}"),
+                                    }
+                                },
+                                elapsed / 60.0,
+                                left / 60.0
+                            );
+                        }
+                    }
                     if let Ok(mut slot) = slots[j].lock() {
                         *slot = Some(result);
                     }
@@ -244,7 +359,7 @@ pub fn run_suite(config: &Config, options: &SuiteOptions) -> Result<SuiteOutput,
     let mut out = SuiteOutput::default();
     // V0 first: the gate decides whether the other sections may run.
     let v0_specs = v::v0_jobs(&ctx);
-    let mut v0_jobs = run_section(&ctx, options.threads, v0_specs.clone(), &mut out)?;
+    let mut v0_jobs = run_section(&ctx, options, v0_specs.clone(), &mut out)?;
     let v0 = v::v0_analyse(&ctx, &v0_jobs);
     let gate_passed = v0.checks.iter().all(|c| c.passed);
     absorb(&mut out, v0);
@@ -290,7 +405,7 @@ pub fn run_suite(config: &Config, options: &SuiteOptions) -> Result<SuiteOutput,
         ranges.push(Some((all.len(), all.len() + list.len())));
         all.extend(list);
     }
-    let results = run_jobs(config, &all, options.threads)?;
+    let results = run_jobs(config, &all, options.threads, &options.control, "main")?;
     for (job, result) in all.iter().zip(&results) {
         out.perf.push(perf_row(job, result));
     }
@@ -426,11 +541,11 @@ fn invariants(specs: &[JobSpec], runs: &[JobResult]) -> SectionOut {
 
 fn run_section(
     ctx: &Ctx<'_>,
-    threads: usize,
+    options: &SuiteOptions,
     jobs: Vec<JobSpec>,
     out: &mut SuiteOutput,
 ) -> Result<Vec<JobResult>, SimError> {
-    let results = run_jobs(ctx.cfg, &jobs, threads)?;
+    let results = run_jobs(ctx.cfg, &jobs, options.threads, &options.control, "V0")?;
     for (job, result) in jobs.iter().zip(&results) {
         out.perf.push(perf_row(job, result));
     }
@@ -621,6 +736,38 @@ pub(crate) fn quantile(values: &[f64], q: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn checkpoints_round_trip_and_are_reused_only_for_the_same_specification() {
+        let cfg = Config::default();
+        let dir = std::env::temp_dir().join(format!("gb-sim-checkpoint-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let mut job = JobSpec::from_config(&cfg, "checkpoint", "T", 3).idealised();
+        job.miners = 50;
+        job.registered_ids = 400;
+        job.days = 0.05;
+        let control = RunControl {
+            progress: false,
+            checkpoint: Some(dir.clone()),
+        };
+        let run = |j: &JobSpec| run_jobs(&cfg, std::slice::from_ref(j), 1, &control, "t").unwrap();
+        let mut first = run(&job).remove(0);
+        // The saved result equals the run's, every float included.
+        let file = dir.join("t-00000.json");
+        let text = std::fs::read_to_string(&file).unwrap();
+        let mut saved: Checkpoint = serde_json::from_str(&text).unwrap();
+        first.wall_s = 0.0;
+        assert_eq!(saved.result, first);
+        // A saved result is taken instead of running the job again …
+        saved.result.blocks = 999_999;
+        std::fs::write(&file, serde_json::to_string(&saved).unwrap()).unwrap();
+        assert_eq!(run(&job)[0].blocks, 999_999);
+        // … but only for the same specification.
+        let mut other = job.clone();
+        other.seed += 1;
+        assert_ne!(run(&other)[0].blocks, 999_999);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     /// Runs one job of the full profile and prints its digest: the SHA-256 of its result as
     /// JSON, without the event count (an implementation detail). Used to profile a job and to

@@ -13,9 +13,10 @@ use crate::{load_config, machine_description};
 use anyhow::{Context, bail, ensure};
 use gb_config::Config;
 use gb_runlog::{
-    GitInfo, RunDetails, RunIdentity, UtcTimestamp, finish_run, write_resolved_config,
+    GitInfo, RESOLVED_CONFIG_FILE, RunDetails, RunIdentity, UtcTimestamp, finish_run,
+    write_resolved_config,
 };
-use gb_sim::suite::{Chart, Profile, SuiteOptions, SuiteOutput, Table, run_suite};
+use gb_sim::suite::{Chart, Profile, RunControl, SuiteOptions, SuiteOutput, Table, run_suite};
 use plotters::prelude::{RGBColor, SeriesLabelPosition};
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
@@ -106,6 +107,10 @@ pub struct SimOptions {
     pub only: Vec<String>,
     /// Fraction of events to trace, overriding `sim.trace_sample`.
     pub trace: Option<f64>,
+    /// Continue the interrupted run in this directory instead of starting a new one.
+    pub resume: Option<PathBuf>,
+    /// Print a line to standard error as each job finishes.
+    pub progress: bool,
 }
 
 /// What a finished run produced.
@@ -159,8 +164,62 @@ pub fn produce(
     Ok(out)
 }
 
-/// Runs `gb sim`.
+/// File, inside a run directory, that lets an interrupted run resume (removed when the run
+/// finishes, like the checkpoints).
+pub const RESUME_FILE: &str = "resume.json";
+
+/// Directory, inside a run directory, of finished jobs' results while the run is in progress.
+pub const CHECKPOINT_DIR: &str = "checkpoint";
+
+/// What a run directory records at its start, so the run can resume after an interruption.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+struct ResumeInfo {
+    /// UTC start time: year, month, day, hour, minute, second.
+    started: (i64, u32, u32, u32, u32, u32),
+    git_commit: Option<String>,
+    git_dirty: bool,
+    seed: u64,
+    config_path: Option<String>,
+    config_sha256: String,
+    command_line: Vec<String>,
+    quick: bool,
+    only: Vec<String>,
+}
+
+impl ResumeInfo {
+    fn identity(&self) -> RunIdentity {
+        let (year, month, day, hour, minute, second) = self.started;
+        RunIdentity {
+            analysis: "sim".to_string(),
+            started: UtcTimestamp {
+                year,
+                month,
+                day,
+                hour,
+                minute,
+                second,
+            },
+            git: GitInfo {
+                commit: self.git_commit.clone(),
+                dirty: self.git_dirty,
+            },
+            seed: self.seed,
+        }
+    }
+}
+
+/// Runs `gb sim`: starts a new run directory, or continues the one in `options.resume`.
 pub fn run_sim(options: &SimOptions) -> anyhow::Result<SimOutcome> {
+    let run_dir = match &options.resume {
+        Some(dir) => dir.clone(),
+        None => start_sim(options)?,
+    };
+    resume_sim(&run_dir, options)
+}
+
+/// Checks the options and creates a new run directory holding the resolved configuration
+/// and what is needed to resume; returns the directory. Nothing is simulated yet.
+pub fn start_sim(options: &SimOptions) -> anyhow::Result<PathBuf> {
     let mut config = load_config(options.config_path.as_deref())?;
     if let Some(seed) = options.seed {
         config.run.seed = seed;
@@ -199,28 +258,99 @@ pub fn run_sim(options: &SimOptions) -> anyhow::Result<SimOutcome> {
         run_dir.display()
     );
     std::fs::create_dir_all(&run_dir).with_context(|| format!("creating {}", run_dir.display()))?;
-    let suite = SuiteOptions {
-        profile: options.profile,
-        threads: options
-            .threads
-            .unwrap_or(config.sim.threads as usize)
-            .max(1),
-        only: options.only.clone(),
-    };
-    let out = produce(&run_dir, &config, &identity.git, &suite)?;
-    let config_sha256 = gb_runlog::sha256_hex(config.to_toml_string()?.as_bytes());
-    let details = RunDetails {
-        command_line: options.command_line.clone(),
+    let config_sha256 = write_resolved_config(&run_dir, &config.to_toml_string()?)?;
+    let t = identity.started;
+    let info = ResumeInfo {
+        started: (t.year, t.month, t.day, t.hour, t.minute, t.second),
+        git_commit: identity.git.commit.clone(),
+        git_dirty: identity.git.dirty,
+        seed: identity.seed,
         config_path: options
             .config_path
             .as_ref()
             .map(|p| p.display().to_string()),
         config_sha256,
+        command_line: options.command_line.clone(),
+        quick: options.profile == Profile::Quick,
+        only: options.only.clone(),
+    };
+    std::fs::write(
+        run_dir.join(RESUME_FILE),
+        serde_json::to_string_pretty(&info)? + "\n",
+    )
+    .context("writing resume.json")?;
+    Ok(run_dir)
+}
+
+/// Runs, or continues, the suite of the run directory `run_dir` made by [`start_sim`]: jobs
+/// whose results are in its checkpoint directory are not run again. When the suite finishes,
+/// writes every output, removes the checkpoints and the resume file, and records `run.json`.
+pub fn resume_sim(run_dir: &Path, options: &SimOptions) -> anyhow::Result<SimOutcome> {
+    ensure!(
+        !run_dir.join(gb_runlog::RUN_LOG_FILE).exists(),
+        "{} is a finished run (it has run.json); nothing to resume",
+        run_dir.display()
+    );
+    let text = std::fs::read_to_string(run_dir.join(RESUME_FILE)).with_context(|| {
+        format!(
+            "{} has no {RESUME_FILE}, so it is not a gb sim run that can resume",
+            run_dir.display()
+        )
+    })?;
+    let info: ResumeInfo = serde_json::from_str(&text).context("reading resume.json")?;
+    let config_path = run_dir.join(RESOLVED_CONFIG_FILE);
+    let config = load_config(Some(&config_path))?;
+    let config_sha256 = gb_runlog::sha256_hex(config.to_toml_string()?.as_bytes());
+    ensure!(
+        config_sha256 == info.config_sha256,
+        "the configuration in {} no longer matches the run's",
+        config_path.display()
+    );
+    let git = GitInfo::read(&options.repo_dir);
+    ensure!(
+        git.commit == info.git_commit,
+        "the run started from commit {}, but the working tree is at {}; check out the run's commit to resume it",
+        info.git_commit.as_deref().unwrap_or("none"),
+        git.commit.as_deref().unwrap_or("none")
+    );
+    if !git.is_clean_commit() && !options.allow_dirty {
+        bail!(
+            "the working tree is not a clean git commit ({}); resume from the clean commit, or pass --allow-dirty",
+            git.short_label()
+        );
+    }
+    let identity = info.identity();
+    let checkpoint = run_dir.join(CHECKPOINT_DIR);
+    let suite = SuiteOptions {
+        profile: if info.quick {
+            Profile::Quick
+        } else {
+            Profile::Full
+        },
+        threads: options
+            .threads
+            .unwrap_or(config.sim.threads as usize)
+            .max(1),
+        only: info.only.clone(),
+        control: RunControl {
+            progress: options.progress,
+            checkpoint: Some(checkpoint.clone()),
+        },
+    };
+    let out = produce(run_dir, &config, &identity.git, &suite)?;
+    if checkpoint.exists() {
+        std::fs::remove_dir_all(&checkpoint).context("removing the checkpoints")?;
+    }
+    std::fs::remove_file(run_dir.join(RESUME_FILE)).context("removing resume.json")?;
+    let details = RunDetails {
+        command_line: info.command_line.clone(),
+        config_path: info.config_path.clone(),
+        config_sha256,
         crate_version: env!("CARGO_PKG_VERSION").to_string(),
     };
-    finish_run(&run_dir, &identity, &details)?;
+    finish_run(run_dir, &identity, &details)?;
     Ok(SimOutcome {
-        run_dir,
+        run_dir: run_dir.to_path_buf(),
         checks: out.checks.len(),
         failed: out
             .checks

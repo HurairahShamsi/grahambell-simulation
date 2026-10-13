@@ -1,14 +1,16 @@
 //! End-to-end checks of `gb sim`: the outputs (everything outside `perf/`) do not depend on the
 //! thread count, a run of the quick profile writes every table and chart and its checks pass,
-//! sampled traces are written when asked for, and a run refuses to start from a working tree
-//! that is not a clean commit or with an unknown section.
+//! sampled traces are written when asked for, a run refuses to start from a working tree that
+//! is not a clean commit or with an unknown section, and a started run resumes to the outputs
+//! of a run done in one go.
 
 use gb_cli::sim::{
-    CHART_DIR, PERF_DIR, SIM_CHARTS, SIM_TABLES, SimOptions, TRACE_DIR, produce, run_sim,
+    CHART_DIR, CHECKPOINT_DIR, PERF_DIR, RESUME_FILE, SIM_CHARTS, SIM_TABLES, SimOptions,
+    TRACE_DIR, produce, resume_sim, run_sim, start_sim,
 };
 use gb_config::Config;
 use gb_runlog::{GitInfo, OutputFile, RESOLVED_CONFIG_FILE, build_manifest};
-use gb_sim::suite::{Profile, SuiteOptions};
+use gb_sim::suite::{Profile, RunControl, SuiteOptions};
 use std::path::Path;
 
 fn clean_git() -> GitInfo {
@@ -35,6 +37,7 @@ fn outputs_and_traces_do_not_depend_on_the_thread_count() {
         profile: Profile::Quick,
         threads,
         only: vec!["A6".to_string()],
+        control: RunControl::default(),
     };
     let first = tempfile::tempdir().unwrap();
     let second = tempfile::tempdir().unwrap();
@@ -63,6 +66,7 @@ fn the_quick_profile_writes_every_output_and_its_checks_pass() {
             profile: Profile::Quick,
             threads,
             only: Vec::new(),
+            control: RunControl::default(),
         },
     )
     .unwrap();
@@ -107,6 +111,8 @@ fn options(repo: &Path, out: &Path, allow_dirty: bool, only: &[&str]) -> SimOpti
         threads: Some(1),
         only: only.iter().map(|s| (*s).to_string()).collect(),
         trace: None,
+        resume: None,
+        progress: false,
     }
 }
 
@@ -126,4 +132,43 @@ fn an_unknown_section_is_refused() {
     let error = run_sim(&options(repo.path(), out.path(), true, &["C9"])).unwrap_err();
     assert!(format!("{error}").contains("unknown section C9"), "{error}");
     assert_eq!(std::fs::read_dir(out.path()).unwrap().count(), 0);
+}
+
+#[test]
+fn a_started_run_resumes_to_the_same_outputs_and_cannot_resume_twice() {
+    // `gb sim` starts a run directory, then runs it; `gb sim --resume` runs the same function
+    // on a directory whose run was interrupted.
+    let repo = tempfile::tempdir().unwrap();
+    let out = tempfile::tempdir().unwrap();
+    let opts = options(repo.path(), out.path(), true, &["V4"]);
+    let run_dir = start_sim(&opts).unwrap();
+    assert!(run_dir.join(RESUME_FILE).exists());
+    let outcome = resume_sim(&run_dir, &opts).unwrap();
+    assert!(outcome.gate_passed);
+    assert!(!run_dir.join(RESUME_FILE).exists());
+    assert!(!run_dir.join(CHECKPOINT_DIR).exists());
+    let error = resume_sim(&run_dir, &opts).unwrap_err();
+    assert!(format!("{error}").contains("finished run"), "{error}");
+    // The same outputs as a run done in one go.
+    let direct = tempfile::tempdir().unwrap();
+    produce(
+        direct.path(),
+        &Config::default(),
+        &GitInfo::read(repo.path()),
+        &SuiteOptions {
+            profile: Profile::Quick,
+            threads: 2,
+            only: vec!["V4".to_string()],
+            control: RunControl::default(),
+        },
+    )
+    .unwrap();
+    let without_log = |dir: &Path| {
+        reproducible(dir)
+            .unwrap()
+            .into_iter()
+            .filter(|f| f.path != gb_runlog::RUN_LOG_FILE)
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(without_log(&run_dir), without_log(direct.path()));
 }

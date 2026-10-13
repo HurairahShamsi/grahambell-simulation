@@ -14,7 +14,7 @@ gb-analytic.workspace = true
 gb-protocol.workspace = true
 gb-crypto-tests.workspace = true
 serde.workspace = true
-serde_json.workspace = true
+serde_json = { workspace = true, features = ["float_roundtrip"] }
 rand_core.workspace = true
 rand_chacha.workspace = true
 libm.workspace = true
