@@ -293,8 +293,106 @@ pub fn witness_equivocators(a: &Block, b: &Block, kwc: &KwcKeys) -> Vec<usize> {
         .collect()
 }
 
+/// Serialisation (SPEC §3.7): the header must be the next height on `tip` and name it as its
+/// previous block.
+pub fn check_on_tip(header: &Header, tip: &Tip) -> Result<(), Rejection> {
+    if header.height != tip.height + 1 || header.prev_hash != tip.hash {
+        return Err(Rejection::NotOnTip);
+    }
+    Ok(())
+}
+
+/// The entropy signers must meet the miner kind's quorum (SPEC §3.4: online members must
+/// number at least the quorum).
+pub fn check_entropy_quorum(quorum: &QuorumRule, signers: &Bitfield) -> Result<(), Rejection> {
+    if !quorum.is_met(signers) {
+        return Err(Rejection::EntropyBelowQuorum);
+    }
+    Ok(())
+}
+
+/// Full chain recomputation (SPEC §3.5, §3.7): `h_N` must be below the target and N must be
+/// the first winning step of the chain that starts at `t0` with entropy `entropy`.
+pub fn check_chain(
+    header: &Header,
+    entropy: &Hash,
+    t0: u64,
+    winning_step: u64,
+    max_steps: u64,
+) -> Result<(), Rejection> {
+    let inputs = ChainInputs::new(header, *entropy, t0);
+    if winning_step >= max_steps {
+        return Err(Rejection::NotWinning);
+    }
+    let mut first_win = None;
+    let mut last = [0u8; 32];
+    for (n, hash) in inputs.steps().take(winning_step as usize + 1) {
+        if below_target(&hash, &header.target) && first_win.is_none() {
+            first_win = Some(n);
+        }
+        last = hash;
+    }
+    if !below_target(&last, &header.target) {
+        return Err(Rejection::NotWinning);
+    }
+    if first_win != Some(winning_step) {
+        return Err(Rejection::EarlierWinningStep);
+    }
+    Ok(())
+}
+
+/// The block timestamp must equal `t0 + N` (SPEC §3.5).
+pub fn check_timestamp(timestamp: u64, t0: u64, winning_step: u64) -> Result<(), Rejection> {
+    if timestamp != t0 + winning_step {
+        return Err(Rejection::TimestampMismatch);
+    }
+    Ok(())
+}
+
+/// The block must not be received before its own timestamp, within tolerance δ, on the
+/// validator's own clock (SPEC §3.7).
+pub fn check_received(
+    block_at: f64,
+    timestamp: u64,
+    clock_tolerance_s: f64,
+) -> Result<(), Rejection> {
+    if block_at < timestamp as f64 - clock_tolerance_s {
+        return Err(Rejection::ReceivedEarly);
+    }
+    Ok(())
+}
+
+/// The PoWit signers must meet the miner kind's quorum (SPEC §2, §3.6).
+pub fn check_powit_quorum(quorum: &QuorumRule, signers: &Bitfield) -> Result<(), Rejection> {
+    if !quorum.is_met(signers) {
+        return Err(Rejection::PowitBelowQuorum);
+    }
+    Ok(())
+}
+
+/// The PoWit must arrive within D seconds of the block timestamp, on the validator's own
+/// clock (SPEC §3.7); `None` disables the deadline.
+pub fn check_powit_deadline(
+    powit_at: f64,
+    timestamp: u64,
+    deadline_s: Option<f64>,
+) -> Result<(), Rejection> {
+    if let Some(deadline) = deadline_s {
+        if powit_at > timestamp as f64 + deadline {
+            return Err(Rejection::PowitLate);
+        }
+    }
+    Ok(())
+}
+
 /// Validates `block` on `tip` (SPEC §3.7). `unique` reports whether the candidate key and the
 /// address are free. Returns the block hash when valid.
+///
+/// The checks run in this order and the first failure is returned: [`check_on_tip`],
+/// uniqueness, [`check_entropy_quorum`], the entropy aggregate, [`check_chain`],
+/// [`check_timestamp`], [`check_received`], [`check_powit_quorum`], the PoWit aggregate and
+/// [`check_powit_deadline`]. [`validate_facts`] runs the same checks without the two BLS
+/// verifications.
 pub fn validate(
     block: &Block,
     tip: &Tip,
@@ -305,15 +403,11 @@ pub fn validate(
     unique: &dyn Fn(&Header) -> bool,
 ) -> Result<Hash, Rejection> {
     let h = &block.header;
-    if h.height != tip.height + 1 || h.prev_hash != tip.hash {
-        return Err(Rejection::NotOnTip);
-    }
+    check_on_tip(h, tip)?;
     if !unique(h) {
         return Err(Rejection::NotUnique);
     }
-    if !quorum.is_met(&block.entropy_signers) {
-        return Err(Rejection::EntropyBelowQuorum);
-    }
+    check_entropy_quorum(quorum, &block.entropy_signers)?;
     if !verify_entropy(
         h,
         &block.miner_signature,
@@ -324,33 +418,10 @@ pub fn validate(
         return Err(Rejection::BadEntropy);
     }
     let t0 = chain_start(tip.timestamp, rules.start_rule);
-    let inputs = ChainInputs::new(h, block.entropy(), t0);
-    if block.winning_step >= rules.max_steps {
-        return Err(Rejection::NotWinning);
-    }
-    let mut first_win = None;
-    let mut last = [0u8; 32];
-    for (n, hash) in inputs.steps().take(block.winning_step as usize + 1) {
-        if below_target(&hash, &h.target) && first_win.is_none() {
-            first_win = Some(n);
-        }
-        last = hash;
-    }
-    if !below_target(&last, &h.target) {
-        return Err(Rejection::NotWinning);
-    }
-    if first_win != Some(block.winning_step) {
-        return Err(Rejection::EarlierWinningStep);
-    }
-    if block.timestamp != t0 + block.winning_step {
-        return Err(Rejection::TimestampMismatch);
-    }
-    if reception.block_at < block.timestamp as f64 - rules.clock_tolerance_s {
-        return Err(Rejection::ReceivedEarly);
-    }
-    if !quorum.is_met(&block.powit_signers) {
-        return Err(Rejection::PowitBelowQuorum);
-    }
+    check_chain(h, &block.entropy(), t0, block.winning_step, rules.max_steps)?;
+    check_timestamp(block.timestamp, t0, block.winning_step)?;
+    check_received(reception.block_at, block.timestamp, rules.clock_tolerance_s)?;
+    check_powit_quorum(quorum, &block.powit_signers)?;
     let hash = block.hash();
     if !verify_same_message(
         kwc.keys(),
@@ -360,11 +431,66 @@ pub fn validate(
     ) {
         return Err(Rejection::BadPowit);
     }
-    if let Some(deadline) = rules.powit_deadline_s {
-        if reception.powit_at > block.timestamp as f64 + deadline {
-            return Err(Rejection::PowitLate);
-        }
+    check_powit_deadline(reception.powit_at, block.timestamp, rules.powit_deadline_s)?;
+    Ok(hash)
+}
+
+/// The facts of a block that validation reads, without its signatures. Simulators that stand
+/// in for BLS (ARCHITECTURE §3) validate these with [`validate_facts`].
+#[derive(Debug, Clone, Copy)]
+pub struct BlockFacts<'a> {
+    /// The header.
+    pub header: &'a Header,
+    /// The entropy E the block commits to.
+    pub entropy: Hash,
+    /// Members whose entropy signatures are in the aggregate.
+    pub entropy_signers: &'a Bitfield,
+    /// The winning step N.
+    pub winning_step: u64,
+    /// The block timestamp.
+    pub timestamp: u64,
+    /// PoWit signers.
+    pub powit_signers: &'a Bitfield,
+}
+
+/// Whether [`validate_facts`] recomputes the hash chain.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChainCheck {
+    /// Recompute the full chain, as [`validate`] does.
+    Recompute,
+    /// Trust the winning step: only for a simulator that drew N from the per-step success
+    /// probability instead of hashing (its equivalence is tested before use).
+    Trusted,
+}
+
+/// [`validate`] without the two BLS verifications (entropy and PoWit aggregates), in the
+/// same order, for blocks whose signatures a simulator stands in for. With
+/// [`ChainCheck::Recompute`] it agrees with [`validate`] on every block whose two aggregates
+/// verify.
+pub fn validate_facts(
+    facts: &BlockFacts<'_>,
+    tip: &Tip,
+    quorum: &QuorumRule,
+    reception: &Reception,
+    rules: &Rules,
+    unique: &dyn Fn(&Header) -> bool,
+    chain: ChainCheck,
+) -> Result<Hash, Rejection> {
+    let h = facts.header;
+    check_on_tip(h, tip)?;
+    if !unique(h) {
+        return Err(Rejection::NotUnique);
     }
+    check_entropy_quorum(quorum, facts.entropy_signers)?;
+    let t0 = chain_start(tip.timestamp, rules.start_rule);
+    if chain == ChainCheck::Recompute {
+        check_chain(h, &facts.entropy, t0, facts.winning_step, rules.max_steps)?;
+    }
+    check_timestamp(facts.timestamp, t0, facts.winning_step)?;
+    check_received(reception.block_at, facts.timestamp, rules.clock_tolerance_s)?;
+    check_powit_quorum(quorum, facts.powit_signers)?;
+    let hash = block_hash(h, &facts.entropy, facts.winning_step);
+    check_powit_deadline(reception.powit_at, facts.timestamp, rules.powit_deadline_s)?;
     Ok(hash)
 }
 
@@ -549,6 +675,143 @@ pub(crate) mod tests {
             ),
             Err(Rejection::NotUnique)
         );
+    }
+
+    fn facts_of(block: &Block) -> (Block, Hash) {
+        (block.clone(), block.entropy())
+    }
+
+    fn run_facts(
+        f: &Fixture,
+        block: &Block,
+        reception: Reception,
+        r: Rules,
+        unique: bool,
+        tip: &Tip,
+    ) -> Result<Hash, Rejection> {
+        let (b, entropy) = facts_of(block);
+        let facts = BlockFacts {
+            header: &b.header,
+            entropy,
+            entropy_signers: &b.entropy_signers,
+            winning_step: b.winning_step,
+            timestamp: b.timestamp,
+            powit_signers: &b.powit_signers,
+        };
+        validate_facts(
+            &facts,
+            tip,
+            &f.quorum,
+            &reception,
+            &r,
+            &|_| unique,
+            ChainCheck::Recompute,
+        )
+    }
+
+    #[test]
+    fn validate_and_validate_facts_agree_except_on_signatures() {
+        let f = fixture(4, pool(4, 3));
+        let r = rules(Some(5.0));
+        let t0 = f.tip.timestamp + 1;
+        let later = ChainInputs::new(&f.block.header, f.block.entropy(), t0)
+            .steps()
+            .skip(f.block.winning_step as usize + 1)
+            .take(100_000)
+            .find(|(_, h)| below_target(h, &f.block.header.target))
+            .map(|(n, _)| n)
+            .unwrap();
+        let mut cases: Vec<(Block, Reception, Rules, bool, Tip)> = Vec::new();
+        let base = f.block.clone();
+        cases.push((base.clone(), on_time(&base), r, true, f.tip));
+        cases.push((base.clone(), on_time(&base), rules(None), true, f.tip));
+        let mut b = base.clone();
+        b.timestamp += 1;
+        cases.push((b, on_time(&base), r, true, f.tip));
+        let early = Reception {
+            block_at: base.timestamp as f64 - 2.5,
+            powit_at: base.timestamp as f64,
+        };
+        cases.push((base.clone(), early, r, true, f.tip));
+        let late = Reception {
+            block_at: base.timestamp as f64,
+            powit_at: base.timestamp as f64 + 5.5,
+        };
+        cases.push((base.clone(), late, r, true, f.tip));
+        cases.push((base.clone(), late, rules(None), true, f.tip));
+        let mut b = base.clone();
+        b.winning_step += 1;
+        b.timestamp += 1;
+        cases.push((b.clone(), on_time(&b), r, true, f.tip));
+        let mut b = base.clone();
+        b.winning_step = later;
+        b.timestamp = t0 + later;
+        cases.push((b.clone(), on_time(&b), r, true, f.tip));
+        let mut b = base.clone();
+        b.powit_signers = Bitfield::from_seats(4, &[0, 1]);
+        cases.push((b.clone(), on_time(&b), r, true, f.tip));
+        let mut b = base.clone();
+        b.entropy_signers = Bitfield::from_seats(4, &[0, 1]);
+        cases.push((b.clone(), on_time(&b), r, true, f.tip));
+        cases.push((base.clone(), on_time(&base), r, false, f.tip));
+        let other_tip = Tip {
+            height: 10,
+            ..f.tip
+        };
+        cases.push((base.clone(), on_time(&base), r, true, other_tip));
+        let mut rejections = Vec::new();
+        for (block, reception, rules, unique, tip) in &cases {
+            let full = validate(block, tip, &f.kwc, &f.quorum, reception, rules, &|_| {
+                *unique
+            });
+            let facts = run_facts(&f, block, *reception, *rules, *unique, tip);
+            assert_eq!(full, facts, "case {block:?}");
+            rejections.push(full.err());
+        }
+        // The cases cover every rejection except the two signature checks.
+        for expected in [
+            Rejection::NotOnTip,
+            Rejection::NotUnique,
+            Rejection::EntropyBelowQuorum,
+            Rejection::EarlierWinningStep,
+            Rejection::TimestampMismatch,
+            Rejection::ReceivedEarly,
+            Rejection::PowitBelowQuorum,
+            Rejection::PowitLate,
+        ] {
+            assert!(
+                rejections.contains(&Some(expected)),
+                "{expected:?} not covered"
+            );
+        }
+        assert!(rejections.contains(&None));
+    }
+
+    #[test]
+    fn trusted_chain_check_skips_only_the_recomputation() {
+        let f = fixture(4, pool(4, 3));
+        let mut b = f.block.clone();
+        b.winning_step += 1;
+        b.timestamp += 1;
+        let (b, entropy) = facts_of(&b);
+        let facts = BlockFacts {
+            header: &b.header,
+            entropy,
+            entropy_signers: &b.entropy_signers,
+            winning_step: b.winning_step,
+            timestamp: b.timestamp,
+            powit_signers: &b.powit_signers,
+        };
+        let outcome = validate_facts(
+            &facts,
+            &f.tip,
+            &f.quorum,
+            &on_time(&b),
+            &rules(None),
+            &|_| true,
+            ChainCheck::Trusted,
+        );
+        assert_eq!(outcome, Ok(block_hash(&b.header, &entropy, b.winning_step)));
     }
 
     #[test]
