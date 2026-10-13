@@ -4,14 +4,13 @@
 //! commit, seed and configuration. Machine-dependent timings go to `bench/`, which reproduction
 //! checks leave out.
 
-use crate::load_config;
 use crate::tables::write_csv;
+use crate::{load_config, machine_description};
 use anyhow::{Context, bail, ensure};
 use gb_config::Config;
 use gb_crypto_tests::{CryptoResults, Timings};
 use gb_runlog::{
-    GitInfo, RUSTC_VERSION, RunDetails, RunIdentity, UtcTimestamp, finish_run,
-    write_resolved_config,
+    GitInfo, RunDetails, RunIdentity, UtcTimestamp, finish_run, write_resolved_config,
 };
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
@@ -323,33 +322,6 @@ pub fn render_summary(
         );
     }
     s
-}
-
-fn machine_description() -> String {
-    let cores = std::thread::available_parallelism().map_or(1, |n| n.get());
-    let cpu = std::process::Command::new("sysctl")
-        .args(["-n", "machdep.cpu.brand_string"])
-        .output()
-        .ok()
-        .filter(|o| o.status.success())
-        .and_then(|o| String::from_utf8(o.stdout).ok())
-        .or_else(|| {
-            std::fs::read_to_string("/proc/cpuinfo").ok().and_then(|t| {
-                t.lines()
-                    .find(|l| l.starts_with("model name"))
-                    .and_then(|l| l.split(':').nth(1))
-                    .map(str::to_string)
-            })
-        })
-        .unwrap_or_else(|| "unknown CPU".to_string());
-    format!(
-        "{} ({} {}), {} logical cores, {}",
-        cpu.trim(),
-        std::env::consts::OS,
-        std::env::consts::ARCH,
-        cores,
-        RUSTC_VERSION
-    )
 }
 
 /// The machine-dependent timing report.

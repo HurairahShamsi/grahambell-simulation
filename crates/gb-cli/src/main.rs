@@ -7,6 +7,7 @@ use gb_cli::analytic::{AnalyticOptions, run_analytic};
 use gb_cli::crypto::{CryptoOptions, run_crypto};
 use gb_cli::load_config;
 use gb_cli::params::{ListingFormat, render_listing};
+use gb_cli::sim::{SimOptions, run_sim};
 use gb_config::registry::parameter_listing;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -51,6 +52,34 @@ enum Command {
         #[arg(long)]
         allow_dirty: bool,
     },
+    /// Run the M3a Tier 1 simulator suite and write tables, charts, SUMMARY.md, validation.csv,
+    /// performance and run.json.
+    Sim {
+        /// Configuration file to merge over the defaults.
+        #[arg(long)]
+        config: Option<PathBuf>,
+        /// Seed overriding the configuration's.
+        #[arg(long)]
+        seed: Option<u64>,
+        /// Directory that receives one sub-directory per run.
+        #[arg(long, default_value = "results/sim")]
+        out: PathBuf,
+        /// Allow a working tree with uncommitted changes (recorded in run.json).
+        #[arg(long)]
+        allow_dirty: bool,
+        /// Experiment sizes: the M3a sizes, or tiny sizes for tests.
+        #[arg(long, value_enum, default_value_t = ProfileArg::Full)]
+        profile: ProfileArg,
+        /// Worker threads (default: `sim.threads`); results do not depend on it.
+        #[arg(long)]
+        threads: Option<usize>,
+        /// Run only these sections (repeat or separate with commas); V0 always runs.
+        #[arg(long, value_delimiter = ',')]
+        only: Vec<String>,
+        /// Write a sampled trace of every run's events, this fraction of them, to trace/.
+        #[arg(long)]
+        trace: Option<f64>,
+    },
     /// Write the gb-protocol test vectors (SPEC Appendix A) to a directory.
     Vectors {
         /// Directory that receives protocol_v1.json.
@@ -71,6 +100,15 @@ enum Command {
         #[command(subcommand)]
         action: ConfigAction,
     },
+}
+
+/// Experiment sizes of `gb sim`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+enum ProfileArg {
+    /// The M3a sizes.
+    Full,
+    /// Tiny sizes for tests and CI; not results.
+    Quick,
 }
 
 #[derive(Debug, Subcommand)]
@@ -130,6 +168,47 @@ fn main() -> anyhow::Result<ExitCode> {
                 "Cross-checks passed: {} of {}",
                 outcome.checks - outcome.failed.len(),
                 outcome.checks
+            );
+            if !outcome.failed.is_empty() {
+                eprintln!("Failed checks: {}", outcome.failed.join(", "));
+                return Ok(ExitCode::FAILURE);
+            }
+        }
+        Command::Sim {
+            config,
+            seed,
+            out,
+            allow_dirty,
+            profile,
+            threads,
+            only,
+            trace,
+        } => {
+            let outcome = run_sim(&SimOptions {
+                config_path: config,
+                seed,
+                out_root: out,
+                allow_dirty,
+                repo_dir: std::env::current_dir()?,
+                command_line: std::env::args().collect(),
+                profile: match profile {
+                    ProfileArg::Full => gb_sim::suite::Profile::Full,
+                    ProfileArg::Quick => gb_sim::suite::Profile::Quick,
+                },
+                threads,
+                only,
+                trace,
+            })?;
+            println!("Wrote {}", outcome.run_dir.display());
+            println!(
+                "Validation checks passed: {} of {} (V0 gate {})",
+                outcome.checks - outcome.failed.len(),
+                outcome.checks,
+                if outcome.gate_passed {
+                    "passed"
+                } else {
+                    "failed"
+                }
             );
             if !outcome.failed.is_empty() {
                 eprintln!("Failed checks: {}", outcome.failed.join(", "));

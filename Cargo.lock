@@ -509,6 +509,7 @@ dependencies = [
  "gb-crypto-tests",
  "gb-protocol",
  "gb-runlog",
+ "gb-sim",
  "libm",
  "plotters",
  "serde",

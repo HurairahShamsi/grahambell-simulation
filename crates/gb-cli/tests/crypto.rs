@@ -57,3 +57,38 @@ fn reproducible_outputs_are_byte_identical_and_all_checks_pass() {
     let failed: Vec<_> = results.checks.iter().filter(|c| !c.passed).collect();
     assert!(failed.is_empty(), "failed checks: {failed:#?}");
 }
+
+#[test]
+#[ignore = "runs the full M2 measurement (minutes); run by hand after changes to shared crates"]
+fn the_full_run_still_matches_the_committed_reference() {
+    // Reference: results/crypto/reference/, the committed M2 run. Its tables and checks must
+    // be byte-identical; in SUMMARY.md only the commit and configuration-hash lines may differ,
+    // because the configuration gained the M3a keys after that run.
+    let reference =
+        std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../results/crypto/reference");
+    let out = tempfile::tempdir().unwrap();
+    let git = GitInfo {
+        commit: Some("0123456789abcdef0123456789abcdef01234567".to_string()),
+        dirty: false,
+    };
+    produce(out.path(), &Config::default(), &git).unwrap();
+    for name in CRYPTO_TABLES {
+        let expected = std::fs::read(reference.join(name)).unwrap();
+        let actual = std::fs::read(out.path().join(name)).unwrap();
+        assert!(expected == actual, "{name} differs from the reference run");
+    }
+    let masked = |path: &std::path::Path| {
+        std::fs::read_to_string(path)
+            .unwrap()
+            .lines()
+            .filter(|l| {
+                !l.starts_with("- Git commit:") && !l.starts_with("- Configuration SHA-256:")
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    assert_eq!(
+        masked(&reference.join("SUMMARY.md")),
+        masked(&out.path().join("SUMMARY.md"))
+    );
+}

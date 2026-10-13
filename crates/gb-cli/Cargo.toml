@@ -17,6 +17,7 @@ gb-runlog.workspace = true
 gb-analytic.workspace = true
 gb-protocol.workspace = true
 gb-crypto-tests.workspace = true
+gb-sim.workspace = true
 serde.workspace = true
 csv.workspace = true
 clap.workspace = true
