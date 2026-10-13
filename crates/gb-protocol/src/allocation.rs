@@ -22,14 +22,16 @@ pub fn insertion_position(id: &IdHash, beacon: &Hash, filled: u64) -> u64 {
     mod_u256(&tagged(ALLOC_TAG, &[id, beacon]), filled + 1)
 }
 
+/// The WCs of KWC `w` on a ring of `wcs` active WCs: the leader `w`, then
+/// `(w + o) mod W` for each ring offset `o`, in that order.
+pub fn kwc_wcs(w: u64, wcs: u64, offsets: &[u64]) -> impl Iterator<Item = u64> + '_ {
+    std::iter::once(w).chain(offsets.iter().map(move |o| (w + o) % wcs.max(1)))
+}
+
 /// The KWC ring on `wcs` active WCs: entry `w` is `[w, (w + o₁) mod W, …]`.
 pub fn golomb_ring(wcs: u64, offsets: &[u64]) -> Vec<Vec<u64>> {
     (0..wcs)
-        .map(|w| {
-            std::iter::once(w)
-                .chain(offsets.iter().map(|o| (w + o) % wcs.max(1)))
-                .collect()
-        })
+        .map(|w| kwc_wcs(w, wcs, offsets).collect())
         .collect()
 }
 
@@ -177,11 +179,19 @@ impl Allocation {
     /// Members of KWC `w` in seat order: the leader WC's seats, then each subordinate WC's in
     /// ring-offset order (the bitfield order of Appendix A).
     pub fn kwc_members(&self, w: u64) -> Vec<IdHash> {
-        let wcs = self.active_wcs();
-        std::iter::once(w)
-            .chain(self.offsets.iter().map(|o| (w + o) % wcs.max(1)))
+        kwc_wcs(w, self.active_wcs(), &self.offsets)
             .flat_map(|wc| self.wc_members(wc).to_vec())
             .collect()
+    }
+
+    /// The ID in seat `seat`, if filled.
+    pub fn id_at(&self, seat: usize) -> Option<&IdHash> {
+        self.seats.get(seat)
+    }
+
+    /// The ring offsets.
+    pub fn offsets(&self) -> &[u64] {
+        &self.offsets
     }
 }
 
