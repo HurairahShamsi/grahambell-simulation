@@ -1,0 +1,661 @@
+{
+ "source": "RIPE Atlas (RIPE NCC), https://atlas.ripe.net — anchoring mesh pings, IPv6",
+ "retrieved_utc": "2026-10-13T07:46:39Z",
+ "day_utc": "2026-10-12",
+ "windows_utc": [
+  [
+   "00:00",
+   "00:30"
+  ],
+  [
+   "06:00",
+   "06:30"
+  ],
+  [
+   "12:00",
+   "12:30"
+  ],
+  [
+   "18:00",
+   "18:30"
+  ]
+ ],
+ "sources_per_region": 8,
+ "targets_per_region": 3,
+ "anchors": {
+  "na_east": [
+   {
+    "anchor": 1151,
+    "probe": 6379,
+    "fqdn": "us-dur-as36236.anchors.atlas.ripe.net",
+    "country": "US",
+    "city": "Durham"
+   },
+   {
+    "anchor": 1521,
+    "probe": 6456,
+    "fqdn": "ca-tor-as20473.anchors.atlas.ripe.net",
+    "country": "CA",
+    "city": "Toronto"
+   },
+   {
+    "anchor": 1233,
+    "probe": 6420,
+    "fqdn": "mx-mex-as42473.anchors.atlas.ripe.net",
+    "country": "MX",
+    "city": "Mexico City"
+   },
+   {
+    "anchor": 1373,
+    "probe": 6389,
+    "fqdn": "us-sfj-as36444.anchors.atlas.ripe.net",
+    "country": "US",
+    "city": "Detroit"
+   },
+   {
+    "anchor": 1577,
+    "probe": 6498,
+    "fqdn": "ca-mtr-as852.anchors.atlas.ripe.net",
+    "country": "CA",
+    "city": "Montreal"
+   },
+   {
+    "anchor": 4183,
+    "probe": 7597,
+    "fqdn": "mx-mid-as265561.anchors.atlas.ripe.net",
+    "country": "MX",
+    "city": "Merida"
+   },
+   {
+    "anchor": 1374,
+    "probe": 6373,
+    "fqdn": "us-mkc-as32097.anchors.atlas.ripe.net",
+    "country": "US",
+    "city": "Kansas City"
+   },
+   {
+    "anchor": 1679,
+    "probe": 6522,
+    "fqdn": "ca-lon-as1403.anchors.atlas.ripe.net",
+    "country": "CA",
+    "city": "Longueuil"
+   }
+  ],
+  "na_west": [
+   {
+    "anchor": 1393,
+    "probe": 6411,
+    "fqdn": "us-sjc-as55002.anchors.atlas.ripe.net",
+    "country": "US",
+    "city": "San Jose"
+   },
+   {
+    "anchor": 1440,
+    "probe": 6775,
+    "fqdn": "ca-van-as394256.anchors.atlas.ripe.net",
+    "country": "CA",
+    "city": "Vancouver"
+   },
+   {
+    "anchor": 1086,
+    "probe": 6398,
+    "fqdn": "mx-tte-as22894.anchors.atlas.ripe.net",
+    "country": "MX",
+    "city": "Monterrey"
+   },
+   {
+    "anchor": 1397,
+    "probe": 6408,
+    "fqdn": "us-phx-as36236.anchors.atlas.ripe.net",
+    "country": "US",
+    "city": "Phoenix"
+   },
+   {
+    "anchor": 1576,
+    "probe": 6493,
+    "fqdn": "ca-van-as852.anchors.atlas.ripe.net",
+    "country": "CA",
+    "city": "Vancouver"
+   },
+   {
+    "anchor": 3519,
+    "probe": 7298,
+    "fqdn": "mx-qro-as64112.anchors.atlas.ripe.net",
+    "country": "MX",
+    "city": "Querétaro"
+   },
+   {
+    "anchor": 1405,
+    "probe": 6407,
+    "fqdn": "us-sea-as55002.anchors.atlas.ripe.net",
+    "country": "US",
+    "city": "Seattle"
+   },
+   {
+    "anchor": 3177,
+    "probe": 7128,
+    "fqdn": "ca-sak-as399580.anchors.atlas.ripe.net",
+    "country": "CA",
+    "city": "Saskatoon"
+   }
+  ],
+  "sa_east": [
+   {
+    "anchor": 1164,
+    "probe": 6349,
+    "fqdn": "br-poa-as19200.anchors.atlas.ripe.net",
+    "country": "BR",
+    "city": "Porto Alegre"
+   },
+   {
+    "anchor": 1938,
+    "probe": 6633,
+    "fqdn": "ar-ttd-as263777.anchors.atlas.ripe.net",
+    "country": "AR",
+    "city": "Tostado"
+   },
+   {
+    "anchor": 1605,
+    "probe": 6485,
+    "fqdn": "cl-scl-as64112.anchors.atlas.ripe.net",
+    "country": "CL",
+    "city": "Santiago de Chile"
+   },
+   {
+    "anchor": 2950,
+    "probe": 7049,
+    "fqdn": "ve-mun-as265641.anchors.atlas.ripe.net",
+    "country": "VE",
+    "city": "Maturin"
+   },
+   {
+    "anchor": 2475,
+    "probe": 6978,
+    "fqdn": "co-bog-as12008.anchors.atlas.ripe.net",
+    "country": "CO",
+    "city": "Bogota"
+   },
+   {
+    "anchor": 1364,
+    "probe": 6488,
+    "fqdn": "ec-uio-as61468.anchors.atlas.ripe.net",
+    "country": "EC",
+    "city": "Quito"
+   },
+   {
+    "anchor": 2207,
+    "probe": 6931,
+    "fqdn": "pe-lim-as64116.anchors.atlas.ripe.net",
+    "country": "PE",
+    "city": "Lima"
+   },
+   {
+    "anchor": 3080,
+    "probe": 7147,
+    "fqdn": "uy-mvd-as6057.anchors.atlas.ripe.net",
+    "country": "UY",
+    "city": "Montevideo"
+   }
+  ],
+  "eu_west": [
+   {
+    "anchor": 1154,
+    "probe": 6313,
+    "fqdn": "de-fra-as203329.anchors.atlas.ripe.net",
+    "country": "DE",
+    "city": "Frankfurt am Main"
+   },
+   {
+    "anchor": 1135,
+    "probe": 6307,
+    "fqdn": "nl-ams-as3333-3.anchors.atlas.ripe.net",
+    "country": "NL",
+    "city": "Amsterdam"
+   },
+   {
+    "anchor": 990,
+    "probe": 6320,
+    "fqdn": "fr-bod-as198985.anchors.atlas.ripe.net",
+    "country": "FR",
+    "city": "Bordeaux"
+   },
+   {
+    "anchor": 1253,
+    "probe": 6657,
+    "fqdn": "uk-lon-as20596.anchors.atlas.ripe.net",
+    "country": "GB",
+    "city": "London"
+   },
+   {
+    "anchor": 1075,
+    "probe": 6317,
+    "fqdn": "ch-zrh-as559.anchors.atlas.ripe.net",
+    "country": "CH",
+    "city": "Zürich"
+   },
+   {
+    "anchor": 1120,
+    "probe": 6316,
+    "fqdn": "it-trn-as12779.anchors.atlas.ripe.net",
+    "country": "IT",
+    "city": "Torino"
+   },
+   {
+    "anchor": 1138,
+    "probe": 6360,
+    "fqdn": "at-szg-as39878.anchors.atlas.ripe.net",
+    "country": "AT",
+    "city": "Salzburg"
+   },
+   {
+    "anchor": 1287,
+    "probe": 6350,
+    "fqdn": "se-mma-as39351.anchors.atlas.ripe.net",
+    "country": "SE",
+    "city": "Malmö"
+   }
+  ],
+  "af": [
+   {
+    "anchor": 1444,
+    "probe": 6569,
+    "fqdn": "za-jnb-as42473.anchors.atlas.ripe.net",
+    "country": "ZA",
+    "city": "Johannesburg"
+   },
+   {
+    "anchor": 2387,
+    "probe": 6882,
+    "fqdn": "ke-nbo-as37578.anchors.atlas.ripe.net",
+    "country": "KE",
+    "city": "Nairobi"
+   },
+   {
+    "anchor": 4457,
+    "probe": 7623,
+    "fqdn": "ng-los-as36940.anchors.atlas.ripe.net",
+    "country": "NG",
+    "city": "Lagos"
+   },
+   {
+    "anchor": 3413,
+    "probe": 7207,
+    "fqdn": "mu-qbe-as328699.anchors.atlas.ripe.net",
+    "country": "MU",
+    "city": "Quatre Bornes"
+   },
+   {
+    "anchor": 3987,
+    "probe": 7401,
+    "fqdn": "tz-dar-as327844.anchors.atlas.ripe.net",
+    "country": "TZ",
+    "city": "Dar es Salaam"
+   },
+   {
+    "anchor": 2310,
+    "probe": 7239,
+    "fqdn": "ao-lad-as37468.anchors.atlas.ripe.net",
+    "country": "AO",
+    "city": "Luanda"
+   },
+   {
+    "anchor": 2934,
+    "probe": 7050,
+    "fqdn": "cm-dla-as328913.anchors.atlas.ripe.net",
+    "country": "CM",
+    "city": "Douala"
+   },
+   {
+    "anchor": 4809,
+    "probe": 7799,
+    "fqdn": "gh-acc-as37271.anchors.atlas.ripe.net",
+    "country": "GH",
+    "city": "Accra"
+   }
+  ],
+  "as_south": [
+   {
+    "anchor": 2519,
+    "probe": 6954,
+    "fqdn": "in-bom-as12008.anchors.atlas.ripe.net",
+    "country": "IN",
+    "city": "Mumbai"
+   },
+   {
+    "anchor": 4395,
+    "probe": 7596,
+    "fqdn": "lk-cmb-as38229.anchors.atlas.ripe.net",
+    "country": "LK",
+    "city": "Colombo"
+   },
+   {
+    "anchor": 4133,
+    "probe": 7475,
+    "fqdn": "np-ktm-as17501.anchors.atlas.ripe.net",
+    "country": "NP",
+    "city": "Jawalakhel"
+   },
+   {
+    "anchor": 4439,
+    "probe": 7613,
+    "fqdn": "pk-lhe-as152605.anchors.atlas.ripe.net",
+    "country": "PK",
+    "city": "Lahore"
+   },
+   {
+    "anchor": 2523,
+    "probe": 6953,
+    "fqdn": "in-del-as12008.anchors.atlas.ripe.net",
+    "country": "IN",
+    "city": "Delhi"
+   },
+   {
+    "anchor": 4422,
+    "probe": 7605,
+    "fqdn": "lk-srj-as38229.anchors.atlas.ripe.net",
+    "country": "LK",
+    "city": "Malabe"
+   },
+   {
+    "anchor": 4550,
+    "probe": 7670,
+    "fqdn": "np-ktm-as153566.anchors.atlas.ripe.net",
+    "country": "NP",
+    "city": "Kathmandu"
+   },
+   {
+    "anchor": 4826,
+    "probe": 7812,
+    "fqdn": "pk-lyp-as138910.anchors.atlas.ripe.net",
+    "country": "PK",
+    "city": "Faisalabad"
+   }
+  ],
+  "as_east": [
+   {
+    "anchor": 1291,
+    "probe": 6586,
+    "fqdn": "sg-sin-as202196.anchors.atlas.ripe.net",
+    "country": "SG",
+    "city": "Singapore"
+   },
+   {
+    "anchor": 1349,
+    "probe": 6370,
+    "fqdn": "jp-tyo-as59105.anchors.atlas.ripe.net",
+    "country": "JP",
+    "city": "Tokyo"
+   },
+   {
+    "anchor": 1644,
+    "probe": 6521,
+    "fqdn": "id-bdo-as133802.anchors.atlas.ripe.net",
+    "country": "ID",
+    "city": "Bandung"
+   },
+   {
+    "anchor": 2328,
+    "probe": 6818,
+    "fqdn": "tw-tpe-as3491.anchors.atlas.ripe.net",
+    "country": "TW",
+    "city": "Taipei"
+   },
+   {
+    "anchor": 2543,
+    "probe": 6887,
+    "fqdn": "ph-ceb-as135132.anchors.atlas.ripe.net",
+    "country": "PH",
+    "city": "Cebu"
+   },
+   {
+    "anchor": 1947,
+    "probe": 6641,
+    "fqdn": "kr-sel-as199524.anchors.atlas.ripe.net",
+    "country": "KR",
+    "city": "Seoul"
+   },
+   {
+    "anchor": 2761,
+    "probe": 7007,
+    "fqdn": "my-kul-as3491.anchors.atlas.ripe.net",
+    "country": "MY",
+    "city": "Kuala Lumpur"
+   },
+   {
+    "anchor": 2026,
+    "probe": 6718,
+    "fqdn": "vn-sgn-as24173.anchors.atlas.ripe.net",
+    "country": "VN",
+    "city": "Ho Chi Minh City"
+   }
+  ],
+  "oc": [
+   {
+    "anchor": 1491,
+    "probe": 6427,
+    "fqdn": "au-syd-as9268.anchors.atlas.ripe.net",
+    "country": "AU",
+    "city": "Sydney"
+   },
+   {
+    "anchor": 2144,
+    "probe": 6803,
+    "fqdn": "nz-akl-as138398.anchors.atlas.ripe.net",
+    "country": "NZ",
+    "city": "Auckland"
+   },
+   {
+    "anchor": 1526,
+    "probe": 6503,
+    "fqdn": "au-syd-as20473.anchors.atlas.ripe.net",
+    "country": "AU",
+    "city": "Sydney"
+   },
+   {
+    "anchor": 2525,
+    "probe": 6904,
+    "fqdn": "nz-akl-as38064.anchors.atlas.ripe.net",
+    "country": "NZ",
+    "city": "Auckland"
+   },
+   {
+    "anchor": 1904,
+    "probe": 6764,
+    "fqdn": "au-syd-as138466.anchors.atlas.ripe.net",
+    "country": "AU",
+    "city": "Sydney"
+   },
+   {
+    "anchor": 2817,
+    "probe": 7111,
+    "fqdn": "nz-wlg-as24324.anchors.atlas.ripe.net",
+    "country": "NZ",
+    "city": "Wellington"
+   },
+   {
+    "anchor": 1927,
+    "probe": 6636,
+    "fqdn": "au-syd-as199610.anchors.atlas.ripe.net",
+    "country": "AU",
+    "city": "Sydney"
+   },
+   {
+    "anchor": 3112,
+    "probe": 7098,
+    "fqdn": "nz-akl-as133075.anchors.atlas.ripe.net",
+    "country": "NZ",
+    "city": "Auckland"
+   }
+  ]
+ },
+ "targets": [
+  {
+   "region": "na_east",
+   "anchor": 1151,
+   "fqdn": "us-dur-as36236.anchors.atlas.ripe.net",
+   "measurement": 15393464,
+   "results": 1636
+  },
+  {
+   "region": "na_east",
+   "anchor": 1521,
+   "fqdn": "ca-tor-as20473.anchors.atlas.ripe.net",
+   "measurement": 18399420,
+   "results": 1546
+  },
+  {
+   "region": "na_east",
+   "anchor": 1233,
+   "fqdn": "mx-mex-as42473.anchors.atlas.ripe.net",
+   "measurement": 17496257,
+   "results": 1633
+  },
+  {
+   "region": "na_west",
+   "anchor": 1393,
+   "fqdn": "us-sjc-as55002.anchors.atlas.ripe.net",
+   "measurement": 17174670,
+   "results": 1356
+  },
+  {
+   "region": "na_west",
+   "anchor": 1440,
+   "fqdn": "ca-van-as394256.anchors.atlas.ripe.net",
+   "measurement": 24860508,
+   "results": 1648
+  },
+  {
+   "region": "na_west",
+   "anchor": 1086,
+   "fqdn": "mx-tte-as22894.anchors.atlas.ripe.net",
+   "measurement": 16437040,
+   "results": 1431
+  },
+  {
+   "region": "sa_east",
+   "anchor": 1164,
+   "fqdn": "br-poa-as19200.anchors.atlas.ripe.net",
+   "measurement": 11688946,
+   "results": 1461
+  },
+  {
+   "region": "sa_east",
+   "anchor": 1605,
+   "fqdn": "cl-scl-as64112.anchors.atlas.ripe.net",
+   "measurement": 19187554,
+   "results": 1497
+  },
+  {
+   "region": "sa_east",
+   "anchor": 2950,
+   "fqdn": "ve-mun-as265641.anchors.atlas.ripe.net",
+   "measurement": 34543409,
+   "results": 1427
+  },
+  {
+   "region": "eu_west",
+   "anchor": 1154,
+   "fqdn": "de-fra-as203329.anchors.atlas.ripe.net",
+   "measurement": 10103388,
+   "results": 1608
+  },
+  {
+   "region": "eu_west",
+   "anchor": 1135,
+   "fqdn": "nl-ams-as3333-3.anchors.atlas.ripe.net",
+   "measurement": 9333348,
+   "results": 1584
+  },
+  {
+   "region": "eu_west",
+   "anchor": 990,
+   "fqdn": "fr-bod-as198985.anchors.atlas.ripe.net",
+   "measurement": 10404701,
+   "results": 1410
+  },
+  {
+   "region": "af",
+   "anchor": 1444,
+   "fqdn": "za-jnb-as42473.anchors.atlas.ripe.net",
+   "measurement": 22128034,
+   "results": 1549
+  },
+  {
+   "region": "af",
+   "anchor": 2387,
+   "fqdn": "ke-nbo-as37578.anchors.atlas.ripe.net",
+   "measurement": 27849465,
+   "results": 922
+  },
+  {
+   "region": "af",
+   "anchor": 4457,
+   "fqdn": "ng-los-as36940.anchors.atlas.ripe.net",
+   "measurement": 131396507,
+   "results": 1456
+  },
+  {
+   "region": "as_south",
+   "anchor": 4395,
+   "fqdn": "lk-cmb-as38229.anchors.atlas.ripe.net",
+   "measurement": 125059670,
+   "results": 1650
+  },
+  {
+   "region": "as_south",
+   "anchor": 4133,
+   "fqdn": "np-ktm-as17501.anchors.atlas.ripe.net",
+   "measurement": 86862452,
+   "results": 1469
+  },
+  {
+   "region": "as_south",
+   "anchor": 4439,
+   "fqdn": "pk-lhe-as152605.anchors.atlas.ripe.net",
+   "measurement": 130058284,
+   "results": 1417
+  },
+  {
+   "region": "as_east",
+   "anchor": 1644,
+   "fqdn": "id-bdo-as133802.anchors.atlas.ripe.net",
+   "measurement": 88534994,
+   "results": 1463
+  },
+  {
+   "region": "as_east",
+   "anchor": 2328,
+   "fqdn": "tw-tpe-as3491.anchors.atlas.ripe.net",
+   "measurement": 26069767,
+   "results": 1459
+  },
+  {
+   "region": "as_east",
+   "anchor": 2543,
+   "fqdn": "ph-ceb-as135132.anchors.atlas.ripe.net",
+   "measurement": 27973989,
+   "results": 1585
+  },
+  {
+   "region": "oc",
+   "anchor": 1491,
+   "fqdn": "au-syd-as9268.anchors.atlas.ripe.net",
+   "measurement": 17692053,
+   "results": 1473
+  },
+  {
+   "region": "oc",
+   "anchor": 2144,
+   "fqdn": "nz-akl-as138398.anchors.atlas.ripe.net",
+   "measurement": 25584462,
+   "results": 1476
+  },
+  {
+   "region": "oc",
+   "anchor": 1526,
+   "fqdn": "au-syd-as20473.anchors.atlas.ripe.net",
+   "measurement": 19649600,
+   "results": 1376
+  }
+ ]
+}
