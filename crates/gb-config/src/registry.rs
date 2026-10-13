@@ -79,7 +79,13 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "issuance.count_based_correction",
         "§2, §3.8",
         "",
-        "Variant B's correction from recent block times; no rule yet (M3 proposes and tests one).",
+        "Variant B's correction [P]; none by default (the count alone). M3 compares P1, P2 and B-exact.",
+    ),
+    doc(
+        "issuance.difficulty_count_rule",
+        "§3.8",
+        "",
+        "Which admitted miners Variant B counts: those past the post-admission wait, or all Globally Active.",
     ),
     doc(
         "issuance.min_attack_time_floor_years",
@@ -208,6 +214,12 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "KWC members whose signatures the entropy aggregate must include.",
     ),
     doc(
+        "entropy.equivocation_scope",
+        "§3.4, Appendix A",
+        "",
+        "What counts as miner equivocation: two headers at one height, or [P] two headers on one parent.",
+    ),
+    doc(
         "capacity.miners_per_leader_wc",
         "§2",
         "miners",
@@ -254,6 +266,24 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "§2, §3.7",
         "s",
         "PoWit arrival deadline D after the block's timestamp.",
+    ),
+    doc(
+        "timing.powit_deadline_scope",
+        "§3.7",
+        "",
+        "How a node treats a block whose PoWit reached it after D: invalid for good, or only not extended.",
+    ),
+    doc(
+        "timing.early_block",
+        "§3.7",
+        "",
+        "How a node treats a block received before its timestamp minus δ: rejected for good, or re-evaluated.",
+    ),
+    doc(
+        "timing.witness_signing",
+        "§3.6",
+        "",
+        "When an honest witness signs the PoWit: at its own clock t0 + N, or at t0 + N − δ.",
     ),
     doc(
         "admission.post_admission_wait_rounds",
@@ -341,6 +371,12 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "Long-absence threshold L: a seat is vacated only after a longer continuous absence, or a ban.",
     ),
     doc(
+        "offline.unreachable_rule",
+        "§4.6, §12",
+        "",
+        "Failing One Chance: refusal and penalised (strict), or [P] recorded offline when unreachable.",
+    ),
+    doc(
         "penalties.suspension_ladder_s",
         "§2, §4.8",
         "s",
@@ -351,6 +387,12 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "§2, §4.8",
         "",
         "Final step of the penalty ladder.",
+    ),
+    doc(
+        "penalties.strict_offence",
+        "§4.6, §4.8",
+        "",
+        "Penalty for a failed One Chance under the strict rule: the ladder, the ladder with a yearly reset [P], or a ban.",
     ),
     doc("crypto.signature_scheme", "§2", "", "Signature scheme."),
     doc("crypto.hash_function", "§2", "", "Hash function."),
@@ -502,6 +544,13 @@ pub const SPEC_SECTION_2_ROWS: &[(&str, &[&str])] = &[
 pub const OUTSIDE_SECTION_2: &[(&str, &str)] = &[
     ("issuance.start_rule", "§3.5"),
     ("issuance.same_height_tie_break", "§3.7"),
+    ("issuance.difficulty_count_rule", "§3.8"),
+    ("entropy.equivocation_scope", "§3.4, Appendix A"),
+    ("timing.powit_deadline_scope", "§3.7"),
+    ("timing.early_block", "§3.7"),
+    ("timing.witness_signing", "§3.6"),
+    ("offline.unreachable_rule", "§4.6"),
+    ("penalties.strict_offence", "§4.6, §4.8"),
 ];
 
 /// One row of the SPEC §2 parameter table.

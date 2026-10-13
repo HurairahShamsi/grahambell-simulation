@@ -4,8 +4,8 @@ use crate::analytic::{AnalyticConfig, ModelConstants, RunConfig};
 use crate::crypto_tests::CryptoTestsConfig;
 use crate::error::ConfigError;
 use crate::protocol::{
-    Admission, Cac, Capacity, Crypto, Entropy, Genesis, Issuance, Network, Offline, Pacing,
-    Penalties, Quorum, Timing, Transactions, Witness,
+    Admission, Cac, Capacity, CountBasedCorrection, Crypto, Entropy, Genesis, Issuance, Network,
+    Offline, Pacing, Penalties, Quorum, Timing, Transactions, Witness,
 };
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -223,6 +223,30 @@ impl Config {
             self.model.seconds_per_year > 0,
             "model.seconds_per_year must be positive",
         );
+        let correction = &self.issuance.count_based_correction;
+        let corrections = correction.value.iter().chain(
+            correction
+                .sweep
+                .iter()
+                .flat_map(|s| s.values.iter().flatten()),
+        );
+        for form in corrections {
+            if let CountBasedCorrection::RecentIntervalRatio {
+                window_blocks,
+                bound,
+            }
+            | CountBasedCorrection::Accumulated {
+                window_blocks,
+                bound,
+            } = *form
+            {
+                require(
+                    problems,
+                    window_blocks > 0 && bound > 0.0 && bound < 1.0,
+                    "issuance.count_based_correction needs window_blocks > 0 and 0 < bound < 1",
+                );
+            }
+        }
     }
 
     fn validate_grids(&self, problems: &mut Vec<String>) {
@@ -738,6 +762,35 @@ mod tests {
         let repeated =
             Config::from_toml_str("[witness]\nring_offsets.value = [1, 4, 4]\n").unwrap_err();
         assert!(matches!(repeated, ConfigError::Invalid(_)), "{repeated}");
+    }
+
+    #[test]
+    fn variant_b_corrections_are_parsed_and_checked() {
+        let p1 = Config::from_toml_str(
+            "[issuance]\ncount_based_correction.value = { form = \"recent_interval_ratio\", window_blocks = 144, bound = 0.1 }\n",
+        )
+        .unwrap();
+        assert_eq!(
+            p1.issuance.count_based_correction.value,
+            Some(CountBasedCorrection::RecentIntervalRatio {
+                window_blocks: 144,
+                bound: 0.1
+            })
+        );
+        let exact = Config::from_toml_str(
+            "[issuance]\ncount_based_correction.value = { form = \"discrete_exact\" }\n",
+        )
+        .unwrap();
+        assert_eq!(
+            exact.issuance.count_based_correction.value,
+            Some(CountBasedCorrection::DiscreteExact)
+        );
+        assert!(
+            Config::from_toml_str(
+                "[issuance]\ncount_based_correction.value = { form = \"accumulated\", window_blocks = 144, bound = 1.5 }\n",
+            )
+            .is_err()
+        );
     }
 
     #[test]

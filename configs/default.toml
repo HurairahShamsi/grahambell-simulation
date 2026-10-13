@@ -22,7 +22,9 @@ rate_mode = { value = "fixed", status = "P", sweep = { values = ["fixed", "adapt
 difficulty_variant = { value = "count_based", status = "D", sweep = { values = ["count_based", "bitcoin_retarget"], note = "Variant A (Bitcoin-style retarget) is the comparison (SPEC §3.8)" } }
 retarget_window_blocks = { value = 144, status = "D" }
 retarget_clamp_factor = { value = 4.0, status = "D" }
-count_based_correction = { status = "P" }
+# Variant B correction [P]: none by default; M3 compares P1, P2 and B-exact.
+count_based_correction = { status = "P", sweep = { values = [{ form = "recent_interval_ratio", window_blocks = 144, bound = 0.1 }, { form = "accumulated", window_blocks = 144, bound = 0.1 }, { form = "discrete_exact" }], note = "P1, P2 and B-exact, proposed and compared in M3" } }
+difficulty_count_rule = { value = "after_post_admission_wait", status = "D", sweep = { values = ["after_post_admission_wait", "all_globally_active"], note = "all Globally Active miners is the comparison (architect, 2026-10-12)" } }
 min_attack_time_floor_years = { value = 2.0, status = "P", sweep = { range = [1.0, 10.0] } }
 cap_checkpoint_interval_fraction_of_t_min = { value = 1.0, status = "D", sweep = { values = [0.25, 0.5, 1.0] } }
 cap_safety_factor = { value = { numerator = 7, denominator = 6 }, status = "D" }
@@ -56,6 +58,7 @@ unregistered_total_min_30_node = { value = 20, status = "D" }
 # ---------------------------------------------------------------- SPEC §2, §3.4: entropy lock
 [entropy]
 signers = { value = "all_online_members", status = "D" }
+equivocation_scope = { value = "same_height", status = "D", sweep = { values = ["same_height", "same_parent"], note = "same parent is the [P] comparison (architect, 2026-10-12)" } }
 
 # ---------------------------------------------------------------- SPEC §2: capacity
 [capacity]
@@ -74,6 +77,9 @@ clock_tolerance_s = { value = 2.0, status = "O", sweep = { range = [0.5, 10.0] }
 # One Chance wait: one grace epoch (5 rounds) by default.
 one_chance_wait_rounds = { value = 5, status = "O", sweep = { values = [1, 2, 5] } }
 powit_deadline_s = { status = "O", sweep = { values = [5.0, 10.0, 30.0, 60.0] } }
+powit_deadline_scope = { value = "permanent", status = "D", sweep = { values = ["permanent", "not_extended_only"], note = "not extended only is the comparison (architect, 2026-10-12)" } }
+early_block = { value = "permanent", status = "D", sweep = { values = ["permanent", "reevaluate_later"], note = "re-evaluation is the comparison (architect, 2026-10-12)" } }
+witness_signing = { value = "on_time", status = "D", sweep = { values = ["on_time", "earliest_within_tolerance"], note = "earliest within δ (the earlier P-4 reading) is the comparison" } }
 
 # ---------------------------------------------------------------- SPEC §2, §3.1: admission
 [admission]
@@ -102,11 +108,13 @@ deactivation_threshold_s = { status = "O", sweep = { values = [3600.0, 21600.0, 
 reactivation_wait_s = { status = "O", sweep = { values = [86400.0, 604800.0, 1209600.0, 2592000.0] } }
 # Long-absence threshold L: 30 days; sweep 3, 7, 30, 90, 365 days.
 long_absence_threshold_s = { value = 2592000.0, status = "O", sweep = { values = [259200.0, 604800.0, 2592000.0, 7776000.0, 31536000.0] } }
+unreachable_rule = { value = "strict", status = "O", sweep = { values = ["strict", "unreachable_is_not_refusal"], note = "strict is the interim default; unreachable is not refusal is [P] (SPEC §4.6, §12)" } }
 
 # ---------------------------------------------------------------- SPEC §2, §4.8: penalties (seconds)
 [penalties]
 suspension_ladder_s = { value = [86400, 2592000], status = "D" }
 final_step = { value = "permanent", status = "D" }
+strict_offence = { value = "ladder", status = "D", sweep = { values = ["ladder", "ladder_yearly_reset", "immediate_ban"], note = "yearly reset is [P]; immediate ban is §4.6 read literally (architect, 2026-10-12)" } }
 
 # ---------------------------------------------------------------- SPEC §2: cryptography
 [crypto]

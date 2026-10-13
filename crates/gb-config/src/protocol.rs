@@ -70,6 +70,123 @@ pub enum DifficultyVariant {
     BitcoinRetarget,
 }
 
+/// Variant B's correction \[P\] (SPEC §3.8). The SPEC names no preferred form; M3 proposes
+/// these and compares them, and none is used by default.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "form", rename_all = "snake_case")]
+pub enum CountBasedCorrection {
+    /// P1 (the architect's example): the count-based target is multiplied by the mean of the
+    /// last `window_blocks` intervals ÷ the target interval, bounded to `1 ± bound`, so
+    /// difficulty is multiplied by "target interval ÷ recent average interval".
+    RecentIntervalRatio {
+        /// Blocks in the sliding window.
+        window_blocks: u32,
+        /// Largest relative change, for example 0.10 for ±10%.
+        bound: f64,
+    },
+    /// P2: an accumulated factor, multiplied at the end of every `window_blocks` blocks by
+    /// that window's mean interval ÷ the target interval, bounded to `1 ± bound`.
+    Accumulated {
+        /// Blocks per update.
+        window_blocks: u32,
+        /// Largest relative deviation of the factor from 1.
+        bound: f64,
+    },
+    /// B-exact: the per-step success probability p is set so that 1 − (1 − p)^N equals one
+    /// over the target interval exactly, for the N counted miners, with no lookback.
+    DiscreteExact,
+}
+
+/// Which admitted miners Variant B's count includes (SPEC §3.8; architect, 2026-10-12).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DifficultyCountRule {
+    /// Globally Active miners recorded online whose post-admission wait has ended.
+    #[default]
+    AfterPostAdmissionWait,
+    /// Comparison: every Globally Active miner recorded online, including those still in the
+    /// post-admission wait.
+    AllGloballyActive,
+}
+
+/// What counts as miner equivocation (SPEC §3.4, Appendix A; architect, 2026-10-12).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EquivocationScope {
+    /// Two different headers at the same height signed by the same key (the SPEC as
+    /// written): a miner whose parent loses sits out until the next block.
+    #[default]
+    SameHeight,
+    /// \[P\] comparison: only two different headers on the same parent, so a miner may
+    /// switch parent at the same height.
+    SameParent,
+}
+
+/// How a member that fails One Chance is treated (SPEC §4.6).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum UnreachableRule {
+    /// The strict rule, the interim default (architect, 2026-10-12): failing One Chance is
+    /// refusal and is penalised.
+    #[default]
+    Strict,
+    /// \[P\] "unreachable is not refusal": an unreachable member is recorded offline; a
+    /// penalty needs proof that it refused while demonstrably online.
+    UnreachableIsNotRefusal,
+}
+
+/// The penalty for a failed One Chance under the strict rule (SPEC §4.6, §4.8; architect,
+/// 2026-10-12).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StrictOffencePenalty {
+    /// The §4.8 ladder for lesser offences (24 h, then 30 days, then permanent), never reset.
+    #[default]
+    Ladder,
+    /// \[P\] comparison: the same ladder, with the offence count reset after a year without
+    /// an offence.
+    LadderYearlyReset,
+    /// Comparison (§4.6 read literally): a permanent ban at the first failed One Chance.
+    ImmediateBan,
+}
+
+/// When an honest witness signs the PoWit (SPEC §3.6; architect, 2026-10-12).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WitnessSigning {
+    /// When its own clock reaches `t0 + N`; δ applies to validators only.
+    #[default]
+    OnTime,
+    /// Comparison (the earlier reading of ASSUMPTIONS P-4): when its own clock reaches
+    /// `t0 + N − δ`.
+    EarliestWithinTolerance,
+}
+
+/// How a node treats a block whose PoWit reached it after the deadline D (SPEC §3.7;
+/// architect, 2026-10-12).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DeadlineScope {
+    /// Literal: the block, and any chain containing it, is invalid at that node for good.
+    #[default]
+    Permanent,
+    /// Comparison: the node does not extend the block, but accepts a longer chain that
+    /// contains it.
+    NotExtendedOnly,
+}
+
+/// How a node treats a block it received before the block's timestamp minus δ (SPEC §3.7;
+/// architect, 2026-10-12).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EarlyBlockRule {
+    /// Literal: rejected at that node for good, because its receipt time is a fact.
+    #[default]
+    Permanent,
+    /// Comparison: re-evaluated if it arrives again after its timestamp minus δ.
+    ReevaluateLater,
+}
+
 /// A fraction `numerator / denominator`.
 ///
 /// Used for approval thresholds (SPEC §4.3, §4.6), the adaptive-cap safety factor k
@@ -173,7 +290,8 @@ pub enum StartRule {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TieBreak {
-    /// Proposed rule (status P): keep the block with the lower block hash.
+    /// The SPEC v0.6 order (status P for its last step): keep the block with the earlier
+    /// timestamp (smaller winning step N), then the one with the lower block hash.
     #[default]
     LowerBlockHash,
     /// Comparison: keep the block seen first.
@@ -210,9 +328,11 @@ pub struct Issuance {
     pub retarget_window_blocks: Param<u32>,
     /// Variant A comparison: largest difficulty change per retarget, as a factor.
     pub retarget_clamp_factor: Param<f64>,
-    /// Variant B's correction from recent block times. No rule exists yet ("—"); M3 proposes
-    /// and tests one, so nothing reads this value.
-    pub count_based_correction: Param<Option<String>>,
+    /// Variant B's correction \[P\] ("—" by default: Variant B uses the count alone). M3
+    /// compares P1, P2 and B-exact (see [`CountBasedCorrection`]).
+    pub count_based_correction: Param<Option<CountBasedCorrection>>,
+    /// Which admitted miners Variant B's count includes.
+    pub difficulty_count_rule: Param<DifficultyCountRule>,
     /// Minimum attack time floor `T_min` for adaptive issuance, in years.
     pub min_attack_time_floor_years: Param<f64>,
     /// Adaptive-cap checkpoint interval as a fraction of `T_min`.
@@ -244,7 +364,30 @@ impl Default for Issuance {
             ),
             retarget_window_blocks: Param::decided(144),
             retarget_clamp_factor: Param::decided(4.0),
-            count_based_correction: Param::with_status(None, Status::P),
+            count_based_correction: Param::with_status(None, Status::P).swept(
+                Sweep::values(vec![
+                    Some(CountBasedCorrection::RecentIntervalRatio {
+                        window_blocks: 144,
+                        bound: 0.10,
+                    }),
+                    Some(CountBasedCorrection::Accumulated {
+                        window_blocks: 144,
+                        bound: 0.10,
+                    }),
+                    Some(CountBasedCorrection::DiscreteExact),
+                ])
+                .with_note("P1, P2 and B-exact, proposed and compared in M3"),
+            ),
+            difficulty_count_rule: Param::decided(DifficultyCountRule::AfterPostAdmissionWait)
+                .swept(
+                    Sweep::values(vec![
+                        DifficultyCountRule::AfterPostAdmissionWait,
+                        DifficultyCountRule::AllGloballyActive,
+                    ])
+                    .with_note(
+                        "all Globally Active miners is the comparison (architect, 2026-10-12)",
+                    ),
+                ),
             min_attack_time_floor_years: Param::with_status(2.0, Status::P)
                 .swept(Sweep::range(1.0, 10.0)),
             cap_checkpoint_interval_fraction_of_t_min: Param::decided(1.0)
@@ -351,12 +494,21 @@ impl Default for Quorum {
 pub struct Entropy {
     /// Who must sign the entropy aggregate.
     pub signers: Param<EntropySigners>,
+    /// What counts as two headers from one miner in one round (equivocation).
+    pub equivocation_scope: Param<EquivocationScope>,
 }
 
 impl Default for Entropy {
     fn default() -> Self {
         Entropy {
             signers: Param::decided(EntropySigners::AllOnlineMembers),
+            equivocation_scope: Param::decided(EquivocationScope::SameHeight).swept(
+                Sweep::values(vec![
+                    EquivocationScope::SameHeight,
+                    EquivocationScope::SameParent,
+                ])
+                .with_note("same parent is the [P] comparison (architect, 2026-10-12)"),
+            ),
         }
     }
 }
@@ -425,11 +577,38 @@ pub struct Timing {
     /// PoWit arrival deadline D, in seconds after the block's timestamp (SPEC §3.7; "—" until
     /// chosen).
     pub powit_deadline_s: Param<Option<f64>>,
+    /// How a node treats a block whose PoWit reached it after D.
+    pub powit_deadline_scope: Param<DeadlineScope>,
+    /// How a node treats a block it received before its timestamp minus δ.
+    pub early_block: Param<EarlyBlockRule>,
+    /// When an honest witness signs the PoWit.
+    pub witness_signing: Param<WitnessSigning>,
 }
 
 impl Default for Timing {
     fn default() -> Self {
         Timing {
+            powit_deadline_scope: Param::decided(DeadlineScope::Permanent).swept(
+                Sweep::values(vec![
+                    DeadlineScope::Permanent,
+                    DeadlineScope::NotExtendedOnly,
+                ])
+                .with_note("not extended only is the comparison (architect, 2026-10-12)"),
+            ),
+            early_block: Param::decided(EarlyBlockRule::Permanent).swept(
+                Sweep::values(vec![
+                    EarlyBlockRule::Permanent,
+                    EarlyBlockRule::ReevaluateLater,
+                ])
+                .with_note("re-evaluation is the comparison (architect, 2026-10-12)"),
+            ),
+            witness_signing: Param::decided(WitnessSigning::OnTime).swept(
+                Sweep::values(vec![
+                    WitnessSigning::OnTime,
+                    WitnessSigning::EarliestWithinTolerance,
+                ])
+                .with_note("earliest within δ (the earlier P-4 reading) is the comparison"),
+            ),
             grace_epoch_rounds: Param::decided(5),
             clock_tolerance_s: Param::with_status(2.0, Status::O).swept(Sweep::range(0.5, 10.0)),
             one_chance_wait_rounds: Param::with_status(5, Status::O)
@@ -542,6 +721,8 @@ pub struct Offline {
     /// Long-absence threshold L, in seconds: a seat is vacated only after a continuous absence
     /// longer than this (or a ban).
     pub long_absence_threshold_s: Param<f64>,
+    /// How a member that fails One Chance is treated (SPEC §4.6).
+    pub unreachable_rule: Param<UnreachableRule>,
 }
 
 impl Default for Offline {
@@ -549,6 +730,15 @@ impl Default for Offline {
         const HOUR: f64 = 3_600.0;
         const DAY: f64 = 86_400.0;
         Offline {
+            unreachable_rule: Param::with_status(UnreachableRule::Strict, Status::O).swept(
+                Sweep::values(vec![
+                    UnreachableRule::Strict,
+                    UnreachableRule::UnreachableIsNotRefusal,
+                ])
+                .with_note(
+                    "strict is the interim default; unreachable is not refusal is [P] (SPEC §4.6, §12)",
+                ),
+            ),
             deactivation_threshold_s: Param::with_status(None, Status::O).swept(Sweep::values(
                 vec![
                     Some(HOUR),
@@ -585,6 +775,8 @@ pub struct Penalties {
     pub suspension_ladder_s: Param<Vec<u64>>,
     /// Final step of the ladder.
     pub final_step: Param<PenaltyFinalStep>,
+    /// The penalty for a failed One Chance under the strict rule.
+    pub strict_offence: Param<StrictOffencePenalty>,
 }
 
 impl Default for Penalties {
@@ -592,6 +784,16 @@ impl Default for Penalties {
         Penalties {
             suspension_ladder_s: Param::decided(vec![86_400, 2_592_000]),
             final_step: Param::decided(PenaltyFinalStep::Permanent),
+            strict_offence: Param::decided(StrictOffencePenalty::Ladder).swept(
+                Sweep::values(vec![
+                    StrictOffencePenalty::Ladder,
+                    StrictOffencePenalty::LadderYearlyReset,
+                    StrictOffencePenalty::ImmediateBan,
+                ])
+                .with_note(
+                    "yearly reset is [P]; immediate ban is §4.6 read literally (architect, 2026-10-12)",
+                ),
+            ),
         }
     }
 }
