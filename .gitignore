@@ -7,5 +7,8 @@
 !/results/crypto/
 /results/crypto/*
 !/results/crypto/reference/
+!/results/sim/
+/results/sim/*
+!/results/sim/reference/
 /.history/
 .DS_Store

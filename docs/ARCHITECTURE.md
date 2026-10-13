@@ -21,14 +21,14 @@ This document describes how the Stage 1 code is organised, how later milestones 
 | `gb-config` | exists | M0 | Typed parameters for every SPEC §2 row (value, status D/P/O, sweep), M1 grids, M2 measurement settings, run settings; TOML loading by deep merge over defaults. |
 | `gb-runlog` | exists | M0 | Run id, git commit and dirty flag, UTC timestamp, resolved-config hash, SHA-256 manifest of outputs, seeded ChaCha20 streams. |
 | `gb-analytic` | exists | M1 | Exact closed forms and exact probabilities (sections A–I), with independent cross-checks. Pure functions; no I/O. |
-| `gb-cli` | exists | M0+ | Binary `gb`: `analytic`, `crypto`, `vectors`, `params`, `config`. Writes CSV/PNG/SUMMARY, the public brief and the run log. Front end only; never recomputes results. |
+| `gb-cli` | exists | M0+ | Binary `gb`: `analytic`, `crypto`, `sim`, `vectors`, `params`, `config`. Writes CSV/PNG/SUMMARY, the public brief and the run log. Front end only; never recomputes results. |
 | `gb-protocol` | exists | M2 | Shared protocol core (section 5): pure functions over `blst` and SHA-256, with test vectors in `vectors/`. |
 | `gb-crypto-tests` | exists | M2 | Measurements with real SHA-256 and BLS12-381: S11 grinding, S14, equivocation, beacon withholding, placement grinding, timings, the threshold-BLS prototype (benchmark only), and the equivalence of the simulator's entropy stand-in. |
-| `gb-sim` | planned | M3, M4 | Tier 1 discrete-event simulator. |
-| `gb-scale` | planned | M6 | Tier 2 aggregate model at full scale. |
+| `gb-sim` | exists | M3a (M3b, M4 extend it) | Tier 1 discrete-event simulator of PoW-ID issuance (section 3), its validation ladder and the M3a experiments. |
+| `gb-scale` | planned | M3b (to be built), M6 (full-scale runs) | Tier 2 aggregate model at full scale. |
 | `gb-bench` | planned | M5 | S27 hardware benchmark and S28 money-cost model. |
 
-Dependencies point one way: `gb-cli` → analysis crates (`gb-analytic`, `gb-crypto-tests`, `gb-sim`, `gb-scale`, `gb-bench`) → `gb-protocol`, `gb-config`, `gb-runlog`. No analysis crate depends on `gb-cli`. `gb-protocol` uses `gb-analytic` only in its tests, to reproduce M1's ring and composition rates.
+Dependencies point one way: `gb-cli` → analysis crates (`gb-analytic`, `gb-crypto-tests`, `gb-sim`, `gb-scale`, `gb-bench`) → `gb-protocol`, `gb-config`, `gb-runlog`. No analysis crate depends on `gb-cli`. `gb-protocol` uses `gb-analytic` only in its tests, to reproduce M1's ring and composition rates. `gb-sim` also depends on two analysis crates: `gb-analytic`, for the closed forms its checks compare with and the `Check` type, and `gb-crypto-tests`, to rerun M2's entropy stand-in test (C6) and reuse its χ² and Kolmogorov–Smirnov statistics.
 
 ## 3. The two tiers
 
@@ -42,8 +42,18 @@ Dependencies point one way: `gb-cli` → analysis crates (`gb-analytic`, `gb-cry
 - **Cryptography:** real `gb-protocol` code where affordable. Where a statistically equivalent abstraction is used for speed, M2 must first document and test the equivalence.
 - **Scale:** up to about 100,000 miners.
 - **Milestones:**
-  - M3 covers issuance scenarios S1–S10, including S5 restart, S6 difficulty hopping and S7 adaptive issuance.
+  - M3 covers issuance scenarios S1–S10, including S5 restart, S6 difficulty hopping and S7 adaptive issuance. It is split in two (decided 2026-10-12):
+    - **M3a (built):** the engine, the network and household models, honest growth and patience, the honest baselines (S1, S5, S6, fork choice, the PoWit deadline), the validation ladder (V0–V4) and the experiments C1–C7 and A6. Command: `gb sim`.
+    - **M3b (next):** the attackers S2–S4, S7 and S8, the full S9, S10, Tier 2 `gb-scale` at millions of miners, and the hypothesis verdict table.
   - M4 covers the witness layer, S12–S26.
+
+**How M3a is built.**
+
+- **Crypto modes.** Real BLS and SHA-256; the M2 C6 stand-in (uniform entropy, real SHA-256 chains); and a fast mode that draws each round's winning steps exactly from the target's per-step probability (block hashes stay real SHA-256). The fast mode is used for the large runs only after the V0 gate shows all three agree.
+- **Network.** Region-to-region latency from RIPE Atlas anchor-mesh pings (`data/latency/`), a gossip overlay calibrated into arrival quantiles, loss with retransmission, partitions that hold messages until they heal, and per-node clock skew.
+- **Households.** Per-node on/off timelines: device schedules, crashes, glitches, grid faults and load-shedding (with UPS), provider and regional outages, long absences and departures, each tagged announced or unannounced by its cause.
+- **Network chain.** 101 ideal validators spread over the regions stand for the network: the network chain is the longest chain more than half of them hold. An ID passes confirmation depth when 6 blocks are built on its block there.
+- **Invariants.** Every run recounts its caches (active list, seats, WC, miner and KWC counters) daily and at the end, and every broadcast block must pass `validate_facts` at its own miner.
 
 ### Tier 2 — `gb-scale` (aggregate model)
 
@@ -82,6 +92,11 @@ Each M1 table becomes a check that a later simulator must pass.
 | M2 C1(c′) online-set lever (1.88× for one colluding member) | M4 S11(f) under the strict rule, the [P] rule and threshold BLS entropy |
 | M2.1 witness double-signing detection (`witness_equivocators`) | M4 ban scenarios |
 | M2.1 optimistic entropy verification (SPEC §3.4 [P]) | M4/M5 load model |
+| M3a V0 gate: the three crypto modes agree, the gap sampler is exact, the horizon audit finds nothing | every Tier 1 result: the stand-in and fast modes are used only while it passes |
+| M3a V1–V4 (M1 A1/A7/F1, D1, E1 and the M2 vectors in the simulator) | M3b attacker scenarios on the same engine |
+| M3a C5 One Chance costs, honest penalties and IDs lost per year by region and device | H7/H8 (M3b, M4) |
+| M3a C7 KWC quorum liveness under household profiles | M4 witness layer |
+| M3a Tier 1 at 10³–10⁵ miners | Tier 2 `gb-scale` validation (M3b), then full scale (M6) |
 
 ### Planned for M4–M6 (decided 2026-10-09)
 
@@ -100,6 +115,11 @@ Each M1 table becomes a check that a later simulator must pass.
 - larger KWCs: M2 and M5 (I maps them);
 - threshold BLS entropy: M2 measures the key-setup cost;
 - witness peer topology option 2 (no standing witness-to-witness connections): M3 and M5 (I4 estimates the on-demand connections).
+
+**Decided 2026-10-12 for M4:**
+
+- a [P] threshold-BLS randomness beacon to replace the block-hash beacons for seat placement and the committee lottery; M4 compares it with the current beacons;
+- in the meantime strict One Chance stays the default, and "unreachable is not refusal" is a [P] comparison only.
 
 ## 5. `gb-protocol` and the Stage 3 testnet
 
@@ -126,21 +146,32 @@ Each M1 table becomes a check that a later simulator must pass.
   - Exact rationals for tail probabilities.
   - `libm` (pure Rust) for transcendental functions, so results do not depend on the platform math library.
   - No hash-map iteration in output paths.
-- **Parallelism** (Tier 2) uses deterministic partitioning and ordered reductions only.
-- **Run directory:** `results/<analysis>/<run-id>/` holds the tables (CSV), charts (PNG), `SUMMARY.md`, `config.resolved.toml` and `run.json`. `run.json` records commit, dirty flag, seed, config hash, toolchain and a SHA-256 for every output file.
+- **Parallelism.** Tier 1 runs execute in parallel on scoped threads, but each run is single-threaded and seeded and its result is stored by its index in the job list, so the thread count never changes an output. Within a run, random numbers are drawn by key (purpose, entity, index) through ChaCha20 random access, so a value does not depend on the order in which the simulation asks for it. Tier 2 will use deterministic partitioning and ordered reductions only.
+- **Run directory:** `results/<analysis>/<run-id>/` holds the tables (CSV), charts (PNG), `SUMMARY.md`, `config.resolved.toml` and `run.json`. `run.json` records commit, dirty flag, seed, config hash, toolchain and a SHA-256 for every output file. Machine-dependent timings go to a sub-directory that reproduction checks leave out (`bench/` for `gb crypto`, `perf/` for `gb sim`); `gb sim --trace` adds sampled event traces in `trace/`.
 - **Front ends** read these outputs only (SPEC §11.6).
 
-## 7. Configuration toggles to add with M3/M4
+## 7. Configuration toggles
 
-These [P] rules and comparisons are defined in the SPEC but not needed by M1. They will become typed `gb-config` parameters when the simulators use them:
+**Typed in M3a** (each with its status and sweep in `gb-config`, and in `configs/default.toml`):
+
+- `issuance.count_based_correction`: Variant B's [P] correction from recent block times (§3.8), P1, P2 or B-exact; off by default;
+- `issuance.difficulty_count_rule`: Variant B counts miners after their post-admission wait (default) or all Globally Active miners;
+- `entropy.equivocation_scope`: one header per miner per height (default) or per parent [P];
+- `offline.unreachable_rule`: strict One Chance (interim default) or "unreachable is not refusal" [P] (§4.6, S17);
+- `penalties.strict_offence`: the §4.8 ladder without reset (default), with a yearly reset [P], or an immediate ban;
+- `timing.witness_signing`: honest witnesses sign on their own clock at t0 + N (default) or at the earliest time within δ (the P-4 comparison);
+- `timing.powit_deadline_scope`: a late PoWit invalidates the block for good (default) or only stops it being extended;
+- `timing.early_block`: a block received early is rejected for good (default) or re-evaluated later.
+
+The simulator's own settings (crypto mode, threads, world, network, households, growth and experiment sizes) are in the `[sim]` section.
+
+**Still to add with M3b/M4** when the simulators use them:
 
 - mandatory handshake vs none (§3.1, S26);
 - hash-priority tie-break for pending claims vs timestamps (§3.1);
-- sorted-hash field ordering (S14);
-- "unreachable is not refusal" vs strict One Chance (§4.6, S17);
+- sorted-hash field ordering (S14; M2 measured it separately);
 - diversity constraints in allocation (§4.2);
 - proposer rotation, proposer rights and failure behaviour (§4.4);
-- Variant B's correction from recent block times (§3.8), once proposed;
 - the SPEC v0.4 §12 [P] proposals: validity separate from payment, the split rule, larger KWCs, threshold BLS entropy and witness peer topology option 2.
 
 The lottery beacon offset k, the allocation beacon delay and the long-absence threshold L are already typed parameters (all [O]). M1 does not depend on the two beacon parameters, because it models the draws as uniform; M2 and M4 measure what the miner of a beacon block can gain by withholding it. L enters sections B, G and H through its sweep.
@@ -224,5 +255,5 @@ Development and publication use two repositories.
   1. restore the push URL: `git remote set-url --push public https://github.com/HurairahShamsi/grahambell-simulation.git`;
   2. push `main` only, with `git push public main`: never another branch, never `--force`;
   3. disable it again with `git remote set-url --push public DISABLED`, and check with `git remote -v`.
-- **Reference results:** `results/` is ignored by git except a release's reference run in `results/analytic/reference/`. It is produced by `gb analytic` from a clean commit, and its `run.json` records that commit and a SHA-256 of every file, so anyone can check out the commit, rerun the analysis and compare.
+- **Reference results:** `results/` is ignored by git except the reference runs in `results/analytic/reference/`, `results/crypto/reference/` and `results/sim/reference/`. Each is produced from a clean commit, and its `run.json` records that commit and a SHA-256 of every file, so anyone can check out the commit, rerun the analysis and compare (outside the machine-dependent `bench/` and `perf/`).
 - **Before a release push**, check the commit authors (`git log --format='%an <%ae>' | sort -u`), files over 1 MB, and anything that looks like a secret, a key or a local path.

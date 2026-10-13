@@ -14,7 +14,8 @@ GrahamBell is a proposed Layer 1 blockchain whose Sybil resistance comes from ti
 | M1.2 | done | The architect's decisions on M1.1 (SPEC v0.4): seats survive downtime (only bans and absences longer than L vacate them), distinct episodes as the H6 measure, placement without the committee, committee departures, conflicting decisions and proposer rights. Adds quorum feasibility under honest downtime (section H), the KWC size trade-off (section I) and the Apache 2.0 licence |
 | M2 | done | SPEC v0.5 (M1.2 answers, PoWit arrival deadline, Stage 3 testnet decisions, wire formats). The shared protocol core `gb-protocol` with test vectors, and `gb-crypto-tests`: grinding, sorted-hash ambiguity, beacon withholding, placement grinding, benchmarks, a threshold-BLS prototype and the simulator's entropy stand-in, all with real SHA-256 and BLS12-381 |
 | M2.1 | done | SPEC v0.6: H1–H9 thresholds locked before M3, the online-set grinding lever (S11(f)), optimistic entropy verification, the fork-choice order and witness double-signing evidence; a committed crypto reference run |
-| M3–M6 | planned | Simulators, cost model, full-scale runs; see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
+| M3a | done | **Tier 1 issuance simulator** `gb-sim` (`gb sim`): measured inter-region latency (RIPE Atlas), household downtime with correlated outages, the validation ladder against M1 and M2 (V0–V4), and the honest baselines C1–C7 and A6: tagged-group amplification, fork choice, the PoWit deadline and a withholder, the issuance rate under Variant B and its correction candidates, One Chance costs and honest penalties, clock skew, quorum liveness and newcomers' patience; a committed sim reference run |
+| M3b–M6 | planned | Attacker scenarios and Tier 2 at full scale, the witness layer, cost model, final runs; see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 
 M1 results are the ground truth that later simulators must reproduce before their own results are trusted. Every modelling assumption behind them is listed in [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md).
 
@@ -68,11 +69,32 @@ cargo run --release -p gb-cli -- vectors       # rewrite crates/gb-protocol/vect
 
 `gb crypto` takes the same options as `gb analytic` and also refuses a dirty working tree. It takes a few minutes. Its tables (`K1_…` to `K6_….csv`), `validation.csv` and `SUMMARY.md` are reproducible from the commit, seed and configuration. Timings depend on the machine, so they go to `bench/` (with the machine described in `bench/BENCH.md`) and are left out of reproducibility checks. The test vectors are checked by `cargo test`; regenerate them only when SPEC Appendix A changes.
 
+## Run the M3a simulator
+
+```sh
+cargo run --release -p gb-cli -- sim                    # every section, in results/sim/<run-id>/
+cargo run --release -p gb-cli -- sim --only C2,C3       # V0 (always) and the named sections
+cargo run --release -p gb-cli -- sim --profile quick    # tiny sizes, for tests; not results
+```
+
+`gb sim` takes the options of `gb analytic` and also refuses a dirty working tree. It runs the V0 gate first (the three crypto modes agree, the fast sampler is exact, the horizon audit finds nothing); if the gate fails, it reports no result that relies on the stand-in or fast modes. A full run takes about an hour of wall time with 4 threads on a laptop (`perf/PERF.md` records the machine and the time of every run). It exits with a non-zero status if any check fails, after writing all outputs.
+
+| Option | Meaning |
+|---|---|
+| `--profile full\|quick` | Experiment sizes (default `full`) |
+| `--threads N` | Worker threads (default `sim.threads`, 4); results do not depend on it |
+| `--only V1,C2,…` | Run only these sections; V0 always runs |
+| `--trace F` | Also write a sampled trace of a fraction F of every run's events to `trace/` |
+
+Every run is single-threaded and seeded and is stored by its index, so the tables are byte-identical whatever the thread count. Wall times depend on the machine, so they go to `perf/` and are left out of reproducibility checks, as `bench/` is for `gb crypto`.
+
 ## Where each output lives
 
 The reference run for this release is committed in [`results/analytic/reference/`](results/analytic/reference/); start with its [`SUMMARY.md`](results/analytic/reference/SUMMARY.md). It was produced from a clean commit, which its `run.json` records together with a SHA-256 of every file. New runs are written to `results/analytic/<run-id>/` and stay ignored by git.
 
 The M2 crypto reference run is committed in [`results/crypto/reference/`](results/crypto/reference/), with its [`SUMMARY.md`](results/crypto/reference/SUMMARY.md). Its `bench/` timings come from the machine named in [`bench/BENCH.md`](results/crypto/reference/bench/BENCH.md) and will differ on other machines; everything else reproduces from the commit in its `run.json`. New crypto runs go to `results/crypto/<run-id>/` and stay ignored.
+
+The M3a sim reference run is committed in [`results/sim/reference/`](results/sim/reference/), with its [`SUMMARY.md`](results/sim/reference/SUMMARY.md). It holds one CSV per table (`V0_…` to `V4_…`, `C1_…` to `C7_…`, `A6_…`, and `ALL_runs.csv`, which lists every run), `validation.csv`, `charts/`, `config.resolved.toml` and `run.json`; its `perf/` timings come from the machine named in `perf/PERF.md`. New sim runs go to `results/sim/<run-id>/` and stay ignored.
 
 Inside each run directory (`results/analytic/<run-id>/`, or `results/analytic/reference/`):
 
@@ -103,7 +125,7 @@ Every run is determined by three things: the git commit, the seed and the config
 
 1. Check out the commit recorded in its `run.json`.
 2. Run `cargo run --release -p gb-cli -- analytic --seed <seed> --config <file>` with the same seed and configuration (`config.resolved.toml` from the run directory works as the configuration file).
-3. Compare the `outputs` list in the two `run.json` files.
+3. Compare the `outputs` list in the two `run.json` files (for `gb crypto` and `gb sim`, outside `bench/` and `perf/`).
 
 CSV and Markdown outputs are designed to be byte-identical across machines: exact arithmetic, a pure-Rust maths library and in-repo random samplers remove the usual platform differences. A test checks byte-identity of reruns on the same machine, and an independent rebuild on Linux x86_64 with rustc 1.97.0 reproduced `SUMMARY.md` (apart from its git-commit line) and `M1_PUBLIC_BRIEF.md` byte for byte. PNG charts are byte-identical on the same platform; their identity across platforms is still untested.
 
@@ -135,7 +157,7 @@ Unknown keys are rejected. A file cannot change a status tag, because status tag
 |---|---|
 | `docs/SPEC.md` | Stage 1 specification (source of truth), with its changelog |
 | `docs/ARCHITECTURE.md` | Two-tier design, planned crates, validation ladder, rationale of the adopted allocation |
-| `docs/ASSUMPTIONS.md` | Every M1 modelling assumption, and open questions |
+| `docs/ASSUMPTIONS.md` | Every modelling assumption (M1, M2, M3a) with its source, and open questions |
 | `LICENSE` | Apache License 2.0 |
 | `docs/M1_PUBLIC_BRIEF.md` | Public brief on the M1 results (generated; see above) |
 | `configs/default.toml` | Default configuration |
@@ -144,8 +166,11 @@ Unknown keys are rejected. A file cannot change a status tag, because status tag
 | `crates/gb-analytic` | M1 analytical baseline: exact formulas, exact probabilities, cross-checks |
 | `crates/gb-protocol` | M2 protocol core: header encoding, entropy and BLS, hash chain, validation, difficulty and issuance, allocation, committee lottery; test vectors in `vectors/` |
 | `crates/gb-crypto-tests` | M2 measurements with real cryptography, and criterion benchmarks in `benches/` |
+| `crates/gb-sim` | M3a Tier 1 discrete-event simulator: engine, network and household models, rounds and fork choice, the experiments and their checks |
 | `crates/gb-cli` | The `gb` command-line tool: tables, charts, summary |
-| `results/` | Generated outputs; only the reference runs in `results/analytic/reference/` and `results/crypto/reference/` are committed |
+| `data/latency/` | Inter-region round-trip times from RIPE Atlas, the simulator's latency input, with their provenance |
+| `tools/` | `ripe_atlas_latency.py`, which rebuilds `data/latency/` from public RIPE Atlas data (Python standard library only) |
+| `results/` | Generated outputs; only the reference runs in `results/analytic/reference/`, `results/crypto/reference/` and `results/sim/reference/` are committed |
 
 ## Licence
 
