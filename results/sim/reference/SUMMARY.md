@@ -1,6 +1,6 @@
 # M3a Tier 1 issuance simulator — summary
 
-- Git commit: `1b3805616afd478965317e6db9d4ab81d4204406` (clean working tree)
+- Git commit: `b6688fb13a50e7212532793e8d72de37fd6b5a14` (clean working tree)
 - Seed: 20261005
 - Configuration SHA-256: `cf1ca7be38157bb5d06194284d44e6fa905da44c693f890577c723fe54bc1fad`
 - Protocol version: 1
@@ -12,8 +12,11 @@ Every run is seeded and single-threaded, so these tables are reproducible bit fo
 
 ## Validation
 
-**156 of 166 checks passed.** The V0 gate passed, so the stand-in and fast modes are used for the other sections.
-- **failed** `V2-old-w1299`: old design: restart advantage at keep window 1299 s vs M1 advantage_old_design(q, C_realised, W), allowance 1 % for tie losses (reference 2.6997515636570397, value 2.422074299951657)
+**153 of 166 checks passed.** The V0 gate passed, so the stand-in and fast modes are used for the other sections.
+- **failed** `V2-old-w1299`: old design: restart advantage at keep window 1299 s vs M1 advantage_old_design(q, C_realised, W), allowance 1 % for tie losses (reference 2.699751580323843, value 2.078719146097398)
+- **failed** `V2-old-w3600`: old design: restart advantage at keep window 3600 s vs M1 advantage_old_design(q, C_realised, W), allowance 1 % for tie losses (reference 5.294821431355288, value 3.4042074684908403)
+- **failed** `V2-old-w5196`: old design: restart advantage at keep window 5196 s vs M1 advantage_old_design(q, C_realised, W), allowance 1 % for tie losses (reference 5.682876871076375, value 3.6796881804720845)
+- **failed** `V2-old-w20785`: old design: restart advantage at keep window 20785 s vs M1 advantage_old_design(q, C_realised, W), allowance 1 % for tie losses (reference 3.0136551434864027, value 2.4198717948717947)
 - **failed** `V3-A-K144-clamp4-m4`: Variant A hopping gain (K = 144) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 5.000 (reference 4.7559712362459114, value 6.264876534860303)
 - **failed** `V3-A-K144-clampnone-m4`: Variant A hopping gain (K = 144) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 5.000 (reference 4.7559712362459114, value 5.574338776849414)
 - **failed** `V3-A-K144-clampnone-m4-recovery`: Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped (reference 5.539129844736366, value 6.725939450686641)
@@ -22,7 +25,7 @@ Every run is seeded and single-threaded, so these tables are reproducible bit fo
 - **failed** `V3-A-K2016-clampnone-m4`: Variant A hopping gain (K = 2016) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 5.000 (reference 4.7559712362459114, value 7.7464737986509915)
 - **failed** `V3-A-K2016-clampnone-m4-recovery`: Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped (reference 77.54781782630913, value 125.60052083333333)
 - **failed** `C2-idealised-orphans`: zero latency: orphans per final-chain block vs E[tied winners − 1] from M1 F1 (1000 slots) (reference 0.016742592328524587, value 0.009261533064374671)
-- **failed** `ALL-deep-reorgs`: reorgs of the network chain below a confirmed ID (1011 runs) (reference 0, value 1871)
+- **failed** `ALL-deep-reorgs`: reorgs of the network chain below a confirmed ID (1011 runs) (reference 0, value 154)
 
 ## V0 — mode agreement (the gate)
 
@@ -38,7 +41,7 @@ Blocks to 51 % of active IDs, the long-run share and the tie rate are compared w
 
 ## V2 — S5 restart attack
 
-Under the old fixed-entropy design the restart advantage matches M1 section D at the simulator's size (q = 1/30000, C ≈ 451.0 s realised through the admission path). Under per-round entropy the restart strategy gains nothing: its largest advantage is **0.094** (H4 asks ≤ 1.02; reported, not a check). `V2_restart_advantage.csv`.
+Under the old fixed-entropy design the restart advantage matches M1 section D at the simulator's size (q = 1/30000, C ≈ 451.0 s realised through the admission path). Under per-round entropy the restart strategy gains nothing: its largest advantage is **0.092** (H4 asks ≤ 1.02; reported, not a check). `V2_restart_advantage.csv`.
 
 ## V3 — S6 difficulty hopping
 
@@ -67,12 +70,12 @@ Variant A reproduces M1 E1 once both use whole-second steps (`V3_difficulty_hopp
 
 A tagged group of honest slots wins IDs in proportion to its mining slot-time (`C1_amplification.csv`, by region in `C1_amplification_by_region.csv`):
 
-- 1000 miners, literal, x = 0.1: amplification 0.9793 (95 % CI 0.9641–0.9945)
-- 1000 miners, literal, x = 0.5: amplification 1.0046 (95 % CI 0.9982–1.0110)
-- 10000 miners, literal, x = 0.1: amplification 0.9844 (95 % CI 0.9677–1.0010)
-- 10000 miners, literal, x = 0.5: amplification 1.0054 (95 % CI 0.9978–1.0129)
-- 100000 miners, literal, x = 0.1: amplification 0.9874 (95 % CI 0.9722–1.0026)
-- 100000 miners, literal, x = 0.5: amplification 0.9995 (95 % CI 0.9930–1.0060)
+- 1000 miners, literal, x = 0.1: amplification 0.9752 (95 % CI 0.9586–0.9918)
+- 1000 miners, literal, x = 0.5: amplification 1.0051 (95 % CI 0.9983–1.0119)
+- 10000 miners, literal, x = 0.1: amplification 0.9763 (95 % CI 0.9597–0.9929)
+- 10000 miners, literal, x = 0.5: amplification 1.0102 (95 % CI 1.0021–1.0183)
+- 100000 miners, literal, x = 0.1: amplification 0.9715 (95 % CI 0.9545–0.9884)
+- 100000 miners, literal, x = 0.5: amplification 1.0036 (95 % CI 0.9958–1.0114)
 - 10000 miners, same-parent [P], x = 0.1: amplification 0.9844 (95 % CI 0.9677–1.0010)
 - 10000 miners, same-parent [P], x = 0.5: amplification 1.0054 (95 % CI 0.9978–1.0129)
 
@@ -80,81 +83,81 @@ A tagged group of honest slots wins IDs in proportion to its mining slot-time (`
 
 Orphan and fork rates for the v0.6 rule, first-seen and lower-hash-only (`C2_fork_choice.csv`; no loss below):
 
-- v0.6, literal: orphan rate 6.29 %, fork heights 2.59 %, lower-hash loser 40.0 % of orphans, max reorg 12, deeper than confirmation 23
+- v0.6, literal: orphan rate 2.74 %, fork heights 2.25 %, lower-hash loser 24.0 % of orphans, max reorg 4, deeper than confirmation 0
 - v0.6, same-parent: orphan rate 6.29 %, fork heights 2.59 %, lower-hash loser 40.0 % of orphans, max reorg 12, deeper than confirmation 23
 - first-seen, literal: orphan rate 3.20 %, fork heights 1.82 %, lower-hash loser 50.7 % of orphans, max reorg 5, deeper than confirmation 0
 - first-seen, same-parent: orphan rate 3.20 %, fork heights 1.82 %, lower-hash loser 50.7 % of orphans, max reorg 5, deeper than confirmation 0
-- lower-hash-only, literal: orphan rate 15.34 %, fork heights 10.46 %, lower-hash loser 29.5 % of orphans, max reorg 5, deeper than confirmation 0
+- lower-hash-only, literal: orphan rate 13.66 %, fork heights 10.13 %, lower-hash loser 21.1 % of orphans, max reorg 4, deeper than confirmation 0
 - lower-hash-only, same-parent: orphan rate 15.34 %, fork heights 10.46 %, lower-hash loser 29.5 % of orphans, max reorg 5, deeper than confirmation 0
 
 ## C3 — PoWit arrival deadline and the withholder
 
 With partitions (one per region per day, 5 min) and 0.5 % loss (`C3_powit_deadline.csv`, `C3_late_by_region.csv`, `C3_withholder.csv`; withholder values are measurements, not checks):
 
-- D = none (permanent): 0.000 % of blocks late at the panel majority, fork rate 5.32 % (no deadline: 5.32 %), split panel nodes 0, deepest reorg 12 (164 below a confirmed ID); withholder success 57.9 %, amplification 0.899
-- D = 5 (permanent): 1.938 % of blocks late at the panel majority, fork rate 3.04 % (no deadline: 5.32 %), split panel nodes 63, deepest reorg 2 (0 below a confirmed ID); withholder success 8.4 %, amplification 0.102
-- D = 5 (not_extended_only): 3.007 % of blocks late at the panel majority, fork rate 2.69 % (no deadline: 5.32 %), split panel nodes 0, deepest reorg 2 (0 below a confirmed ID); withholder success 8.4 %, amplification 0.103
-- D = 10 (permanent): 1.065 % of blocks late at the panel majority, fork rate 2.83 % (no deadline: 5.32 %), split panel nodes 63, deepest reorg 2 (0 below a confirmed ID); withholder success 17.7 %, amplification 0.217
-- D = 10 (not_extended_only): 2.906 % of blocks late at the panel majority, fork rate 2.62 % (no deadline: 5.32 %), split panel nodes 0, deepest reorg 1 (0 below a confirmed ID); withholder success 17.0 %, amplification 0.205
-- D = 30 (permanent): 0.858 % of blocks late at the panel majority, fork rate 3.10 % (no deadline: 5.32 %), split panel nodes 63, deepest reorg 1 (0 below a confirmed ID); withholder success 42.7 %, amplification 0.538
-- D = 30 (not_extended_only): 2.502 % of blocks late at the panel majority, fork rate 2.60 % (no deadline: 5.32 %), split panel nodes 0, deepest reorg 2 (0 below a confirmed ID); withholder success 42.0 %, amplification 0.527
-- D = 60 (permanent): 0.404 % of blocks late at the panel majority, fork rate 3.08 % (no deadline: 5.32 %), split panel nodes 63, deepest reorg 2 (0 below a confirmed ID); withholder success 58.7 %, amplification 0.755
-- D = 60 (not_extended_only): 1.988 % of blocks late at the panel majority, fork rate 2.89 % (no deadline: 5.32 %), split panel nodes 0, deepest reorg 4 (0 below a confirmed ID); withholder success 59.0 %, amplification 0.754
+- D = none (permanent): 0.000 % of blocks late at the panel majority, fork rate 3.40 % (no deadline: 3.40 %), split panel nodes 0, deepest reorg 4 (0 below a confirmed ID); withholder success 66.9 %, amplification 0.854
+- D = 5 (permanent): 1.148 % of blocks late at the panel majority, fork rate 3.06 % (no deadline: 3.40 %), split panel nodes 63, deepest reorg 2 (0 below a confirmed ID); withholder success 7.2 %, amplification 0.087
+- D = 5 (not_extended_only): 2.800 % of blocks late at the panel majority, fork rate 2.55 % (no deadline: 3.40 %), split panel nodes 0, deepest reorg 1 (0 below a confirmed ID); withholder success 6.8 %, amplification 0.084
+- D = 10 (permanent): 0.975 % of blocks late at the panel majority, fork rate 3.14 % (no deadline: 3.40 %), split panel nodes 63, deepest reorg 1 (0 below a confirmed ID); withholder success 15.4 %, amplification 0.192
+- D = 10 (not_extended_only): 3.925 % of blocks late at the panel majority, fork rate 2.63 % (no deadline: 3.40 %), split panel nodes 0, deepest reorg 2 (0 below a confirmed ID); withholder success 17.4 %, amplification 0.214
+- D = 30 (permanent): 1.465 % of blocks late at the panel majority, fork rate 2.97 % (no deadline: 3.40 %), split panel nodes 63, deepest reorg 1 (0 below a confirmed ID); withholder success 37.9 %, amplification 0.506
+- D = 30 (not_extended_only): 2.642 % of blocks late at the panel majority, fork rate 2.63 % (no deadline: 3.40 %), split panel nodes 0, deepest reorg 1 (0 below a confirmed ID); withholder success 37.8 %, amplification 0.473
+- D = 60 (permanent): 0.734 % of blocks late at the panel majority, fork rate 2.78 % (no deadline: 3.40 %), split panel nodes 63, deepest reorg 1 (0 below a confirmed ID); withholder success 50.6 %, amplification 0.728
+- D = 60 (not_extended_only): 2.093 % of blocks late at the panel majority, fork rate 2.68 % (no deadline: 3.40 %), split panel nodes 0, deepest reorg 2 (0 below a confirmed ID); withholder success 53.7 %, amplification 0.663
 
 ## C4 — issuance rate under churn
 
 Mean interval and stability per difficulty rule (`C4_issuance_rate.csv`; realistic churn, count after the post-admission wait):
 
-- A (K=144, 4×): mean interval 31.61 s (5.36 % from 30 s), daily IDs 2766 ± 263 (SD)
-- B: mean interval 31.27 s (4.22 % from 30 s), daily IDs 2763 ± 189 (SD)
-- B+P1: mean interval 31.05 s (3.51 % from 30 s), daily IDs 2782 ± 194 (SD)
-- B+P2: mean interval 31.07 s (3.56 % from 30 s), daily IDs 2780 ± 185 (SD)
-- B-exact: mean interval 30.88 s (2.92 % from 30 s), daily IDs 2798 ± 194 (SD)
+- A (K=144, 4×): mean interval 32.50 s (8.33 % from 30 s), daily IDs 2658 ± 191 (SD)
+- B: mean interval 39.54 s (31.79 % from 30 s), daily IDs 2185 ± 236 (SD)
+- B+P1: mean interval 36.80 s (22.68 % from 30 s), daily IDs 2347 ± 196 (SD)
+- B+P2: mean interval 36.88 s (22.92 % from 30 s), daily IDs 2340 ± 184 (SD)
+- B-exact: mean interval 36.99 s (23.30 % from 30 s), daily IDs 2335 ± 201 (SD)
 
 ## C5 — timing the SPEC promises, and honest penalties
 
 KWC switches take 451.0 s at the median ("a few minutes"). Entropy stalls and penalties by One Chance wait and rule (`C5_one_chance.csv`, losses by region and device in `C5_honest_losses_by_region_device.csv`):
 
-- W = 1, strict, ladder: stalls 28.9 s mean, glitches under the grace epoch recorded offline 79.9 %, honest IDs lost 1943.82 % per year, global pauses 446; stopped by a fork storm on day 9.19 (SIM-29)
-- W = 1, strict, ladder with yearly reset [P]: stalls 28.9 s mean, glitches under the grace epoch recorded offline 79.9 %, honest IDs lost 1943.82 % per year, global pauses 446; stopped by a fork storm on day 9.19 (SIM-29)
-- W = 1, strict, immediate ban: stalls 29.0 s mean, glitches under the grace epoch recorded offline 81.1 %, honest IDs lost 66456.75 % per year, global pauses 1714
-- W = 1, unreachable is not refusal [P]: stalls 28.9 s mean, glitches under the grace epoch recorded offline 79.6 %, honest IDs lost 0.00 % per year, global pauses 2204
-- W = 2, strict, ladder: stalls 54.2 s mean, glitches under the grace epoch recorded offline 54.1 %, honest IDs lost 3880.61 % per year, global pauses 1713
-- W = 2, strict, ladder with yearly reset [P]: stalls 54.2 s mean, glitches under the grace epoch recorded offline 54.1 %, honest IDs lost 3880.61 % per year, global pauses 1713
-- W = 2, strict, immediate ban: stalls 54.3 s mean, glitches under the grace epoch recorded offline 54.1 %, honest IDs lost 42798.68 % per year, global pauses 1720
-- W = 2, unreachable is not refusal [P]: stalls 54.2 s mean, glitches under the grace epoch recorded offline 53.3 %, honest IDs lost 0.00 % per year, global pauses 2167
-- W = 5, strict, ladder: stalls 109.7 s mean, glitches under the grace epoch recorded offline 0.1 %, honest IDs lost 1448.88 % per year, global pauses 1785
-- W = 5, strict, ladder with yearly reset [P]: stalls 109.7 s mean, glitches under the grace epoch recorded offline 0.1 %, honest IDs lost 1448.88 % per year, global pauses 1785
-- W = 5, strict, immediate ban: stalls 109.9 s mean, glitches under the grace epoch recorded offline 0.1 %, honest IDs lost 14872.22 % per year, global pauses 1797
-- W = 5, unreachable is not refusal [P]: stalls 109.7 s mean, glitches under the grace epoch recorded offline 0.1 %, honest IDs lost 0.00 % per year, global pauses 2300
+- W = 1, strict, ladder: stalls 28.9 s mean, glitches under the grace epoch recorded offline 80.9 %, honest IDs lost 6002.60 % per year, global pauses 1865
+- W = 1, strict, ladder with yearly reset [P]: stalls 28.9 s mean, glitches under the grace epoch recorded offline 80.9 %, honest IDs lost 6002.60 % per year, global pauses 1865
+- W = 1, strict, immediate ban: stalls 29.0 s mean, glitches under the grace epoch recorded offline 81.1 %, honest IDs lost 69134.68 % per year, global pauses 1960
+- W = 1, unreachable is not refusal [P]: stalls 28.9 s mean, glitches under the grace epoch recorded offline 79.5 %, honest IDs lost 0.00 % per year, global pauses 2303
+- W = 2, strict, ladder: stalls 54.2 s mean, glitches under the grace epoch recorded offline 54.1 %, honest IDs lost 3943.88 % per year, global pauses 1841
+- W = 2, strict, ladder with yearly reset [P]: stalls 54.2 s mean, glitches under the grace epoch recorded offline 54.1 %, honest IDs lost 3943.88 % per year, global pauses 1841
+- W = 2, strict, immediate ban: stalls 54.3 s mean, glitches under the grace epoch recorded offline 54.1 %, honest IDs lost 44529.07 % per year, global pauses 1976
+- W = 2, unreachable is not refusal [P]: stalls 54.2 s mean, glitches under the grace epoch recorded offline 53.3 %, honest IDs lost 0.00 % per year, global pauses 2305
+- W = 5, strict, ladder: stalls 109.7 s mean, glitches under the grace epoch recorded offline 0.1 %, honest IDs lost 1458.25 % per year, global pauses 1903
+- W = 5, strict, ladder with yearly reset [P]: stalls 109.7 s mean, glitches under the grace epoch recorded offline 0.1 %, honest IDs lost 1458.25 % per year, global pauses 1903
+- W = 5, strict, immediate ban: stalls 109.9 s mean, glitches under the grace epoch recorded offline 0.1 %, honest IDs lost 15225.01 % per year, global pauses 1964
+- W = 5, unreachable is not refusal [P]: stalls 109.7 s mean, glitches under the grace epoch recorded offline 0.1 %, honest IDs lost 0.00 % per year, global pauses 2312
 
 ## C6 — clock skew and false rejections
 
 `C6_clock_skew.csv` covers skew σ × δ × signing time × early-block rule:
 
 - skew σ = 1 s, δ = 2 s, on time (default): 0.000 % of panel receptions early, 0 blocks early at the panel majority
-- skew σ = 1 s, δ = 2 s, earliest within δ (P-4): 13.014 % of panel receptions early, 0 blocks early at the panel majority
-- skew σ = 2 s, δ = 2 s, on time (default): 2.188 % of panel receptions early, 0 blocks early at the panel majority
-- skew σ = 2 s, δ = 2 s, earliest within δ (P-4): 17.761 % of panel receptions early, 2 blocks early at the panel majority
+- skew σ = 1 s, δ = 2 s, earliest within δ (P-4): 12.956 % of panel receptions early, 0 blocks early at the panel majority
+- skew σ = 2 s, δ = 2 s, on time (default): 2.264 % of panel receptions early, 0 blocks early at the panel majority
+- skew σ = 2 s, δ = 2 s, earliest within δ (P-4): 17.647 % of panel receptions early, 0 blocks early at the panel majority
 
 ## C7 — quorum liveness under household profiles
 
 The share of KWCs unable to meet a quorum at a sampled instant (`C7_quorum_liveness.csv`), under the [P] "unreachable is not refusal" rule so that downtime alone is measured (under the strict rule honest witnesses are also banned: C5):
 
-- household profiles, departures 0/yr: witnesses online 83.4 %; KWCs below the unregistered quorum 4.61 % (M1 at that online fraction: 0.37 %), below 7 + 21 16.27 % (M1: 8.60 %)
-- household profiles, departures 0.1/yr: witnesses online 80.6 %; KWCs below the unregistered quorum 9.34 % (M1 at that online fraction: 1.52 %), below 7 + 21 24.92 % (M1: 15.65 %)
-- household profiles, departures 0.25/yr: witnesses online 77.9 %; KWCs below the unregistered quorum 15.12 % (M1 at that online fraction: 4.23 %), below 7 + 21 32.84 % (M1: 24.83 %)
+- household profiles, departures 0/yr: witnesses online 83.4 %; KWCs below the unregistered quorum 4.66 % (M1 at that online fraction: 0.38 %), below 7 + 21 16.46 % (M1: 8.70 %)
+- household profiles, departures 0.1/yr: witnesses online 80.5 %; KWCs below the unregistered quorum 9.59 % (M1 at that online fraction: 1.57 %), below 7 + 21 25.19 % (M1: 15.92 %)
+- household profiles, departures 0.25/yr: witnesses online 77.8 %; KWCs below the unregistered quorum 15.39 % (M1 at that online fraction: 4.40 %), below 7 + 21 33.13 % (M1: 25.30 %)
 
 ## A6 — honest growth and patience
 
 New honest miners arrive at 3·R per year (`A6_growth_and_patience.csv`):
 
-- patience median 3 days: 398137 arrivals, 85.1 % gave up before a first ID, median wait to a first ID 2.26 days
-- patience median 14 days: 396570 arrivals, 70.3 % gave up before a first ID, median wait to a first ID 4.07 days
+- patience median 3 days: 398137 arrivals, 86.7 % gave up before a first ID, median wait to a first ID 2.37 days
+- patience median 14 days: 396570 arrivals, 73.8 % gave up before a first ID, median wait to a first ID 4.54 days
 
 ## Invariants of every run
 
-**2 of 3 hold** across all 1011 runs: recounted caches and counters, self-validation of every broadcast block, and no reorg below a confirmed ID (`validation.csv`, section ALL; every run in `ALL_runs.csv`). Reorgs below a confirmed ID (a confirmed ID's block replaced) occurred in 55: `V2-current-w1000000000000` (1, deepest 7), `C1-m1000-literal-s0` (44, deepest 12), `C1-m10000-literal-s0` (43, deepest 12), `C1-m100000-literal-s0` (21, deepest 12), `C1-m10000-same-parent-s0` (43, deepest 12), `C2-v0.6-literal-loss0` (23, deepest 12), `C2-v0.6-literal-loss0.005` (25, deepest 12), `C2-v0.6-literal-loss0.02` (42, deepest 12), `C2-v0.6-literal-loss0.05` (10, deepest 12), `C2-v0.6-same-parent-loss0` (23, deepest 12), `C2-v0.6-same-parent-loss0.005` (25, deepest 12), `C2-v0.6-same-parent-loss0.02` (42, deepest 12), `C2-v0.6-same-parent-loss0.05` (10, deepest 12), `C2-v0.6-literal-stylised` (33, deepest 12), `C2-v0.6-literal-partitions` (488, deepest 12), `C3-honest-Dnone-permanent` (164, deepest 12), `C3-withholder-Dnone-permanent` (109, deepest 12), `C4-A (K=144, 4×)-after_wait-realistic` (17, deepest 11), `C4-A (K=144, 4×)-after_wait-laptop-heavy` (50, deepest 12), `C4-A (K=144, 4×)-all_globally_active-realistic` (17, deepest 11), `C4-A (K=144, 4×)-all_globally_active-laptop-heavy` (50, deepest 12), `C4-B-after_wait-realistic` (24, deepest 12), `C4-B-all_globally_active-realistic` (23, deepest 12), `C4-B+P1-after_wait-realistic` (24, deepest 12), `C4-B+P1-all_globally_active-realistic` (18, deepest 12), `C4-B+P1-all_globally_active-laptop-heavy` (1, deepest 8), `C4-B+P2-after_wait-realistic` (47, deepest 12), `C4-B+P2-all_globally_active-realistic` (5, deepest 8), `C4-B-exact-after_wait-realistic` (39, deepest 12), `C4-B-exact-all_globally_active-realistic` (47, deepest 12), `C4-B-exact-all_globally_active-laptop-heavy` (4, deepest 8), `C5-W1-strict, ladder` (1, deepest 7), `C5-W1-strict, ladder with yearly reset [P]` (1, deepest 7), `C5-W1-strict, immediate ban` (10, deepest 12), `C5-W1-unreachable is not refusal [P]` (5, deepest 9), `C5-W2-strict, ladder` (62, deepest 12), `C5-W2-strict, ladder with yearly reset [P]` (62, deepest 12), `C5-W2-strict, immediate ban` (9, deepest 11), `C5-W2-unreachable is not refusal [P]` (11, deepest 11), `C5-W5-strict, ladder` (26, deepest 12), `C5-W5-strict, ladder with yearly reset [P]` (26, deepest 12), `C5-W5-strict, immediate ban` (19, deepest 12), `C5-W5-unreachable is not refusal [P]` (4, deepest 7), `C6-skew0.1-delta0.5-OnTime-Permanent` (2, deepest 7), `C6-skew0.1-delta0.5-OnTime-ReevaluateLater` (2, deepest 7), `C6-skew0.1-delta2-OnTime-Permanent` (2, deepest 7), `C6-skew0.1-delta2-OnTime-ReevaluateLater` (2, deepest 7), `C6-skew0.1-delta10-OnTime-Permanent` (2, deepest 7), `C6-skew0.1-delta10-OnTime-ReevaluateLater` (2, deepest 7), `C6-skew1-delta0.5-EarliestWithinTolerance-ReevaluateLater` (1, deepest 7), `C7-households-departures0` (1, deepest 7), `C7-households-departures0.1` (2, deepest 7), `C7-households-departures0.25` (41, deepest 12), `A6-patience3` (63, deepest 12), `A6-patience14` (3, deepest 8).
+**2 of 3 hold** across all 1011 runs: recounted caches and counters, self-validation of every broadcast block, and no reorg below a confirmed ID (`validation.csv`, section ALL; every run in `ALL_runs.csv`). Reorgs below a confirmed ID (a confirmed ID's block replaced) occurred in 11: `C1-m10000-literal-s0` (3, deepest 8), `C1-m10000-same-parent-s0` (43, deepest 12), `C2-v0.6-same-parent-loss0` (23, deepest 12), `C2-v0.6-same-parent-loss0.005` (25, deepest 12), `C2-v0.6-same-parent-loss0.02` (42, deepest 12), `C2-v0.6-same-parent-loss0.05` (10, deepest 12), `C2-v0.6-literal-stylised` (2, deepest 7), `C3-withholder-D30-permanent` (1, deepest 10), `C4-B-all_globally_active-laptop-heavy` (2, deepest 7), `C4-B+P1-after_wait-laptop-heavy` (2, deepest 7), `C4-B+P1-all_globally_active-laptop-heavy` (1, deepest 7).
 
-**Fork storms stopped 8 runs early**, when more blocks than `sim.world.fork_storm_unsettled` were unsettled at once (SIM-29): `C2-v0.6-literal-partitions` (day 9.19), `C4-A (K=144, 4×)-after_wait-realistic` (day 9.19), `C4-A (K=144, 4×)-all_globally_active-realistic` (day 9.19), `C4-B-all_globally_active-laptop-heavy` (day 9.19), `C4-B+P2-all_globally_active-laptop-heavy` (day 9.19), `C4-B-exact-all_globally_active-laptop-heavy` (day 9.19), `C5-W1-strict, ladder` (day 9.19), `C5-W1-strict, ladder with yearly reset [P]` (day 9.19). Their tables cover the time before (`ALL_runs.csv`, column `fork_storm_day`).
+No run had a fork storm: at most 328 unsettled blocks ever shared a height.
 

@@ -2,7 +2,7 @@ test,data,samples,statistic,p_value,passes
 "V0-c6-winning-step distribution, real entropy vs stand-in (two-sample χ², 10 bins)",M2 equivalence,4000,9.775994098794802,0.3689224117423321,true
 V0-c6-real entropy uniform (KS on the top 53 bits),M2 equivalence,4000,0.014434728226537796,0.3727704814599919,true
 V0-c6-stand-in entropy uniform (KS on the top 53 bits),M2 equivalence,4000,0.014511139511068638,0.36633387617938734,true
-V0-real-vs-standin-steps,"V0-real-32, V0-standin-32",79200,1.4753503684951,0.6879710253382422,true
+V0-real-vs-standin-steps,"V0-real-32, V0-standin-32",35552,10.159366352069231,0.01725892441363631,true
 V0-standin-1000-nmin-law,V0-standin-1000,545,0.02428580194866614,0.9013590691968192,true
 V0-standin-1000-hash-uniform,V0-standin-1000,546,0,0.7511520367872987,true
 V0-standin-1000-winners-uniform,V0-standin-1000,546,988.7985347985461,0.5847574020901465,true

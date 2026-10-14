@@ -1,13 +1,13 @@
 {
-  "run_id": "20261014T030619Z_1b38056_s20261005",
-  "created_utc": "2026-10-14T03:06:19Z",
+  "run_id": "20261014T041839Z_b6688fb_s20261005",
+  "created_utc": "2026-10-14T04:18:39Z",
   "analysis": "sim",
   "command_line": [
     "target/release/gb",
     "sim"
   ],
   "seed": 20261005,
-  "git_commit": "1b3805616afd478965317e6db9d4ab81d4204406",
+  "git_commit": "b6688fb13a50e7212532793e8d72de37fd6b5a14",
   "git_dirty": false,
   "config_path": null,
   "config_sha256": "cf1ca7be38157bb5d06194284d44e6fa905da44c693f890577c723fe54bc1fad",
@@ -18,78 +18,78 @@
   "outputs": [
     {
       "path": "A6_growth_and_patience.csv",
-      "sha256": "6d7ed9b2485bb65c5960aa737d38c324c6516921ae33a3e9ca2de9ba1cf70888",
+      "sha256": "18b54a8c49365c5f8ca89aacb7ca63f2a6a21bd8af40d07b181f3e467e502d7a",
       "bytes": 288
     },
     {
       "path": "ALL_runs.csv",
-      "sha256": "84f451da4463d1b4b118c59e3b93c35875279e757d826520bfca0d9ecd04e475",
-      "bytes": 109199
+      "sha256": "94c8b3ca65853f1ce3de47946f286046c7e755a92bb676f57bfa1317ac45ef63",
+      "bytes": 108654
     },
     {
       "path": "C1_amplification.csv",
-      "sha256": "7a6328899f6c88018581aa35eed3ca714251f43369acf22b3db3aa06f913bd31",
+      "sha256": "773b061b7836397c5e9e4da13c1f00c651167bf82d673f1e953e779195befc54",
       "bytes": 1001
     },
     {
       "path": "C1_amplification_by_region.csv",
-      "sha256": "160b5b7b1ab792f53c0ec7f69e214bf5574c627d3924778e81c92779affcf0cf",
-      "bytes": 3351
+      "sha256": "31b1cb541f2c6356d481454a49e230b80a73236d162ea992f2843a4d41603733",
+      "bytes": 3337
     },
     {
       "path": "C2_fork_choice.csv",
-      "sha256": "ebdc69c9b541481e5728267e9fe005c90066cff14a0708cd7fe7c95b329bdddf",
-      "bytes": 4815
+      "sha256": "04be6004e17ab4e778e6c51bc153695eed788df34c0478a62972d1eef6d797f8",
+      "bytes": 4745
     },
     {
       "path": "C3_late_by_region.csv",
-      "sha256": "50ad7dbaf0e6bc54947a1d0eb784db9e446316e86a59646c39202345c3b5eb95",
-      "bytes": 3644
+      "sha256": "c323b8e90a5802c99a993472b7d36feae5438ba056800042622da7b94c52c0de",
+      "bytes": 3623
     },
     {
       "path": "C3_powit_deadline.csv",
-      "sha256": "5b9fdb56e9788e0e3741201a663ae54738edf22a306b085d1f73846acc7e7e44",
-      "bytes": 1116
+      "sha256": "33fad665a230411a0dc7b2d13fbb37c3b9df1a8bf31f7e16a65eccc6ed748db5",
+      "bytes": 1115
     },
     {
       "path": "C3_withholder.csv",
-      "sha256": "bd9800f900642684146d960687aba08c7a7e9fdaeb4ae04ef75f376916f11060",
-      "bytes": 951
+      "sha256": "8aa61bbf115dc7b093050db0695a55edab71d0ba26182c8d7031dd1813367a96",
+      "bytes": 936
     },
     {
       "path": "C4_issuance_rate.csv",
-      "sha256": "52d9ea5a11fdfa3f7fd4db9f9fda8057fd2b4e3e38b98fe262c2395b05c6b3f9",
-      "bytes": 2925
+      "sha256": "8b96a68ed12cfc0a2f424b72ce2abbef61f7663ed77714efc7671eb91a2412bc",
+      "bytes": 2832
     },
     {
       "path": "C5_honest_losses_by_region_device.csv",
-      "sha256": "4f6c4dc06b401e31d1a233b36da1c31a1bfa970c0970b1ee2e4dd0f32336f722",
-      "bytes": 25870
+      "sha256": "429281861cb8f42036d5c12a19bdd3d71c486bac3a57ed01a4eb518f757dafaf",
+      "bytes": 25957
     },
     {
       "path": "C5_one_chance.csv",
-      "sha256": "7de8e3c8588359018fa4cf4d3faf36ab7535396542d21a9b001a61fb443d7289",
-      "bytes": 2688
+      "sha256": "1d9e53b993c3bddf51257e42244ee4ec3ef645353afed6dd411c6a9d4a389336",
+      "bytes": 2689
     },
     {
       "path": "C6_clock_skew.csv",
-      "sha256": "ab857c4f67a2808f1a771234bef8c455181290dbf76bf2d2a11a94a4a56a6b08",
-      "bytes": 6491
+      "sha256": "66c4cd29d1e2d20f942ec5f77f0d83a201923af6845522adb9a096dbe547ce27",
+      "bytes": 6375
     },
     {
       "path": "C7_quorum_liveness.csv",
-      "sha256": "033aff48645d424fa9985402670041a714e4f8038cb9f5b3a4abaf0a32177bfd",
-      "bytes": 1179
+      "sha256": "10638ce2e321a569dfdb1b023a0332f3bed035f2dbe08af4809b46e97d263cea",
+      "bytes": 1176
     },
     {
       "path": "SUMMARY.md",
-      "sha256": "0068c3451c676c78c09df233aaab91a323381474ed217e8bb3730e93e0e2915c",
-      "bytes": 17767
+      "sha256": "7d3d98877f8619ad554a5fbeef440a76d4692bb7310e72b6dad0831a55e60576",
+      "bytes": 15483
     },
     {
       "path": "V0_mode_agreement.csv",
-      "sha256": "9d38238f96b0ef5106adc0b471d87e450dc52b3c3a16268fc6f214e66895760a",
-      "bytes": 2336
+      "sha256": "ff9785025a02be33e250cb0e512693a9134b9b4a2c529aa960b9e7005842e6a5",
+      "bytes": 2340
     },
     {
       "path": "V1_ties_and_interval.csv",
@@ -103,8 +103,8 @@
     },
     {
       "path": "V2_restart_advantage.csv",
-      "sha256": "30a8e4d65893a663fe86428dea5477498184c90456e9cd045b3768cfa9b2407c",
-      "bytes": 811
+      "sha256": "85a8c6567b7ac9862c0ae4c4ab9898f62278092e6880e50056865b5d004d279d",
+      "bytes": 818
     },
     {
       "path": "V3_difficulty_hopping.csv",
@@ -118,23 +118,23 @@
     },
     {
       "path": "charts/C1_amplification.png",
-      "sha256": "c090bff8826058482359c61f5351c6f5f291d60a3dece29cccd221e08c1bcd2a",
-      "bytes": 65793
+      "sha256": "4c20655e628208c388432b8ce55b6b684105955634b7cc556b0fb4bdd09a881f",
+      "bytes": 66636
     },
     {
       "path": "charts/C2_orphan_rate.png",
-      "sha256": "81099d9159b403fa9da96e5e477e457b761469f452843b507ea3e9fb9c7c5919",
-      "bytes": 69794
+      "sha256": "aa01df6611824c484bda3d3b9798abfa0898c55b1f10ad8c7dda232419a048fb",
+      "bytes": 60888
     },
     {
       "path": "charts/C3_powit_deadline.png",
-      "sha256": "f5906c6ff0faf467f3435eeac525b6ed5b3d7a7d5f868818b75d396538d5a05d",
-      "bytes": 72580
+      "sha256": "31982faed07ecdda6aa4f6ea7dfdbaa216728428a8d5753102142304bc374cca",
+      "bytes": 76172
     },
     {
       "path": "charts/C6_clock_skew.png",
-      "sha256": "4f5a7f76e5736816cd7231329ccab8c0faaa5bb9050a1fb207920a755faa1b5c",
-      "bytes": 68202
+      "sha256": "b85cb260704b92d14d61aeb4d331cf29e67ca047747205f7e47b3f7f841535cf",
+      "bytes": 68326
     },
     {
       "path": "charts/V1_time_to_threshold.png",
@@ -153,18 +153,18 @@
     },
     {
       "path": "perf/PERF.md",
-      "sha256": "a64ef79b824fc6caa27ae016e2083baba8cd3d4738b9aef7725efb9871cd43df",
-      "bytes": 1580
+      "sha256": "8c6dc21efbad23df1467ffe39e526d093a9b40e84be5015ae46802cf9384a9d3",
+      "bytes": 1552
     },
     {
       "path": "perf/perf.csv",
-      "sha256": "d920c66c46036d25e243892c84d0a0451425456fb15b10903d7535dd5e029541",
-      "bytes": 76335
+      "sha256": "7e8fb30d062d41ff3f399970b272f5254e38190f130dd5182668ad58d2cd0796",
+      "bytes": 76045
     },
     {
       "path": "validation.csv",
-      "sha256": "4720c91a1e61c35a9135c445dc66b596b3a18ce1721d3e4193ee942fcf74d193",
-      "bytes": 30271
+      "sha256": "ad661417be702cf5bbdf3884aa4c93bc3630c6a7c835400b32ed86a57d0bcf0b",
+      "bytes": 30275
     }
   ]
 }
