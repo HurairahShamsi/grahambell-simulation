@@ -54,6 +54,7 @@ Dependencies point one way: `gb-cli` → analysis crates (`gb-analytic`, `gb-cry
 - **Households.** Per-node on/off timelines: device schedules, crashes, glitches, grid faults and load-shedding (with UPS), provider and regional outages, long absences and departures, each tagged announced or unannounced by its cause.
 - **Network chain.** 101 ideal validators spread over the regions stand for the network: the network chain is the longest chain more than half of them hold. An ID passes confirmation depth when 6 blocks are built on its block there.
 - **Invariants.** Every run recounts its caches (active list, seats, WC, miner and KWC counters) daily and at the end, and every broadcast block must pass `validate_facts` at its own miner.
+- **Fork storms.** After a stall of hours with no PoWit deadline, start rule (a) lets hundreds of blocks compete for each height, and the run's memory grows by gigabytes within seconds of simulated time. A run therefore stops once more than `sim.world.fork_storm_width` (64) unsettled blocks share a height, and the outputs flag it (ASSUMPTIONS SIM-29). The limit never touches a run without a storm.
 
 ### Tier 2 — `gb-scale` (aggregate model)
 
