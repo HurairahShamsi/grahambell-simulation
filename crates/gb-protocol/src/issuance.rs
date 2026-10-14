@@ -220,7 +220,9 @@ pub fn count_based_target(
 /// Whether a Globally Active miner counts toward Variant B's admitted online count (SPEC
 /// §3.8; architect, 2026-10-12): it must be recorded online, and under the default rule its
 /// post-admission wait must have ended. A miner that disappeared without announcing it stays
-/// recorded online, and so counted, until it is recorded offline.
+/// recorded online, and so counted, until it is recorded offline. Under the issued-entropy
+/// rule (the M3a.1 experiment) this is only the admission condition: the miner must also have
+/// received entropy for the round, which its KWC knows and commits per round.
 pub fn counts_for_difficulty(
     rule: DifficultyCountRule,
     recorded_online: bool,
@@ -228,7 +230,9 @@ pub fn counts_for_difficulty(
 ) -> bool {
     recorded_online
         && match rule {
-            DifficultyCountRule::AfterPostAdmissionWait => wait_ended,
+            DifficultyCountRule::AfterPostAdmissionWait | DifficultyCountRule::IssuedEntropy => {
+                wait_ended
+            }
             DifficultyCountRule::AllGloballyActive => true,
         }
 }

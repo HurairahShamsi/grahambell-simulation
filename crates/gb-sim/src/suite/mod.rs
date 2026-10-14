@@ -8,6 +8,7 @@
 //! if it fails, the sections that rely on the stand-in or fast modes are not run.
 
 mod c;
+mod e;
 mod v;
 
 use crate::job::{JobResult, JobSpec};
@@ -345,6 +346,9 @@ pub fn run_jobs(
         .collect()
 }
 
+/// E4 runs at once at most (memory; results do not depend on the thread count).
+const E4_THREADS: usize = 2;
+
 /// Runs the M3a suite.
 pub fn run_suite(config: &Config, options: &SuiteOptions) -> Result<SuiteOutput, SimError> {
     let ctx = Ctx {
@@ -405,6 +409,22 @@ pub fn run_suite(config: &Config, options: &SuiteOptions) -> Result<SuiteOutput,
         ranges.push(Some((all.len(), all.len() + list.len())));
         all.extend(list);
     }
+    // The M3a.1 experiments, stage 1 (E1 needs E2's hopping results; E4 needs E3's verdict).
+    let run_e1 = wanted("E1");
+    let run_e2 = run_e1 || wanted("E2");
+    let run_e4 = wanted("E4");
+    let run_e3 = run_e4 || wanted("E3");
+    let mut stage1 = |run: bool, list: fn(&Ctx<'_>) -> Vec<JobSpec>| {
+        run.then(|| {
+            let jobs = list(&ctx);
+            let range = (all.len(), all.len() + jobs.len());
+            all.extend(jobs);
+            range
+        })
+    };
+    let e2_range = stage1(run_e2, e::e2_jobs);
+    let e1_range = stage1(run_e1, e::e1_stage1_jobs);
+    let e3_range = stage1(run_e3, e::e3_jobs);
     let results = run_jobs(config, &all, options.threads, &options.control, "main")?;
     for (job, result) in all.iter().zip(&results) {
         out.perf.push(perf_row(job, result));
@@ -414,8 +434,76 @@ pub fn run_suite(config: &Config, options: &SuiteOptions) -> Result<SuiteOutput,
             absorb(&mut out, analyse(&ctx, &results[a..b]));
         }
     }
-    let specs: Vec<JobSpec> = v0_specs.into_iter().chain(all).collect();
-    let mut runs: Vec<JobResult> = v0_jobs.into_iter().chain(results).collect();
+    let (e2_out, h5) = match e2_range {
+        Some((a, b)) => {
+            let (o, h) = e::e2_analyse(&ctx, &results[a..b]);
+            (Some(o), Some(h))
+        }
+        None => (None, None),
+    };
+    let (e3_out, setting) = match e3_range {
+        Some((a, b)) => {
+            let (o, s) = e::e3_analyse(&ctx, &results[a..b]);
+            (Some(o), Some(s))
+        }
+        None => (None, None),
+    };
+    // Stage 2: E1's criterion-4 reruns and E4.
+    let e1_reruns = match (e1_range, &h5) {
+        (Some((a, b)), Some(h)) => e::e1_stage2_jobs(&ctx, &results[a..b], h),
+        _ => Vec::new(),
+    };
+    let e4_list = match (&setting, run_e4) {
+        (Some(s), true) => e::e4_jobs(&ctx, s),
+        _ => Vec::new(),
+    };
+    let reruns = e1_reruns.len();
+    let mut stage2_results = if e1_reruns.is_empty() {
+        Vec::new()
+    } else {
+        run_jobs(
+            config,
+            &e1_reruns,
+            options.threads,
+            &options.control,
+            "stage2",
+        )?
+    };
+    // A year-long E4 run holds about a million blocks, rounds and IDs, so fewer run at once.
+    if !e4_list.is_empty() {
+        stage2_results.extend(run_jobs(
+            config,
+            &e4_list,
+            options.threads.min(E4_THREADS),
+            &options.control,
+            "e4",
+        )?);
+    }
+    let stage2: Vec<JobSpec> = e1_reruns.into_iter().chain(e4_list).collect();
+    for (job, result) in stage2.iter().zip(&stage2_results) {
+        out.perf.push(perf_row(job, result));
+    }
+    if let (Some((a, b)), Some(h)) = (e1_range, &h5) {
+        absorb(
+            &mut out,
+            e::e1_analyse(&ctx, &results[a..b], h, &stage2_results[..reruns]),
+        );
+    }
+    if let Some(o) = e2_out {
+        absorb(&mut out, o);
+    }
+    if let Some(o) = e3_out {
+        absorb(&mut out, o);
+    }
+    if let (true, Some(s)) = (run_e4, &setting) {
+        absorb(&mut out, e::e4_analyse(&ctx, &stage2_results[reruns..], s));
+    }
+    let specs: Vec<JobSpec> = v0_specs.into_iter().chain(all).chain(stage2).collect();
+    let mut runs: Vec<JobResult> = v0_jobs
+        .into_iter()
+        .chain(results)
+        .chain(stage2_results)
+        .collect();
     absorb(&mut out, invariants(&specs, &runs));
     take_traces(&mut out, &mut runs);
     Ok(out)
@@ -870,7 +958,7 @@ mod tests {
     /// JSON, without the event count (an implementation detail). Used to profile a job and to
     /// check that a performance change leaves results byte-identical.
     #[test]
-    #[ignore = "harness: GB_JOB_SECTION (V0, V1, … A6), GB_JOB_INDEX, GB_JOB_DAYS, GB_STORM_UNSETTLED, GB_JOB_CONFIG (a file merged over the defaults), GB_JOB_JSON (write the result here)"]
+    #[ignore = "harness: GB_JOB_SECTION (V0, V1, … A6), GB_JOB_INDEX, GB_JOB_DAYS, GB_STORM_UNSETTLED, GB_JOB_CONFIG (a file merged over the defaults), GB_JOB_JSON (write the result here), GB_TRACK_OUTAGES=1"]
     fn run_one_full_job() {
         let mut cfg = match std::env::var("GB_JOB_CONFIG") {
             Ok(path) => Config::from_file(std::path::Path::new(&path)).unwrap(),
@@ -900,6 +988,17 @@ mod tests {
             "C6" => c::c6_jobs(&ctx),
             "C7" => c::c7_jobs(&ctx),
             "A6" => c::a6_jobs(&ctx),
+            "E1" => e::e1_stage1_jobs(&ctx),
+            "E2" => e::e2_jobs(&ctx),
+            "E3" => e::e3_jobs(&ctx),
+            "E4" => e::e4_jobs(
+                &ctx,
+                &e::E4Setting {
+                    signers: gb_config::protocol::EntropySigners::ThresholdTwoThirds,
+                    failover: None,
+                    reason: String::new(),
+                },
+            ),
             _ => v::v0_jobs(&ctx),
         };
         if var("GB_JOB_INDEX") == "list" {
@@ -914,6 +1013,9 @@ mod tests {
         let mut job = jobs[var("GB_JOB_INDEX").parse::<usize>().unwrap_or(0)].clone();
         if let Ok(days) = var("GB_JOB_DAYS").parse::<f64>() {
             job.days = days;
+        }
+        if var("GB_TRACK_OUTAGES") == "1" {
+            job.track_outages = true;
         }
         let started = std::time::Instant::now();
         let mut res = run_job(&job, &cfg).unwrap();
@@ -933,6 +1035,20 @@ mod tests {
             "STORM {} max_unsettled {} max_fork_width {} fork_storm_s {:?}",
             job.id, res.max_unsettled, res.max_fork_width, res.fork_storm_s
         );
+        for o in &res.outages {
+            println!(
+                "OUTAGE kind {} region {} day {:.3} hours {:.3} households {} miners_lost_power {} witnessing_lost_max {} kwcs_unable_max {} max_gap_s {:.0}",
+                o.kind,
+                o.region,
+                o.start_s / 86_400.0,
+                o.duration_s / 3_600.0,
+                o.households,
+                o.miners_lost_power,
+                o.witnessing_lost_max,
+                o.kwcs_unable_max,
+                o.max_gap_s
+            );
+        }
     }
 
     #[test]

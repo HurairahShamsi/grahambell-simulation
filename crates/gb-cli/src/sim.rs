@@ -69,7 +69,8 @@ pub const SIM_CHARTS: &[&str] = &[
 
 /// Sections of the suite, in the order they run (V0 always runs: it gates the others).
 pub const SECTIONS: &[&str] = &[
-    "V0", "V1", "V2", "V3", "V4", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "A6",
+    "V0", "V1", "V2", "V3", "V4", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "A6", "E1", "E2", "E3",
+    "E4",
 ];
 
 /// Colours of series that share a panel, in fixed order: the first three are the M1 charts'

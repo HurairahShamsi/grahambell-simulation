@@ -13,20 +13,22 @@
 //! stand-in or real BLS entropy and take its first winning step.
 
 use crate::chain::{Candidate, Group, INF, Node};
-use crate::engine::{Micros, SECOND, micros};
+use crate::engine::{Micros, SECOND, micros, seconds};
 use crate::household::{bit, pick};
 use crate::job::{ForkRule, Sampler, Strategy};
 use crate::rng::{Cursor, Purpose};
 use crate::samplers::{any_success, geometric_failures, zero_truncated_binomial};
 use crate::sim::{Ev, Sim};
 use crate::world::{NONE, Phase};
-use gb_config::protocol::EquivocationScope;
+use gb_config::protocol::{EntropySigners, EquivocationScope, StartRule as ConfigStartRule};
 use gb_config::sim::CryptoMode;
 use gb_protocol::chain::{ChainInputs, StartRule, chain_start, step_win_probability};
 use gb_protocol::encoding::{Address, Header, block_hash};
+use gb_protocol::entropy::entropy_threshold;
 use gb_protocol::hash::Hash;
 use gb_protocol::validate::{
-    BlockFacts, ChainCheck, Reception, Rules, Tip, prefer, validate_facts,
+    BlockFacts, ChainCheck, QuorumRule, Reception, Rules, Tip, check_powit_quorum, prefer,
+    validate_facts,
 };
 use std::cmp::Ordering;
 
@@ -41,6 +43,40 @@ type ChainList = (
 
 /// Steps searched at most by the chain generators of the stand-in and real modes.
 const CHAIN_CAP: u64 = 600;
+
+/// What a drawn slot's checks found up to its entropy (`Sim::prepare`); under start rule (r)
+/// a candidate whose step comes later than its draw keeps it until its own found time.
+#[derive(Debug, Clone)]
+pub(crate) struct Prep {
+    g: u32,
+    m: u32,
+    k: u32,
+    step: u64,
+    node: Node,
+    displaced_at: Micros,
+    e_ready: Micros,
+    t0: u64,
+    found: Micros,
+    entropy_flags: Option<Vec<bool>>,
+    entropy_quorum: u32,
+}
+
+/// When a miner's entropy is issued and when the miner holds it (SPEC §3.4).
+#[derive(Debug, Clone)]
+struct EntropyTiming {
+    /// When the miner holds the entropy.
+    ready: Micros,
+    /// Whether an absent member held it up (all-online-members rule).
+    stalled: bool,
+    /// The issue time the KWC attests, on the signing member's clock, seconds: when the last
+    /// required signature (or, under a threshold, the t-th) was made, or a record offline
+    /// completed the required set.
+    issued_s: f64,
+    /// Under a threshold: which of the round's members' signatures it used.
+    signers: Option<Vec<bool>>,
+    /// Signatures it needed.
+    quorum: u32,
+}
 
 /// How a round draws its candidates.
 #[derive(Debug, Clone)]
@@ -89,6 +125,7 @@ impl Sim<'_> {
             first_recorded: false,
             eligible: self.counts.after_wait,
             kwc_members: Vec::new(),
+            issued: None,
         });
         let generator = match self.spec.crypto {
             CryptoMode::Fast => match self.spec.sampler {
@@ -499,10 +536,59 @@ impl Sim<'_> {
 
     /// Turns a drawn (slot, step) into a candidate if the slot really mines this round, and
     /// schedules its decision. Returns the candidate.
+    ///
+    /// Under start rule (r) a miner's chain starts at its own attested entropy issue time,
+    /// which can be later than the round's start, so its step can be found later than the
+    /// draw order suggests. Its remaining checks then wait for its own found time
+    /// (`Ev::Found`), as they would for a draw at that time under rule (a).
     pub(crate) fn materialise(&mut self, now: Micros, g: u32, m: u32, step: u64) -> Option<u32> {
-        let (parent, height, t0, target) = {
+        let prep = self.prepare(now, g, m, step)?;
+        if self.spec.start_rule == ConfigStartRule::R {
+            let slack = self.max_skew + self.p.signing_tolerance + 1.0;
+            let at = micros(((prep.t0 + step) as f64 - slack).max(0.0));
+            if at > now {
+                self.res.deferred += 1;
+                let d = match self.deferred_free.pop() {
+                    Some(d) => {
+                        self.deferred[d as usize] = Some(prep);
+                        d
+                    }
+                    None => {
+                        self.deferred.push(Some(prep));
+                        (self.deferred.len() - 1) as u32
+                    }
+                };
+                self.q.push(at, Ev::Found { d });
+                return None;
+            }
+        }
+        self.complete(now, prep, false)
+    }
+
+    /// Start rule (r): a deferred candidate reaches its own found time.
+    pub(crate) fn on_found(&mut self, now: Micros, d: u32) {
+        let Some(prep) = self.deferred[d as usize].take() else {
+            return;
+        };
+        self.deferred_free.push(d);
+        let g = prep.g;
+        if self.groups[g as usize].closed {
+            // Blocks two heights on are everywhere: this round is over.
+            self.drop(6);
+            return;
+        }
+        let beyond = self.groups[g as usize].horizon_at != INF;
+        if let Some(c) = self.complete(now, prep, true) {
+            self.candidates[c as usize].beyond_horizon = beyond;
+        }
+    }
+
+    /// The checks of a drawn slot up to its entropy: whether it mines this round, on which
+    /// block, and when its chain starts and it finds its step.
+    fn prepare(&mut self, now: Micros, g: u32, m: u32, step: u64) -> Option<Prep> {
+        let (parent, height, t0_round) = {
             let grp = &self.groups[g as usize];
-            (grp.parent, grp.height, grp.t0, grp.target)
+            (grp.parent, grp.height, grp.t0)
         };
         let miner = self.miners[m as usize].clone();
         if !matches!(miner.phase, Phase::Mining | Phase::Waiting) || miner.idle || miner.kwc == NONE
@@ -568,15 +654,93 @@ impl Sim<'_> {
             start = start.max(back);
         }
         let k = miner.kwc;
-        let Some((e_ready, stalled)) = self.entropy_ready(&node, m, k, start, parent, g) else {
+        let Some(timing) = self.entropy_ready(&node, m, k, start, parent, g) else {
             self.res.quorum_failures += 1;
             self.drop(4);
             return None;
         };
-        if stalled {
+        if timing.stalled {
             self.res.stalled_candidates += 1;
         }
-        let found = (micros((t0 + step) as f64)).max(e_ready);
+        let t0 = if self.spec.start_rule == ConfigStartRule::R {
+            // Rule (r): steps count from the attested issue time, rounded up to a whole second.
+            let issued = timing.issued_s.max(0.0).ceil() as u64;
+            let t0 = chain_start(
+                self.blocks[parent as usize].timestamp,
+                StartRule::R { issued },
+            );
+            if t0 > t0_round {
+                self.res.late_starts += 1;
+                self.res.late_start_s_sum += (t0 - t0_round) as f64;
+            }
+            t0
+        } else {
+            t0_round
+        };
+        let found = (micros((t0 + step) as f64)).max(timing.ready);
+        Some(Prep {
+            g,
+            m,
+            k,
+            step,
+            node,
+            displaced_at,
+            e_ready: timing.ready,
+            t0,
+            found,
+            entropy_flags: timing.signers,
+            entropy_quorum: timing.quorum,
+        })
+    }
+
+    /// The checks of a drawn slot from its found time on, and its candidate. `deferred`: the
+    /// checks run at the candidate's own found time (start rule (r)), so the miner's state and
+    /// the blocks at the parent's height are read again.
+    fn complete(&mut self, now: Micros, prep: Prep, deferred: bool) -> Option<u32> {
+        let Prep {
+            g,
+            m,
+            k,
+            step,
+            node,
+            mut displaced_at,
+            e_ready,
+            t0,
+            found,
+            entropy_flags,
+            entropy_quorum,
+        } = prep;
+        let (parent, height, target) = {
+            let grp = &self.groups[g as usize];
+            (grp.parent, grp.height, grp.target)
+        };
+        if deferred {
+            let miner = &self.miners[m as usize];
+            if !matches!(miner.phase, Phase::Mining | Phase::Waiting)
+                || miner.idle
+                || miner.kwc != k
+            {
+                self.drop(0);
+                return None;
+            }
+            let hh = &self.hh[miner.household as usize];
+            if !hh.online() && (!miner.ghost || hh.back_at(now) == u64::MAX) {
+                self.drop(3);
+                return None;
+            }
+            // A better block at the parent's height broadcast since the draw ends the round
+            // for it too, if it arrived before the step was found.
+            let (a_parent, _) = self.accept(&node, parent);
+            for s in self.blocks_at(height - 1) {
+                if s == parent {
+                    continue;
+                }
+                let (a_s, late_s) = self.accept(&node, s);
+                if a_s != INF && !late_s && self.prefer_block(s, a_s, parent, a_parent) {
+                    displaced_at = displaced_at.min(a_s);
+                }
+            }
+        }
         if displaced_at <= found {
             if self.spec.equivocation == EquivocationScope::SameHeight {
                 self.res.sat_out += 1;
@@ -596,13 +760,16 @@ impl Sim<'_> {
             }
         }
         let entropy_members = self.round_members(g, k);
-        let entropy_flags: Vec<bool> = entropy_members
-            .iter()
-            .map(|w| {
-                let wit = &self.witnesses[*w as usize];
-                wit.recorded && !wit.removed()
-            })
-            .collect();
+        let entropy_flags: Vec<bool> = match entropy_flags {
+            Some(flags) => flags,
+            None => entropy_members
+                .iter()
+                .map(|w| {
+                    let wit = &self.witnesses[*w as usize];
+                    wit.recorded && !wit.removed()
+                })
+                .collect(),
+        };
         let Some((broadcast, signers)) = self.powit_time(&node, m, k, t0, step, e_ready, g) else {
             self.res.quorum_failures += 1;
             self.drop(7);
@@ -624,12 +791,12 @@ impl Sim<'_> {
             None => self.standin_entropy(g, m),
         };
         let hash = block_hash(&header, &entropy, step);
-        let c = self.candidates.len() as u32;
-        self.candidates.push(Candidate {
+        let candidate = Candidate {
             miner: m,
             group: g,
             step,
-            timestamp: t0 + step,
+            t0,
+            timestamp,
             broadcast,
             header,
             entropy,
@@ -640,9 +807,38 @@ impl Sim<'_> {
             signers,
             members: entropy_members,
             entropy_signers: entropy_flags,
-        });
-        self.q.push(broadcast.max(now), Ev::Decide { c });
+            entropy_quorum,
+            uses: 0,
+        };
+        let c = self.new_candidate(candidate);
+        let uses = self.candidates[c as usize].uses;
+        self.q.push(broadcast.max(now), Ev::Decide { c, uses });
         Some(c)
+    }
+
+    /// Stores a new candidate, in a slot that is done if one is free.
+    fn new_candidate(&mut self, mut candidate: Candidate) -> u32 {
+        match self.free_candidates.pop() {
+            Some(c) => {
+                candidate.uses = self.candidates[c as usize].uses.wrapping_add(1);
+                self.candidates[c as usize] = candidate;
+                c
+            }
+            None => {
+                self.candidates.push(candidate);
+                (self.candidates.len() - 1) as u32
+            }
+        }
+    }
+
+    /// Marks candidate `c` done and frees its slot (its member lists go with it).
+    fn retire(&mut self, c: u32) {
+        let cand = &mut self.candidates[c as usize];
+        cand.done = true;
+        cand.members = Vec::new();
+        cand.signers = Vec::new();
+        cand.entropy_signers = Vec::new();
+        self.free_candidates.push(c);
     }
 
     /// One-way direct delay between two households, keyed by (round, slot, member, leg).
@@ -655,10 +851,18 @@ impl Sim<'_> {
             .direct_delay(a.region, a.access, b.region, b.access, u[0], 1.0 - u[1])
     }
 
-    /// When the miner holds its entropy (SPEC §3.4): every recorded-online member must have the
-    /// parent and sign; a member that disappeared without announcing it holds the entropy until
-    /// it returns or One Chance records it offline. `None` when fewer recorded-online members
-    /// than the quorum remain.
+    /// When the miner's entropy is issued and when the miner holds it (SPEC §3.4). `None`
+    /// when the KWC cannot issue it.
+    ///
+    /// All online members (the protocol rule): every recorded-online member must have the
+    /// parent and sign; a member that disappeared without announcing it holds the entropy
+    /// until it returns or One Chance records it offline. `None` when fewer recorded-online
+    /// members than the quorum remain.
+    ///
+    /// Threshold (the M3a.1 experiment E3): the seated members reachable when the miner asks
+    /// sign once they hold the parent, and any t of them give the same group signature, so
+    /// absent members are not waited for; one that returns mid-round signs from the next
+    /// round. `None` when fewer than t can sign.
     fn entropy_ready(
         &mut self,
         node: &Node,
@@ -667,8 +871,51 @@ impl Sim<'_> {
         start: Micros,
         parent: u32,
         g: u32,
-    ) -> Option<(Micros, bool)> {
+    ) -> Option<EntropyTiming> {
         let members = self.round_members(g, k);
+        if let Some(rule) = self.threshold_rule() {
+            let seated = members
+                .iter()
+                .filter(|w| !self.witnesses[**w as usize].removed())
+                .count();
+            let t = entropy_threshold(seated, rule).unwrap_or(seated);
+            let mut signed: Vec<(Micros, f64, usize)> = Vec::with_capacity(members.len());
+            for (i, w) in members.iter().enumerate() {
+                if self.witnesses[*w as usize].removed() || !self.witness_reachable(*w) {
+                    continue;
+                }
+                let h = self.witnesses[*w as usize].household;
+                let member = self.node_of(h);
+                let out = self.direct(node, &member, g, m, 2 * i as u64);
+                let back = self.direct(&member, node, g, m, 2 * i as u64 + 1);
+                let (a_p, _) = self.accept(&member, parent);
+                if a_p == INF {
+                    continue;
+                }
+                let at = (start + micros(out)).max(a_p);
+                signed.push((at + micros(back), seconds(at) + member.skew, i));
+            }
+            if t == 0 || signed.len() < t {
+                return None;
+            }
+            // The miner holds the entropy once t signatures have arrived; the KWC attests the
+            // time the t-th was made.
+            signed.sort_by(|a, b| a.0.cmp(&b.0).then(a.2.cmp(&b.2)));
+            let mut flags = vec![false; members.len()];
+            for s in signed.iter().take(t) {
+                flags[s.2] = true;
+            }
+            let ready = signed[t - 1].0.max(start);
+            let mut clocks: Vec<f64> = signed.iter().map(|s| s.1).collect();
+            clocks.sort_by(f64::total_cmp);
+            return Some(EntropyTiming {
+                ready,
+                stalled: false,
+                issued_s: clocks[t - 1],
+                signers: Some(flags),
+                quorum: t as u32,
+            });
+        }
         let recorded: Vec<u32> = members
             .iter()
             .copied()
@@ -682,30 +929,62 @@ impl Sim<'_> {
         }
         let mut ready = start;
         let mut stalled = false;
+        let mut issued_s = seconds(start);
         for (i, w) in recorded.iter().enumerate() {
             let h = self.witnesses[*w as usize].household;
             let member = self.node_of(h);
             let out = self.direct(node, &member, g, m, 2 * i as u64);
             let back = self.direct(&member, node, g, m, 2 * i as u64 + 1);
-            let signed = if self.witness_reachable(*w) {
+            let (signed, clock) = if self.witness_reachable(*w) {
                 let (a_p, _) = self.accept(&member, parent);
                 if a_p == INF {
                     continue;
                 }
-                (start + micros(out)).max(a_p)
+                let at = (start + micros(out)).max(a_p);
+                (at, seconds(at) + member.skew)
             } else {
                 stalled = true;
                 let wit = &self.witnesses[*w as usize];
                 let back_at = self.witness_back_at(*w, start);
                 let record = if wit.ghost { wit.check_at } else { INF };
-                back_at.min(record)
+                if record < back_at {
+                    // Recorded offline: a KWC decision completes the required set.
+                    (record, seconds(record))
+                } else {
+                    (back_at, seconds(back_at) + member.skew)
+                }
             };
             if signed == INF {
                 return None;
             }
             ready = ready.max(signed + micros(back));
+            issued_s = issued_s.max(clock);
         }
-        Some((ready, stalled))
+        Some(EntropyTiming {
+            ready,
+            stalled,
+            issued_s,
+            signers: None,
+            quorum: self.p.quorum_unregistered as u32,
+        })
+    }
+
+    /// The threshold entropy rule of the run, if it uses one.
+    pub(crate) fn threshold_rule(&self) -> Option<EntropySigners> {
+        match self.spec.entropy_signers {
+            EntropySigners::AllOnlineMembers => None,
+            rule => Some(rule),
+        }
+    }
+
+    /// PoWit signatures a block needs: the unregistered quorum (27 of 40), or just over half
+    /// of the seats under the majority threshold (21 of 40; split quorum: just over half for
+    /// witness signatures, two-thirds for decisions).
+    pub(crate) fn powit_quorum(&self) -> usize {
+        match self.spec.entropy_signers {
+            EntropySigners::ThresholdMajority => self.p.unregistered.seats() / 2 + 1,
+            _ => self.p.quorum_unregistered,
+        }
     }
 
     /// When the miner holds a PoWit quorum (SPEC §3.6): each online member signs once its own
@@ -744,7 +1023,7 @@ impl Sim<'_> {
             }
             arrivals.push((sign + micros(back), *w));
         }
-        let quorum = self.p.quorum_unregistered;
+        let quorum = self.powit_quorum();
         if arrivals.len() < quorum {
             return None;
         }
@@ -794,8 +1073,8 @@ impl Sim<'_> {
         }
     }
 
-    pub(crate) fn on_decide(&mut self, now: Micros, c: u32) {
-        if self.candidates[c as usize].done {
+    pub(crate) fn on_decide(&mut self, now: Micros, c: u32, uses: u32) {
+        if self.candidates[c as usize].uses != uses || self.candidates[c as usize].done {
             return;
         }
         let cand = self.candidates[c as usize].clone();
@@ -804,9 +1083,9 @@ impl Sim<'_> {
         if !self.hh[h as usize].online() {
             let back = self.hh[h as usize].back_at(now);
             if self.miners[m as usize].ghost && back != u64::MAX {
-                self.q.push(back, Ev::Decide { c });
+                self.q.push(back, Ev::Decide { c, uses });
             } else {
-                self.candidates[c as usize].done = true;
+                self.retire(c);
             }
             return;
         }
@@ -817,7 +1096,7 @@ impl Sim<'_> {
             if a_x != INF && !late && a_x <= now && self.beats(x, &cand, height) {
                 self.res.abandoned += 1;
                 self.drop(8);
-                self.candidates[c as usize].done = true;
+                self.retire(c);
                 return;
             }
         }
@@ -861,7 +1140,11 @@ impl Sim<'_> {
         let rules = Rules {
             clock_tolerance_s: self.spec.delta,
             powit_deadline_s: None,
-            start_rule: StartRule::A,
+            start_rule: if self.spec.start_rule == ConfigStartRule::R {
+                StartRule::R { issued: cand.t0 }
+            } else {
+                StartRule::A
+            },
             max_steps: CHAIN_CAP.max(1_000_000),
         };
         let check = if self.spec.crypto == CryptoMode::Fast {
@@ -873,15 +1156,22 @@ impl Sim<'_> {
             block_at: (cand.timestamp as f64).max(now as f64 / SECOND as f64),
             powit_at: now as f64 / SECOND as f64,
         };
-        let verdict = validate_facts(
-            &facts,
-            &tip,
-            &self.p.unregistered,
-            &reception,
-            &rules,
-            &|_| true,
-            check,
-        );
+        // The entropy needed the quorum of online members or, under a threshold, t of the
+        // seated members; the PoWit needs its own quorum.
+        let quorum = if cand.entropy_quorum as usize == self.p.quorum_unregistered {
+            self.p.unregistered
+        } else {
+            QuorumRule::Pool {
+                seats,
+                quorum: cand.entropy_quorum as usize,
+            }
+        };
+        let powit_rule = QuorumRule::Pool {
+            seats,
+            quorum: self.powit_quorum(),
+        };
+        let verdict = validate_facts(&facts, &tip, &quorum, &reception, &rules, &|_| true, check)
+            .and_then(|hash| check_powit_quorum(&powit_rule, &bits).map(|()| hash));
         if verdict.is_err() && seats == on.len() {
             self.res.self_invalid += 1;
         }
@@ -889,6 +1179,7 @@ impl Sim<'_> {
             crate::real::validate_real(self, c, &tip);
         }
         self.add_block(now, c, withheld);
+        self.retire(c);
         // An old-design restarter draws its next win after this one.
         if let Some(Strategy::Restart {
             old_design: true,
@@ -932,12 +1223,16 @@ impl Sim<'_> {
         }
         if release < self.candidates[c as usize].release_at {
             self.candidates[c as usize].release_at = release;
-            self.q.push(release, Ev::Release { c });
+            let uses = self.candidates[c as usize].uses;
+            self.q.push(release, Ev::Release { c, uses });
         }
     }
 
-    pub(crate) fn on_release(&mut self, now: Micros, c: u32) {
-        if self.candidates[c as usize].release_at != now || !self.withheld.contains(&c) {
+    pub(crate) fn on_release(&mut self, now: Micros, c: u32, uses: u32) {
+        if self.candidates[c as usize].uses != uses
+            || self.candidates[c as usize].release_at != now
+            || !self.withheld.contains(&c)
+        {
             return;
         }
         self.withheld.retain(|x| *x != c);
@@ -995,5 +1290,166 @@ impl Sim<'_> {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::job::JobSpec;
+    use gb_config::Config;
+
+    fn small(cfg: &Config) -> JobSpec {
+        let mut spec = JobSpec::from_config(cfg, "round-test", "T", 7).idealised();
+        spec.miners = 4;
+        spec.registered_ids = 400;
+        spec
+    }
+
+    /// The first member of miner 0's KWC in round 0 disappears at time 0 without announcing
+    /// it: under the all-online-members rule its entropy waits for the One Chance record.
+    fn stalled_round(rule: ConfigStartRule) -> (Prep, Micros) {
+        let cfg = Config::default();
+        let mut spec = small(&cfg);
+        spec.start_rule = rule;
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let k = sim.miners[0].kwc;
+        let w = sim.round_members(0, k)[0];
+        let h = sim.witnesses[w as usize].household;
+        sim.set_cause(0, h, bit::CRASH, true, false, u64::MAX);
+        let record = sim.witnesses[w as usize].check_at;
+        (sim.prepare(0, 0, 0, 5).unwrap(), record)
+    }
+
+    #[test]
+    fn under_rule_r_a_late_entropy_starts_the_chain_late_and_catches_up_nothing() {
+        // Rule (a): the chain starts one second after genesis whenever the entropy comes, so
+        // the miner computes the missed steps at once (catch-up) and its timestamp is early.
+        let (a, record) = stalled_round(ConfigStartRule::A);
+        assert_eq!(a.t0, 1);
+        assert_eq!(a.e_ready, record);
+        assert_eq!(a.found, record);
+        assert!(micros((a.t0 + 5) as f64) < a.found);
+        // Rule (r): steps count from the attested issue time (the record, here), so the step
+        // is found five seconds after it and the timestamp says so.
+        let (r, record) = stalled_round(ConfigStartRule::R);
+        assert_eq!(r.t0, (record as f64 / SECOND as f64).ceil() as u64);
+        assert_eq!(r.found, micros((r.t0 + 5) as f64));
+        assert!(r.found >= r.e_ready);
+    }
+
+    #[test]
+    fn rule_r_defers_a_late_candidate_to_its_own_found_time() {
+        let cfg = Config::default();
+        let mut spec = small(&cfg);
+        spec.start_rule = ConfigStartRule::R;
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let k = sim.miners[0].kwc;
+        let w = sim.round_members(0, k)[0];
+        let h = sim.witnesses[w as usize].household;
+        sim.set_cause(0, h, bit::CRASH, true, false, u64::MAX);
+        assert_eq!(sim.materialise(0, 0, 0, 5), None);
+        assert_eq!(sim.res.deferred, 1);
+        let mut found = None;
+        for _ in 0..10_000 {
+            match sim.q.pop() {
+                Some((at, Ev::Found { d })) => {
+                    found = Some((at, d));
+                    break;
+                }
+                Some(_) => {}
+                None => break,
+            }
+        }
+        let (at, d) = found.expect("no deferred candidate");
+        let prep = sim.deferred[d as usize].clone().unwrap();
+        // It waits until shortly before its own found time.
+        assert!(at < prep.found && prep.found - at < 5 * SECOND);
+        let c = sim.complete(prep.found, prep, true).unwrap();
+        let cand = &sim.candidates[c as usize];
+        assert_eq!(cand.timestamp, cand.t0 + 5);
+        assert!(cand.t0 > 1);
+    }
+
+    /// Miner 0's entropy in round 0 with the first `absent` members of its KWC away without
+    /// announcing it, under `rule`; also the members and which ones are away.
+    fn entropy_with_absences(
+        rule: EntropySigners,
+        absent: usize,
+    ) -> (Option<EntropyTiming>, Vec<u32>, Vec<bool>) {
+        let cfg = Config::default();
+        let mut spec = small(&cfg);
+        spec.entropy_signers = rule;
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let k = sim.miners[0].kwc;
+        let members = sim.round_members(0, k);
+        for w in members.iter().take(absent) {
+            let h = sim.witnesses[*w as usize].household;
+            sim.set_cause(0, h, bit::CRASH, true, false, u64::MAX);
+        }
+        let away: Vec<bool> = members.iter().map(|w| !sim.witness_reachable(*w)).collect();
+        let node = sim.node_of(sim.miners[0].household);
+        (sim.entropy_ready(&node, 0, k, 0, 0, 0), members, away)
+    }
+
+    #[test]
+    fn threshold_entropy_waits_for_no_absent_member_and_needs_t_reachable_ones() {
+        // 13 of 40 away: 27 reachable, so the two-thirds threshold issues at once, from
+        // reachable members only.
+        let (timing, members, away) = entropy_with_absences(EntropySigners::ThresholdTwoThirds, 13);
+        assert_eq!(members.len(), 40);
+        assert_eq!(away.iter().filter(|a| **a).count(), 13);
+        let t = timing.unwrap();
+        assert!(!t.stalled);
+        assert_eq!((t.quorum, t.ready), (27, 0));
+        let flags = t.signers.unwrap();
+        assert_eq!(flags.iter().filter(|f| **f).count(), 27);
+        assert!(flags.iter().zip(&away).all(|(f, a)| !(*f && *a)));
+        // The same absences stall the entropy under the all-online-members rule.
+        let (all, _, _) = entropy_with_absences(EntropySigners::AllOnlineMembers, 13);
+        assert!(all.unwrap().stalled);
+        // One more away: 26 reachable, below t.
+        let (none, _, _) = entropy_with_absences(EntropySigners::ThresholdTwoThirds, 14);
+        assert!(none.is_none());
+    }
+
+    #[test]
+    fn threshold_entropy_fails_below_t_and_a_returning_member_signs_again() {
+        let cfg = Config::default();
+        let mut spec = small(&cfg);
+        spec.entropy_signers = EntropySigners::ThresholdMajority;
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let k = sim.miners[0].kwc;
+        let members = sim.round_members(0, k);
+        let node = sim.node_of(sim.miners[0].household);
+        let mut down = Vec::new();
+        for w in &members {
+            if members
+                .iter()
+                .filter(|x| sim.witness_reachable(**x))
+                .count()
+                < 21
+            {
+                break;
+            }
+            let h = sim.witnesses[*w as usize].household;
+            if sim.hh[h as usize].online() {
+                sim.set_cause(0, h, bit::CRASH, true, false, u64::MAX);
+                down.push(h);
+            }
+        }
+        // Fewer than 21 of 40 reachable: no entropy this round.
+        assert!(sim.entropy_ready(&node, 0, k, 0, 0, 0).is_none());
+        assert_eq!(sim.powit_quorum(), 21);
+        // The last member back: the next request has 21 again.
+        let h = *down.last().unwrap();
+        sim.set_cause(SECOND, h, bit::CRASH, false, false, SECOND);
+        sim.open_group(0, SECOND);
+        let t = sim.entropy_ready(&node, 0, k, SECOND, 0, 1).unwrap();
+        assert_eq!(t.quorum, 21);
     }
 }

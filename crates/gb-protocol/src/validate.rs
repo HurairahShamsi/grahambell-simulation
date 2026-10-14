@@ -669,6 +669,41 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn under_rule_r_the_same_header_gives_the_same_entropy_for_any_t0() {
+        // Architect, 2026-10-14: the entropy signs the header only and t0 is attested
+        // separately, so one header keeps its entropy whatever t0 is attested, and each t0
+        // gives its own chain and timestamp.
+        let f = fixture(4, pool(4, 3));
+        let e = f.block.entropy();
+        let mut firsts = Vec::new();
+        for issued in [
+            f.tip.timestamp + 1,
+            f.tip.timestamp + 37,
+            f.tip.timestamp + 600,
+        ] {
+            let mut b = f.block.clone();
+            let inputs = ChainInputs::new(&b.header, e, issued);
+            let (n, _) = inputs.winning_step(&b.header.target, 10_000).unwrap();
+            b.winning_step = n;
+            b.timestamp = issued + n;
+            assert_eq!(b.entropy(), e);
+            let pmsg = powit_message(&b.hash());
+            let psigs: Vec<SignatureBytes> = f.members.iter().map(|k| k.sign(&pmsg)).collect();
+            b.powit_aggregate = aggregate(&psigs).unwrap();
+            let mut r = rules(Some(5.0));
+            r.start_rule = StartRule::R { issued };
+            assert_eq!(run(&f, &b, on_time(&b), r), Ok(b.hash()));
+            // Attested at another time, the same block is invalid.
+            r.start_rule = StartRule::R {
+                issued: issued + 1_000,
+            };
+            assert!(run(&f, &b, on_time(&b), r).is_err());
+            firsts.push(inputs.first());
+        }
+        assert!(firsts[0] != firsts[1] && firsts[1] != firsts[2]);
+    }
+
+    #[test]
     fn each_rule_rejects_its_violation() {
         let f = fixture(4, pool(4, 3));
         let r = rules(Some(5.0));

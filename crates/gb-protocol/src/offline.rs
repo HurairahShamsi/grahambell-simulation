@@ -101,12 +101,82 @@ pub fn penalty_for(
         })
 }
 
+/// A witness member's offline points (the M3a.1 E4 ladder; architect, 2026-10-14). The member
+/// earns points for offline periods of at least `n`, whatever the cause: the k-th award since
+/// its points last reset adds `steps[k]` (the last step repeats), and the total stops at the
+/// cap, where the outcome applies (seat loss or blacklist). Points reset to zero once
+/// `reset_s` of block time pass after the most recent award.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct OfflinePoints {
+    /// Points held after the last award.
+    pub total: u32,
+    /// Awards since the points last reset.
+    pub awards: u32,
+    /// Block time of the most recent award, in seconds (`None` before the first).
+    pub last_award: Option<u64>,
+}
+
+impl OfflinePoints {
+    /// Points held at block time `now`: zero once `reset_s` have passed since the last award.
+    pub fn at(&self, now: u64, reset_s: u64) -> u32 {
+        match self.last_award {
+            Some(last) if now.saturating_sub(last) < reset_s => self.total,
+            _ => 0,
+        }
+    }
+
+    /// Records an award at block time `now` and returns the new total (at most `cap`).
+    pub fn award(&mut self, now: u64, steps: &[u32], cap: u32, reset_s: u64) -> u32 {
+        if self.at(now, reset_s) == 0 {
+            self.total = 0;
+            self.awards = 0;
+        }
+        let step = steps
+            .get(self.awards as usize)
+            .or(steps.last())
+            .copied()
+            .unwrap_or(1);
+        self.total = self.total.saturating_add(step).min(cap);
+        self.awards += 1;
+        self.last_award = Some(now);
+        self.total
+    }
+
+    /// Clears the points, after the outcome at the cap has been applied.
+    pub fn clear(&mut self) {
+        *self = OfflinePoints::default();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     const LADDER: [u64; 2] = [86_400, 2_592_000];
     const YEAR: u64 = 31_536_000;
+
+    #[test]
+    fn offline_points_escalate_stop_at_the_cap_and_reset_after_a_clean_year() {
+        let steps = [1, 1, 2, 3, 4, 5];
+        let mut p = OfflinePoints::default();
+        let totals: Vec<u32> = (0..8u64)
+            .map(|k| p.award(k * 86_400, &steps, 20, YEAR))
+            .collect();
+        // 1, 1, 2, 3, 4, 5, then the last step repeats; the cap holds at 20.
+        assert_eq!(totals, vec![1, 2, 4, 7, 11, 16, 20, 20]);
+        assert_eq!(p.at(7 * 86_400 + YEAR - 1, YEAR), 20);
+        // A year after the most recent award the points are gone, and the steps start again.
+        assert_eq!(p.at(7 * 86_400 + YEAR, YEAR), 0);
+        assert_eq!(p.award(7 * 86_400 + YEAR, &steps, 20, YEAR), 1);
+        assert_eq!(p.awards, 1);
+        // A point within the year keeps the count going.
+        let mut q = OfflinePoints::default();
+        q.award(0, &steps, 20, YEAR);
+        q.award(YEAR - 1, &steps, 20, YEAR);
+        assert_eq!(q.award(2 * YEAR - 2, &steps, 20, YEAR), 4);
+        q.clear();
+        assert_eq!(q, OfflinePoints::default());
+    }
 
     #[test]
     fn an_unreachable_member_is_recorded_offline_and_penalised_only_under_the_strict_rule() {

@@ -10,7 +10,7 @@ use crate::rng::{Keyed, Purpose};
 use crate::samplers::any_success;
 use crate::stats::{binned, chi_square_p, chi_square_two_sample, geometric_pit, ks_uniform};
 use gb_analytic::validation::Check;
-use gb_config::protocol::{CountBasedCorrection, DifficultyVariant};
+use gb_config::protocol::{CountBasedCorrection, DifficultyVariant, StartRule};
 use gb_config::sim::CryptoMode;
 use gb_protocol::issuance::variant_b_target;
 
@@ -87,6 +87,22 @@ pub(crate) fn v0_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
     audit.one_chance_wait_rounds = 1;
     audit.audit = true;
     jobs.push(audit);
+    // M3a.1: start rule (r) with real latency, where chain starts differ between miners,
+    // under both samplers.
+    for (id, sampler) in [
+        ("V0-gap-r-1000", Sampler::Gap),
+        ("V0-permin-r-1000", Sampler::PerMiner),
+    ] {
+        let mut j = ctx.job(id, V0, 0);
+        j.miners = m;
+        j.registered_ids = ctx.pick(2_900, 1_300);
+        j.outages = false;
+        j.instant_admission = true;
+        j.days = days;
+        j.start_rule = StartRule::R;
+        j.sampler = sampler;
+        jobs.push(j);
+    }
     jobs
 }
 
@@ -172,6 +188,56 @@ pub(crate) fn v0_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             real.validated as f64,
             0.0,
             real.validated,
+        ));
+    }
+    // Start rule (r) with real latency: the samplers agree on what the chain does.
+    if let (Some(g), Some(p)) = (
+        find(results, "V0-gap-r-1000"),
+        find(results, "V0-permin-r-1000"),
+    ) {
+        let interval = |r: &JobResult| {
+            let k = r.interval_count.max(1) as f64;
+            let mean = r.interval_sum_s / k;
+            let var = (r.interval_sq_sum_s / k - mean * mean).max(0.0);
+            (mean, (var / k).sqrt())
+        };
+        let ((gm, gs), (pm, ps)) = (interval(g), interval(p));
+        out.checks.push(mc_check(
+            V0,
+            "V0-r-sampler-interval",
+            "start rule (r), real latency: mean interval, gap sampler vs per-miner sampler",
+            pm,
+            gm,
+            (gs * gs + ps * ps).sqrt(),
+            g.interval_count,
+            ctx.k,
+            0.0,
+        ));
+        let orphan = |r: &JobResult| {
+            let k = r.canonical.max(1) as f64;
+            let rate = r.orphans as f64 / k;
+            (rate, (rate * (1.0 - rate) / k).sqrt())
+        };
+        let ((go, gse), (po, pse)) = (orphan(g), orphan(p));
+        out.checks.push(mc_check(
+            V0,
+            "V0-r-sampler-orphans",
+            "start rule (r), real latency: orphan rate, gap sampler vs per-miner sampler",
+            po,
+            go,
+            (gse * gse + pse * pse).sqrt(),
+            g.canonical,
+            ctx.k,
+            0.0,
+        ));
+        out.checks.push(Check::at_least(
+            V0,
+            "V0-r-late-starts",
+            "start rule (r), real latency: some chains start after the round's rule (a) start",
+            1.0,
+            g.late_starts.min(p.late_starts) as f64,
+            0.0,
+            g.late_starts.min(p.late_starts),
         ));
     }
     // Earliest winning step of each round against its exact law, per mode.
@@ -634,7 +700,7 @@ pub(crate) fn v2_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
 
 /// Restarter IDs per slot over honest IDs per slot; the standard error treats both counts as
 /// Poisson: relative SE `sqrt(1/n_r + 1/n_h)`.
-fn per_slot_advantage(res: &JobResult, restarter_share: f64, slots: u32) -> (f64, f64) {
+pub(crate) fn per_slot_advantage(res: &JobResult, restarter_share: f64, slots: u32) -> (f64, f64) {
     let r_slots = (restarter_share * f64::from(slots)).round().max(1.0);
     let h_slots = f64::from(slots) - r_slots;
     let (n_r, n_h) = (
@@ -873,7 +939,7 @@ pub(crate) fn v3_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
 /// Hop gain: the hopper's IDs per mining slot-second in its active windows over the fair
 /// per-slot rate of an exact count with the same slots, `q_B / slots`, with
 /// `q_B = 1 − (1 − 1/(30 n))^n`.
-fn hop_gain(res: &JobResult, slots: f64) -> (f64, f64) {
+pub(crate) fn hop_gain(res: &JobResult, slots: f64) -> (f64, f64) {
     let rate = div(res.hop_ids as f64, res.hop_slot_s);
     let fair = any_success(1.0 / (slots * 30.0), slots as u64) / slots;
     let gain = rate / fair;

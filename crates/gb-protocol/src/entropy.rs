@@ -17,6 +17,7 @@ use crate::error::ProtocolError;
 use crate::hash::{Hash, tagged};
 use blst::BLST_ERROR;
 use blst::min_pk::{AggregatePublicKey, AggregateSignature, PublicKey, SecretKey, Signature};
+use gb_config::protocol::EntropySigners;
 
 /// Signature ciphersuite (domain separation tag).
 pub const SIG_DST: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
@@ -318,9 +319,33 @@ pub fn is_equivocation(a: &SignedHeader, b: &SignedHeader) -> bool {
         && verify(&hb.candidate_pk, &miner_message(&hb), &b.signature)
 }
 
+/// Signatures a threshold entropy needs from the `seated` members of a KWC (the M3a.1
+/// experiment E3; architect, 2026-10-14): ⌈2n/3⌉ under the two-thirds rule and ⌊n/2⌋ + 1
+/// under the majority comparison. Any t members give the same group signature, so the
+/// entropy does not depend on which ones sign. `None` under the all-online-members rule,
+/// which needs every member recorded online.
+pub fn entropy_threshold(seated: usize, signers: EntropySigners) -> Option<usize> {
+    match signers {
+        EntropySigners::AllOnlineMembers => None,
+        EntropySigners::ThresholdTwoThirds => Some((2 * seated).div_ceil(3)),
+        EntropySigners::ThresholdMajority => Some(seated / 2 + 1),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn threshold_entropy_needs_two_thirds_or_just_over_half_of_the_seated_members() {
+        use EntropySigners::{AllOnlineMembers, ThresholdMajority, ThresholdTwoThirds};
+        assert_eq!(entropy_threshold(40, ThresholdTwoThirds), Some(27));
+        assert_eq!(entropy_threshold(40, ThresholdMajority), Some(21));
+        assert_eq!(entropy_threshold(30, ThresholdTwoThirds), Some(20));
+        assert_eq!(entropy_threshold(31, ThresholdTwoThirds), Some(21));
+        assert_eq!(entropy_threshold(31, ThresholdMajority), Some(16));
+        assert_eq!(entropy_threshold(40, AllOnlineMembers), None);
+    }
     use crate::encoding::tests::sample;
 
     fn keys(n: u8) -> Vec<Keypair> {

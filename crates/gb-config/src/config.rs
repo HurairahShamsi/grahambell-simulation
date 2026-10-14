@@ -177,6 +177,37 @@ impl Config {
             self.issuance.pow_id_target_interval_s.value > 0.0,
             "issuance.pow_id_target_interval_s must be positive",
         );
+        let pen = &self.penalties;
+        require(
+            problems,
+            pen.offline_points_after_s.value.is_none_or(|n| n > 0.0),
+            "penalties.offline_points_after_s must be positive",
+        );
+        require(
+            problems,
+            !pen.offline_points_steps.value.is_empty()
+                && pen.offline_points_steps.value.iter().all(|s| *s > 0),
+            "penalties.offline_points_steps must be positive and not empty",
+        );
+        require(
+            problems,
+            pen.offline_points_cap.value > 0,
+            "penalties.offline_points_cap must be positive",
+        );
+        require(
+            problems,
+            pen.offline_points_reset_s.value > 0.0
+                && pen.offline_points_seat_cooldown_s.value >= 0.0,
+            "penalties.offline_points_reset_s must be positive and the seat cooldown not negative",
+        );
+        require(
+            problems,
+            self.admission
+                .failover_after_rounds
+                .value
+                .is_none_or(|r| r > 0),
+            "admission.failover_after_rounds must be at least 1",
+        );
         require(
             problems,
             self.transactions.pow_tx_interval_s.value > 0.0,

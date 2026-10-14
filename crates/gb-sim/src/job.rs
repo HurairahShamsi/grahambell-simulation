@@ -2,7 +2,8 @@
 
 use gb_config::protocol::{
     CountBasedCorrection, DeadlineScope, DifficultyCountRule, DifficultyVariant, EarlyBlockRule,
-    EquivocationScope, StrictOffencePenalty, UnreachableRule, WitnessSigning,
+    EntropySigners, EquivocationScope, OfflinePointsOutcome, StartRule, StrictOffencePenalty,
+    UnreachableRule, WitnessSigning,
 };
 use gb_config::sim::{CryptoMode, LatencySource};
 use gb_protocol::hash::Hash;
@@ -84,6 +85,23 @@ pub struct GroupSpec {
     pub strategy: Strategy,
     /// Exempt from household outages (attackers in V1–V3 are always online, M1 G-7).
     pub always_online: bool,
+}
+
+/// The offline points ladder of one run (M3a.1 E4; `penalties.offline_points_*`).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct OfflinePointsSpec {
+    /// An offline period at least this long earns points, seconds.
+    pub after_s: f64,
+    /// Points added by successive awards since the last reset (the last step repeats).
+    pub steps: Vec<u32>,
+    /// Points at which the outcome applies.
+    pub cap: u32,
+    /// Block time after the most recent award at which points reset, seconds.
+    pub reset_s: f64,
+    /// What happens at the cap.
+    pub outcome: OfflinePointsOutcome,
+    /// After a seat loss, how long before the member may take a seat again, seconds.
+    pub seat_cooldown_s: f64,
 }
 
 /// Settings of one run. Protocol parameters not listed here come from the configuration.
@@ -198,6 +216,20 @@ pub struct JobSpec {
     pub warmup_days: f64,
     /// Trace every this many events (0: no trace), from `sim.trace_sample`.
     pub trace_every: u64,
+    /// Chain start rule: (a), or (r) (the M3a.1 experiment; fast mode only).
+    pub start_rule: StartRule,
+    /// Which KWC members sign the entropy: all online members, or a threshold.
+    pub entropy_signers: EntropySigners,
+    /// Failover after this many rounds below quorum (`None`: off).
+    pub failover_after_rounds: Option<u32>,
+    /// The offline points ladder (`None`: off).
+    pub offline_points: Option<OfflinePointsSpec>,
+    /// Scripted regional blackouts: (region, start day, length in seconds).
+    pub scripted_blackouts: Vec<(usize, f64, f64)>,
+    /// Post-admission wait, rounds, overriding the configuration's.
+    pub post_wait_rounds: Option<u32>,
+    /// Record every regional blackout and provider outage (`JobResult::outages`).
+    pub track_outages: bool,
 }
 
 /// One traced event: when it was processed, what it was, and the entities it names.
@@ -215,6 +247,37 @@ pub struct TraceRow {
 
 /// Rows a run's trace holds at most.
 pub const TRACE_ROWS_MAX: usize = 1_000_000;
+
+/// One regional blackout or provider outage, with what it did to mining (E3).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct OutageRecord {
+    /// 0: regional blackout, 1: internet-provider outage, 2: scripted regional blackout.
+    pub kind: u8,
+    /// Region.
+    pub region: u8,
+    /// Start, simulated seconds.
+    pub start_s: f64,
+    /// Length, seconds.
+    pub duration_s: f64,
+    /// Households it took offline.
+    pub households: u64,
+    /// Admitted miners (mining or waiting) whose household it took offline: lost power or
+    /// network.
+    pub miners_lost_power: u64,
+    /// The most miners, over samples taken every round while it lasted, that were mining
+    /// with their household online but whose KWC could not issue entropy: lost witnessing
+    /// while still powered.
+    pub witnessing_lost_max: u64,
+    /// The same, summed over the samples (miner-rounds).
+    pub witnessing_lost_miner_rounds: u64,
+    /// The most KWCs with miners that could not issue entropy, over the samples.
+    pub kwcs_unable_max: u64,
+    /// Samples taken.
+    pub samples: u64,
+    /// The longest gap between consecutive final-chain blocks that overlaps the outage,
+    /// seconds.
+    pub max_gap_s: f64,
+}
 
 /// Counts and sums a run produces. Everything a table needs is here, so tables never rerun a
 /// simulation. Results round-trip through JSON exactly (checkpoints), apart from the wall
@@ -415,6 +478,49 @@ pub struct JobResult {
     /// Miners whose household announced a shutdown and came back within the grace epoch,
     /// and re-admitted at once.
     pub quick_readmits: u64,
+    /// The longest gap between consecutive final-chain broadcasts after the warm-up, seconds.
+    pub max_gap_s: f64,
+    /// When that gap started, simulated seconds.
+    pub max_gap_start_s: f64,
+    /// Rule (r): candidates whose chain started after the round's rule (a) start.
+    pub late_starts: u64,
+    /// Rule (r): the sum of those delays, seconds.
+    pub late_start_s_sum: f64,
+    /// Rule (r): candidates deferred to their own found time.
+    pub deferred: u64,
+    /// Failover: KWCs found below quorum for the failover number of rounds.
+    pub failover_triggers: u64,
+    /// Failover: miners moved off such KWCs.
+    pub failover_moves: u64,
+    /// Failover: times from the move to mining in the new KWC, seconds (sampled).
+    pub failover_s: Vec<f64>,
+    /// Regional blackouts and provider outages (only with `track_outages`).
+    pub outages: Vec<OutageRecord>,
+    /// Offline points: awards, by region and device.
+    pub point_awards: Vec<Vec<u64>>,
+    /// Offline points: awards by cause (household cause bits in order, then partition cuts).
+    pub point_awards_by_cause: Vec<u64>,
+    /// Offline points: awards recorded later than due, because no KWC could decide.
+    pub point_awards_delayed: u64,
+    /// Offline points: members that reached the cap, by region and device.
+    pub points_capped: Vec<Vec<u64>>,
+    /// Of those, the members whose points all came from scheduled load-shedding.
+    pub points_capped_loadshed_only: Vec<Vec<u64>>,
+    /// Offline points: witness seats lost at the cap, by region and device.
+    pub seats_lost: Vec<Vec<u64>>,
+    /// Offline points: IDs blacklisted at the cap, by region and device.
+    pub ids_blacklisted: Vec<Vec<u64>>,
+    /// C1: final-chain blocks by group and device.
+    pub ids_by_group_device: Vec<Vec<u64>>,
+    /// C1: mining slot-seconds by group and device.
+    pub slot_s_by_group_device: Vec<Vec<f64>>,
+    /// C1: final-chain blocks by group and region.
+    pub ids_by_group_region: Vec<Vec<u64>>,
+    /// C1: mining slot-seconds by group and region.
+    pub slot_s_by_group_region: Vec<Vec<f64>>,
+    /// A6: each newcomer's arrival day and its wait to a first ID, days (`None`: none yet;
+    /// sampled up to 200,000).
+    pub newcomers: Vec<(f64, Option<f64>)>,
     /// Sampled events (only when `trace_every > 0`; not part of the tables).
     #[serde(skip)]
     pub trace: Vec<TraceRow>,
@@ -498,6 +604,27 @@ impl JobSpec {
             scripted_crashes: Vec::new(),
             switches_per_day: 0.0,
             partition_cuts_witnesses: sim.network.partition_cuts_witnesses,
+            start_rule: issuance.start_rule.value,
+            entropy_signers: config.entropy.signers.value,
+            failover_after_rounds: config.admission.failover_after_rounds.value,
+            offline_points: config
+                .penalties
+                .offline_points_after_s
+                .value
+                .map(|after_s| {
+                    let pen = &config.penalties;
+                    OfflinePointsSpec {
+                        after_s,
+                        steps: pen.offline_points_steps.value.clone(),
+                        cap: pen.offline_points_cap.value,
+                        reset_s: pen.offline_points_reset_s.value,
+                        outcome: pen.offline_points_outcome.value,
+                        seat_cooldown_s: pen.offline_points_seat_cooldown_s.value,
+                    }
+                }),
+            scripted_blackouts: Vec::new(),
+            post_wait_rounds: None,
+            track_outages: false,
             warmup_days: 1.0,
             trace_every: if sim.trace_sample > 0.0 {
                 (1.0 / sim.trace_sample).round().max(1.0) as u64

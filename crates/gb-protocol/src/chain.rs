@@ -25,6 +25,15 @@ pub enum StartRule {
         /// Local arrival time of the entropy, in seconds.
         arrival: u64,
     },
+    /// Rule (r), the M3a.1 experiment (architect, 2026-10-14): steps count from the time the
+    /// miner's KWC issued its entropy, as the KWC attests it ([`t0_message`]): the clock time
+    /// at which the t-th required signature was made, rounded up to a whole second, and never
+    /// before `timestamp(previous PoW-ID block) + 1 s`. A miner whose entropy comes late
+    /// starts late; it cannot catch up past steps. The entropy depends on the header only.
+    R {
+        /// Attested entropy issue time, in whole seconds.
+        issued: u64,
+    },
 }
 
 /// The chain's start time `t0` under a start rule.
@@ -32,7 +41,18 @@ pub fn chain_start(previous_block_timestamp: u64, rule: StartRule) -> u64 {
     match rule {
         StartRule::A => previous_block_timestamp + 1,
         StartRule::B { arrival } => arrival,
+        StartRule::R { issued } => issued.max(previous_block_timestamp + 1),
     }
+}
+
+/// Domain tag of start-time attestations (start rule (r)).
+pub const T0_TAG: &[u8] = b"GB/t0";
+
+/// Start rule (r): the message a miner's KWC signs (as a threshold signature) to attest its
+/// chain start `t0` for the round of `header`. It is separate from the entropy, which signs
+/// the header only, so the entropy is the same whatever `t0` is attested.
+pub fn t0_message(header: &Header, t0: u64) -> Hash {
+    tagged(T0_TAG, &[&header.digest(), &t0.to_be_bytes()])
 }
 
 /// Inputs that fix a chain for one round.
@@ -151,6 +171,24 @@ mod tests {
     fn rule_a_starts_one_second_after_the_previous_block_and_rule_b_at_arrival() {
         assert_eq!(chain_start(1_000, StartRule::A), 1_001);
         assert_eq!(chain_start(1_000, StartRule::B { arrival: 1_017 }), 1_017);
+    }
+
+    #[test]
+    fn rule_r_starts_at_the_attested_issue_time_but_never_before_rule_a() {
+        assert_eq!(chain_start(1_000, StartRule::R { issued: 1_017 }), 1_017);
+        assert_eq!(chain_start(1_000, StartRule::R { issued: 1_001 }), 1_001);
+        // An attested time at or before the previous block's timestamp starts as rule (a).
+        assert_eq!(chain_start(1_000, StartRule::R { issued: 990 }), 1_001);
+        assert_eq!(chain_start(1_000, StartRule::R { issued: 1_000 }), 1_001);
+    }
+
+    #[test]
+    fn the_t0_attestation_names_the_round_and_the_start() {
+        let header = sample();
+        assert_ne!(t0_message(&header, 10), t0_message(&header, 11));
+        let mut other = header;
+        other.height += 1;
+        assert_ne!(t0_message(&header, 10), t0_message(&other, 10));
     }
 
     #[test]

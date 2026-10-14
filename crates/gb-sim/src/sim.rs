@@ -41,10 +41,13 @@ pub(crate) enum Ev {
     WitnessLongAbsence { w: u32, token: u32 },
     /// A round's candidate generator wakes.
     GroupWake { g: u32 },
-    /// A candidate's miner decides whether to broadcast.
-    Decide { c: u32 },
+    /// A candidate's miner decides whether to broadcast (`uses`: which use of the candidate slot it is for).
+    Decide { c: u32, uses: u32 },
     /// A withholder releases its block.
-    Release { c: u32 },
+    Release { c: u32, uses: u32 },
+    /// Start rule (r): a drawn candidate reaches its own found time, where the rest of its
+    /// round's checks run.
+    Found { d: u32 },
     /// Recompute the panel's tips and the network chain.
     PanelUpdate,
     /// Committee refresh (every 10th PoW-Tx block).
@@ -61,6 +64,18 @@ pub(crate) enum Ev {
     Patience { m: u32 },
     /// A partition starts (`start`) or heals: its witnesses are cut off or return.
     Partition { index: u32, start: bool },
+    /// Failover: every KWC's quorum is checked, once a round.
+    Failover,
+    /// A witness's offline period (the one with `token`) reaches the points threshold n.
+    PointsDue { w: u32, token: u32 },
+    /// An owed points award waits for a KWC able to decide.
+    PointsRecord { w: u32 },
+    /// A witness's cooldown after a seat loss ends.
+    SeatCooldown { w: u32 },
+    /// A scripted regional blackout starts or ends.
+    ScriptedBlackout { index: u32, start: bool },
+    /// A tracked outage's effect on mining is sampled (every round while it lasts).
+    OutageSample { index: u32 },
     /// End of the run.
     End,
 }
@@ -82,8 +97,9 @@ impl Ev {
             Ev::WitnessDeactivate { w, .. } => ("witness_deactivate", Some(w), None),
             Ev::WitnessLongAbsence { w, .. } => ("witness_long_absence", Some(w), None),
             Ev::GroupWake { g } => ("round_wake", Some(g), None),
-            Ev::Decide { c } => ("candidate_decide", Some(c), None),
-            Ev::Release { c } => ("withheld_release", Some(c), None),
+            Ev::Decide { c, .. } => ("candidate_decide", Some(c), None),
+            Ev::Release { c, .. } => ("withheld_release", Some(c), None),
+            Ev::Found { d } => ("candidate_found", Some(d), None),
             Ev::PanelUpdate => ("panel_update", None, None),
             Ev::Committee => ("committee_refresh", None, None),
             Ev::Sample => ("kwc_sample", None, None),
@@ -92,6 +108,14 @@ impl Ev {
             Ev::ScriptEnd { h } => ("scripted_crash_end", Some(h), None),
             Ev::Patience { m } => ("patience_end", Some(m), None),
             Ev::Partition { index, start } => ("partition", Some(index), Some(u32::from(start))),
+            Ev::Failover => ("failover_check", None, None),
+            Ev::PointsDue { w, .. } => ("points_due", Some(w), None),
+            Ev::PointsRecord { w } => ("points_record", Some(w), None),
+            Ev::SeatCooldown { w } => ("seat_cooldown_end", Some(w), None),
+            Ev::ScriptedBlackout { index, start } => {
+                ("scripted_blackout", Some(index), Some(u32::from(start)))
+            }
+            Ev::OutageSample { index } => ("outage_sample", Some(index), None),
             Ev::End => ("end", None, None),
         }
     }
@@ -110,6 +134,12 @@ pub(crate) mod lane {
     pub const LONG_ABSENCE: usize = 3;
     /// A miner recorded offline after the grace epoch.
     pub const MINER_GRACE: usize = 4;
+    /// An offline period reaching the points threshold.
+    pub const POINTS_DUE: usize = 5;
+    /// An owed points award retried a round later.
+    pub const POINTS_RECORD: usize = 6;
+    /// The end of a seat-loss cooldown.
+    pub const SEAT_COOLDOWN: usize = 7;
 }
 
 /// Protocol settings a run reads often, resolved once.
@@ -190,6 +220,18 @@ pub(crate) struct Sim<'a> {
     pub invariants_due: Micros,
     /// Entries in the unsettled blocks' acceptance caches.
     pub own_entries: usize,
+    /// Start rule (r): candidates waiting for their own found time (`Ev::Found`).
+    pub deferred: Vec<Option<crate::round::Prep>>,
+    /// Free slots of `deferred`.
+    pub deferred_free: Vec<u32>,
+    /// Candidate slots that are done and may be used again.
+    pub free_candidates: Vec<u32>,
+    /// Failover: consecutive rounds each KWC has been below quorum.
+    pub failover_below: Vec<u32>,
+    /// The outage record of each shared outage process while it lasts (`NONE` otherwise).
+    pub outage_of_process: Vec<u32>,
+    /// The outage record of each scripted blackout.
+    pub outage_of_script: Vec<u32>,
 }
 
 impl<'a> Sim<'a> {
@@ -224,7 +266,7 @@ impl<'a> Sim<'a> {
         Ok(sim.res)
     }
 
-    fn handle(&mut self, now: Micros, ev: Ev) {
+    pub(crate) fn handle(&mut self, now: Micros, ev: Ev) {
         match ev {
             Ev::Household { h, token } => self.on_household(now, h, token),
             Ev::Shared {
@@ -241,8 +283,9 @@ impl<'a> Sim<'a> {
             Ev::WitnessDeactivate { w, token } => self.on_witness_deactivate(now, w, token),
             Ev::WitnessLongAbsence { w, token } => self.on_witness_long_absence(now, w, token),
             Ev::GroupWake { g } => self.on_group_wake(now, g),
-            Ev::Decide { c } => self.on_decide(now, c),
-            Ev::Release { c } => self.on_release(now, c),
+            Ev::Decide { c, uses } => self.on_decide(now, c, uses),
+            Ev::Release { c, uses } => self.on_release(now, c, uses),
+            Ev::Found { d } => self.on_found(now, d),
             Ev::PanelUpdate => self.on_panel_update(now),
             Ev::Committee => self.on_committee(now),
             Ev::Sample => self.on_sample(now),
@@ -253,6 +296,12 @@ impl<'a> Sim<'a> {
             }
             Ev::Patience { m } => self.on_patience(now, m),
             Ev::Partition { index, start } => self.on_partition(now, index, start),
+            Ev::Failover => self.on_failover(now),
+            Ev::PointsDue { w, token } => self.on_points_due(now, w, token),
+            Ev::PointsRecord { w } => self.on_points_record(now, w),
+            Ev::SeatCooldown { w } => self.on_seat_cooldown(now, w),
+            Ev::ScriptedBlackout { index, start } => self.on_scripted_blackout(now, index, start),
+            Ev::OutageSample { index } => self.on_outage_sample(now, index),
             Ev::End => self.stopped = true,
         }
     }

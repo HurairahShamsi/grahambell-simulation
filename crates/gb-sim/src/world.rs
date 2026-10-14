@@ -1,7 +1,7 @@
 //! The world: households, miner slots, witnesses, allocation, shared outages and the
 //! admission and One Chance processes (SPEC §3.1–§3.2, §4.2, §4.5–§4.8).
 
-use crate::engine::{Micros, SECOND, micros};
+use crate::engine::{Micros, SECOND, micros, seconds};
 use crate::household::{self, CauseContext, Device, Household, bit};
 use crate::job::Strategy;
 use crate::network::{
@@ -11,14 +11,23 @@ use crate::network::{
 use crate::rng::{Keyed, Purpose};
 use crate::samplers::{exponential, lognormal, normal};
 use crate::sim::{Ev, Params, Sim, lane};
+use gb_config::protocol::OfflinePointsOutcome;
 use gb_config::sim::{GridProfile, LatencySource};
 use gb_protocol::allocation::{IdStatus, kwc_wcs};
 use gb_protocol::hash::{Hash, tagged};
-use gb_protocol::offline::{Penalty, one_chance_outcome, penalty_for};
+use gb_protocol::offline::{OfflinePoints, Penalty, one_chance_outcome, penalty_for};
 use gb_protocol::validate::{MinerKind, QuorumRule, witness_signing_tolerance};
 
 /// No index.
 pub(crate) const NONE: u32 = u32::MAX;
+
+/// The cause index of a partition cut, after the household cause bits (offline points).
+pub(crate) const CAUSE_CUT: u8 = bit::COUNT as u8;
+
+/// The index of a household cause bit (offline points by cause).
+pub(crate) fn cause_index(cause: u16) -> u8 {
+    cause.trailing_zeros().min(bit::COUNT as u32) as u8
+}
 
 /// A miner slot's admission state (SPEC §3.1).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -58,6 +67,8 @@ pub(crate) struct Miner {
     pub announced_off_at: Micros,
     /// Valid IDs won by this slot (voided IDs excluded).
     pub ids: u32,
+    /// When it won its first ID (`u64::MAX` if it has none).
+    pub first_id_at: Micros,
     pub joined_at: Micros,
     pub newcomer: bool,
     pub first_id: bool,
@@ -90,6 +101,16 @@ pub(crate) struct Witness {
     /// 2026-10-14), until `cut_until`.
     pub cut_off: bool,
     pub cut_until: Micros,
+    /// Offline points (the M3a.1 E4 ladder).
+    pub points: OfflinePoints,
+    /// What started its current offline period (`cause_index`).
+    pub down_cause: u8,
+    /// Point awards due but not yet recorded, by cause, while no KWC can decide.
+    pub points_owed: Vec<u8>,
+    /// Whether every award since its points last reset came from scheduled load-shedding.
+    pub points_loadshed_only: bool,
+    /// After a seat loss at the points cap, no seat before this time.
+    pub seat_cooldown_until: Micros,
 }
 
 impl Witness {
@@ -115,6 +136,10 @@ pub(crate) struct Counts {
     pub all: u64,
     pub mining_group: Vec<u64>,
     pub mining_region: Vec<u64>,
+    /// Mining slots by group and device (C1 breakdown).
+    pub mining_group_device: Vec<Vec<u64>>,
+    /// Mining slots by group and region (C1 breakdown).
+    pub mining_group_region: Vec<Vec<u64>>,
     pub last: Micros,
     pub hop_mining: u64,
 }
@@ -197,7 +222,10 @@ impl<'a> Sim<'a> {
                 cfg.admission.convergence_interval_epochs.value * (grace as f64 / SECOND as f64),
             ),
             post_wait: micros(
-                (u64::from(cfg.admission.post_admission_wait_rounds.value) * interval_s) as f64,
+                (u64::from(
+                    spec.post_wait_rounds
+                        .unwrap_or(cfg.admission.post_admission_wait_rounds.value),
+                ) * interval_s) as f64,
             ),
             one_chance: micros((u64::from(spec.one_chance_wait_rounds) * interval_s) as f64),
             deactivation: micros(cfg.sim.world.deactivation_threshold_s),
@@ -333,6 +361,8 @@ impl<'a> Sim<'a> {
             counts: Counts {
                 mining_group: vec![0; groups],
                 mining_region: vec![0; regions],
+                mining_group_device: vec![vec![0; 3]; groups],
+                mining_group_region: vec![vec![0; regions]; groups],
                 ..Counts::default()
             },
             blocks: Vec::new(),
@@ -358,6 +388,16 @@ impl<'a> Sim<'a> {
                 blocks_by_region: vec![0; regions],
                 witness_id_s: vec![vec![0.0; 3]; regions],
                 offline_records: vec![vec![0; 3]; regions],
+                point_awards: vec![vec![0; 3]; regions],
+                point_awards_by_cause: vec![0; bit::COUNT + 1],
+                points_capped: vec![vec![0; 3]; regions],
+                points_capped_loadshed_only: vec![vec![0; 3]; regions],
+                seats_lost: vec![vec![0; 3]; regions],
+                ids_blacklisted: vec![vec![0; 3]; regions],
+                ids_by_group_device: vec![vec![0; 3]; groups],
+                slot_s_by_group_device: vec![vec![0.0; 3]; groups],
+                ids_by_group_region: vec![vec![0; regions]; groups],
+                slot_s_by_group_region: vec![vec![0.0; regions]; groups],
                 ..crate::job::JobResult::default()
             },
             end,
@@ -375,7 +415,21 @@ impl<'a> Sim<'a> {
             panel_split: Vec::new(),
             invariants_due: 0,
             own_entries: 0,
+            deferred: Vec::new(),
+            deferred_free: Vec::new(),
+            free_candidates: Vec::new(),
+            failover_below: Vec::new(),
+            outage_of_process: Vec::new(),
+            outage_of_script: Vec::new(),
         };
+        if spec.start_rule == gb_config::protocol::StartRule::B
+            || (spec.start_rule == gb_config::protocol::StartRule::R
+                && spec.crypto != gb_config::sim::CryptoMode::Fast)
+        {
+            return Err(crate::SimError::Setup(
+                "start rule (b) is not simulated, and rule (r) runs in fast mode only".to_string(),
+            ));
+        }
         sim.build_population();
         Ok(sim)
     }
@@ -611,6 +665,7 @@ impl<'a> Sim<'a> {
             rejoin_at: 0,
             announced_off_at: u64::MAX,
             ids: 0,
+            first_id_at: u64::MAX,
             joined_at: now,
             newcomer,
             first_id: false,
@@ -645,6 +700,11 @@ impl<'a> Sim<'a> {
             void: false,
             cut_off: false,
             cut_until: 0,
+            points: OfflinePoints::default(),
+            down_cause: 0,
+            points_owed: Vec::new(),
+            points_loadshed_only: true,
+            seat_cooldown_until: 0,
         });
         self.hh[h as usize].witnesses.push(w);
         w
@@ -842,6 +902,20 @@ impl<'a> Sim<'a> {
                 );
             }
         }
+        if self.spec.failover_after_rounds.is_some() {
+            self.q.push(micros(self.p.interval_s as f64), Ev::Failover);
+        }
+        if self.spec.track_outages {
+            self.outage_of_process = vec![NONE; self.shared.processes.len()];
+        }
+        self.outage_of_script = vec![NONE; self.spec.scripted_blackouts.len()];
+        for (i, (_, day, _)) in self.spec.scripted_blackouts.iter().enumerate() {
+            let index = i as u32;
+            self.q.push(
+                micros(day * 86_400.0),
+                Ev::ScriptedBlackout { index, start: true },
+            );
+        }
         self.d_max = micros(self.net.max_delay(self.max_access) + 0.2);
         self.start_chain();
     }
@@ -933,7 +1007,7 @@ impl<'a> Sim<'a> {
             }
             for (w, old) in witness_olds {
                 if !self.witnesses[w as usize].cut_off {
-                    self.witness_down(now, w, announced, old);
+                    self.witness_down(now, w, announced, old, cause_index(cause));
                 } else {
                     self.commit_witness(w, old);
                 }
@@ -1020,6 +1094,7 @@ impl<'a> Sim<'a> {
                 .push_lane(lane::FIRST_CHECK, check, Ev::WitnessCheck { w, token });
         }
         self.commit_witness(w, old);
+        self.start_points_period(now, w, CAUSE_CUT);
     }
 
     fn witness_uncut(&mut self, now: Micros, w: u32) {
@@ -1106,6 +1181,37 @@ impl<'a> Sim<'a> {
                     affected.push(h);
                     self.set_cause(now, h, cause, true, false, ends);
                 }
+                if self.spec.track_outages {
+                    let kind = match self.shared.processes[p as usize].kind {
+                        SharedKind::Blackout => Some(0),
+                        SharedKind::Isp => Some(1),
+                        _ => None,
+                    };
+                    if let (Some(kind), Some(first)) = (kind, affected.first()) {
+                        let region = self.hh[*first as usize].region as usize;
+                        let miners = affected
+                            .iter()
+                            .filter_map(|h| self.hh[*h as usize].miner)
+                            .filter(|m| {
+                                matches!(
+                                    self.miners[*m as usize].phase,
+                                    Phase::Mining | Phase::Waiting
+                                )
+                            })
+                            .count() as u64;
+                        let r = self.start_outage_record(
+                            now,
+                            kind,
+                            region,
+                            duration,
+                            affected.len(),
+                            miners,
+                        );
+                        if let Some(x) = self.outage_of_process.get_mut(p as usize) {
+                            *x = r;
+                        }
+                    }
+                }
                 let process = &mut self.shared.processes[p as usize];
                 process.affected = affected;
                 process.ends = ends;
@@ -1152,6 +1258,9 @@ impl<'a> Sim<'a> {
                 for h in affected {
                     self.set_cause(now, h, cause, false, false, now);
                 }
+                if let Some(x) = self.outage_of_process.get_mut(p as usize) {
+                    *x = NONE;
+                }
                 self.schedule_shared_start(now, p);
             }
         }
@@ -1192,6 +1301,11 @@ impl<'a> Sim<'a> {
         let d = delta(old.mining, new.mining);
         self.counts.mining_group[group] = (self.counts.mining_group[group] as i64 + d) as u64;
         self.counts.mining_region[region] = (self.counts.mining_region[region] as i64 + d) as u64;
+        let device = self.hh[miner.household as usize].device as usize;
+        let gd = &mut self.counts.mining_group_device[group][device];
+        *gd = (*gd as i64 + d) as u64;
+        let gr = &mut self.counts.mining_group_region[group][region];
+        *gr = (*gr as i64 + d) as u64;
         self.counts.hop_mining = (self.counts.hop_mining as i64 + delta(old.hop, new.hop)) as u64;
     }
 
@@ -1220,6 +1334,16 @@ impl<'a> Sim<'a> {
                 self.res.daily_slot_s_by_region[day][r] += *n as f64 * dt;
             }
             self.res.hop_slot_s += self.counts.hop_mining as f64 * dt;
+            for (g, row) in self.counts.mining_group_device.iter().enumerate() {
+                for (x, n) in row.iter().enumerate() {
+                    self.res.slot_s_by_group_device[g][x] += *n as f64 * dt;
+                }
+            }
+            for (g, row) in self.counts.mining_group_region.iter().enumerate() {
+                for (x, n) in row.iter().enumerate() {
+                    self.res.slot_s_by_group_region[g][x] += *n as f64 * dt;
+                }
+            }
         }
         self.counts.last = now.max(self.counts.last);
     }
@@ -1259,7 +1383,10 @@ impl<'a> Sim<'a> {
                 .words(Purpose::Admission, u64::from(m), epoch * 64 + attempt);
             for word in w {
                 let k = household::pick(word, wcs);
-                if self.kwc_load[k] < self.p.capacity {
+                if self.kwc_load[k] < self.p.capacity
+                    && (self.spec.failover_after_rounds.is_none()
+                        || !self.kwc_below_quorum(k as u32))
+                {
                     return k as u32;
                 }
             }
@@ -1281,6 +1408,13 @@ impl<'a> Sim<'a> {
         let old = self.miner_status(m);
         let k = self.choose_kwc(m);
         if k == NONE {
+            // With failover, no KWC able to take it now: it tries again an epoch later.
+            if self.spec.failover_after_rounds.is_some() {
+                self.miners[m as usize].conn += 1;
+                let token = self.miners[m as usize].token;
+                self.q
+                    .push(now + self.p.grace, Ev::MinerRejoin { m, token });
+            }
             return;
         }
         self.kwc_load[k as usize] += 1;
@@ -1371,6 +1505,8 @@ impl<'a> Sim<'a> {
                 self.res.restart_s.push(took);
             } else if miner.decision_kind == 2 && self.res.switch_s.len() < 10_000 {
                 self.res.switch_s.push(took);
+            } else if miner.decision_kind == 3 && self.res.failover_s.len() < 10_000 {
+                self.res.failover_s.push(took);
             }
             miner.decision_kind = 0;
         }
@@ -1558,6 +1694,7 @@ impl<'a> Sim<'a> {
         slot.ids = slot.ids.saturating_sub(1);
         if slot.ids == 0 && slot.first_id {
             slot.first_id = false;
+            slot.first_id_at = u64::MAX;
             if slot.newcomer {
                 self.res.first_ids -= 1;
                 // It had given up and was counted as a first ID instead: a dropout again.
@@ -1641,7 +1778,14 @@ impl<'a> Sim<'a> {
         }
     }
 
-    fn witness_down(&mut self, now: Micros, w: u32, announced: bool, old: WitnessStatus) {
+    fn witness_down(
+        &mut self,
+        now: Micros,
+        w: u32,
+        announced: bool,
+        old: WitnessStatus,
+        cause: u8,
+    ) {
         if self.witnesses[w as usize].removed() {
             return;
         }
@@ -1673,6 +1817,7 @@ impl<'a> Sim<'a> {
                 .push_lane(lane::FIRST_CHECK, check, Ev::WitnessCheck { w, token });
         }
         self.commit_witness(w, old);
+        self.start_points_period(now, w, cause);
         self.q.push_lane(
             lane::DEACTIVATE,
             now + self.p.deactivation,
@@ -1713,9 +1858,10 @@ impl<'a> Sim<'a> {
             self.registry.set_status(reg, IdStatus::Active);
             self.active.insert(reg);
         }
-        if unseated {
+        if unseated && now >= self.witnesses[w as usize].seat_cooldown_until {
             // Its seat was vacated after an absence longer than L: re-inserted with the beacon
-            // of the block `beacon delay` after its re-activation is confirmed.
+            // of the block `beacon delay` after its re-activation is confirmed. After a seat
+            // loss at the points cap it waits for the cooldown (`on_seat_cooldown`).
             let target = self.network_height() + self.p.confirmation_depth + self.p.beacon_delay;
             self.placements.push((target, w));
         }
@@ -1966,6 +2112,9 @@ impl<'a> Sim<'a> {
                 self.res.waits_days.push(waited);
             }
         }
+        if first {
+            self.miners[miner as usize].first_id_at = now;
+        }
         self.miners[miner as usize].first_id = true;
         self.miners[miner as usize].key_epoch += 1;
         let readmit = self.cfg.sim.world.winners_readmit;
@@ -2003,6 +2152,344 @@ impl<'a> Sim<'a> {
                 }
             }
         }
+    }
+
+    // ------------------------------------------------------------------ M3a.1 mechanisms
+
+    /// Whether KWC `k` can issue entropy now: under the all-online-members rule at least the
+    /// quorum of members recorded online and none of them unreachable (no stall); under a
+    /// threshold, at least t of its seated members reachable.
+    pub(crate) fn kwc_can_issue(&self, k: u32) -> bool {
+        let c = self.kwc_counts(k);
+        match self.threshold_rule() {
+            Some(rule) => {
+                let t = gb_protocol::entropy::entropy_threshold(c.seated as usize, rule)
+                    .unwrap_or(c.seated as usize);
+                t > 0 && c.online as usize >= t
+            }
+            None => c.recorded as usize >= self.p.quorum_unregistered && c.ghost == 0,
+        }
+    }
+
+    /// Whether KWC `k` is below quorum (failover): fewer reachable members than the quorum of
+    /// online members (all-online-members rule) or than t (threshold).
+    pub(crate) fn kwc_below_quorum(&self, k: u32) -> bool {
+        let c = self.kwc_counts(k);
+        let needed = match self.threshold_rule() {
+            Some(rule) => gb_protocol::entropy::entropy_threshold(c.seated as usize, rule)
+                .unwrap_or(c.seated as usize)
+                .max(1),
+            None => self.p.quorum_unregistered,
+        };
+        (c.online as usize) < needed
+    }
+
+    /// Failover (the M3a.1 experiment E3): once a round, every KWC with miners is checked; one
+    /// below quorum for `failover_after_rounds` rounds in a row sends its online miners to
+    /// KWCs that can issue entropy, each by a self-service offline request and re-admission
+    /// (SPEC §3.2, about 450 s).
+    pub(crate) fn on_failover(&mut self, now: Micros) {
+        let Some(after) = self.spec.failover_after_rounds else {
+            return;
+        };
+        let kwcs = self.alloc.active_wcs() as usize;
+        self.failover_below.resize(kwcs, 0);
+        let mut moving = vec![false; kwcs];
+        let mut any = false;
+        for (k, moves) in moving.iter_mut().enumerate() {
+            if self.kwc_load.get(k).copied().unwrap_or(0) == 0 {
+                self.failover_below[k] = 0;
+                continue;
+            }
+            if self.kwc_below_quorum(k as u32) {
+                self.failover_below[k] += 1;
+                if self.failover_below[k] >= after {
+                    self.failover_below[k] = 0;
+                    self.res.failover_triggers += 1;
+                    *moves = true;
+                    any = true;
+                }
+            } else {
+                self.failover_below[k] = 0;
+            }
+        }
+        if any {
+            for m in 0..self.miners.len() as u32 {
+                let miner = &self.miners[m as usize];
+                let k = miner.kwc as usize;
+                if miner.kwc != NONE
+                    && k < kwcs
+                    && moving[k]
+                    && matches!(miner.phase, Phase::Mining | Phase::Waiting)
+                    && self.hh[miner.household as usize].online()
+                {
+                    self.res.failover_moves += 1;
+                    self.self_offline(now, m, 3);
+                }
+            }
+        }
+        self.q
+            .push(now + micros(self.p.interval_s as f64), Ev::Failover);
+    }
+
+    /// Starts the points clock of an offline period of witness `w` (the M3a.1 E4 ladder).
+    fn start_points_period(&mut self, now: Micros, w: u32, cause: u8) {
+        let Some(after) = self.spec.offline_points.as_ref().map(|p| p.after_s) else {
+            return;
+        };
+        let wit = &mut self.witnesses[w as usize];
+        wit.down_cause = cause;
+        let token = wit.token;
+        self.q.push_lane(
+            lane::POINTS_DUE,
+            now + micros(after),
+            Ev::PointsDue { w, token },
+        );
+    }
+
+    /// An offline period of witness `w` reaches n: a point award is due. A KWC records it by a
+    /// two-thirds decision; while none of its KWCs can decide, it waits, a round at a time,
+    /// even if the member is back meanwhile.
+    pub(crate) fn on_points_due(&mut self, now: Micros, w: u32, token: u32) {
+        let wit = &self.witnesses[w as usize];
+        if wit.token != token || wit.removed() {
+            return;
+        }
+        let cause = wit.down_cause;
+        if self.witness_vote_possible(w) {
+            self.award_points(now, w, cause);
+        } else {
+            let first = self.witnesses[w as usize].points_owed.is_empty();
+            self.witnesses[w as usize].points_owed.push(cause);
+            if first {
+                self.q.push_lane(
+                    lane::POINTS_RECORD,
+                    now + micros(self.p.interval_s as f64),
+                    Ev::PointsRecord { w },
+                );
+            }
+        }
+    }
+
+    /// Owed point awards of witness `w` are recorded once one of its KWCs can decide.
+    pub(crate) fn on_points_record(&mut self, now: Micros, w: u32) {
+        if self.witnesses[w as usize].removed() {
+            self.witnesses[w as usize].points_owed.clear();
+            return;
+        }
+        if !self.witness_vote_possible(w) {
+            self.q.push_lane(
+                lane::POINTS_RECORD,
+                now + micros(self.p.interval_s as f64),
+                Ev::PointsRecord { w },
+            );
+            return;
+        }
+        let owed = std::mem::take(&mut self.witnesses[w as usize].points_owed);
+        for cause in owed {
+            if self.witnesses[w as usize].removed() {
+                break;
+            }
+            self.res.point_awards_delayed += 1;
+            self.award_points(now, w, cause);
+        }
+    }
+
+    /// Records one points award for witness `w`, and applies the outcome at the cap.
+    fn award_points(&mut self, now: Micros, w: u32, cause: u8) {
+        let Some(spec) = self.spec.offline_points.clone() else {
+            return;
+        };
+        let now_s = now / SECOND;
+        let reset = spec.reset_s as u64;
+        let h = self.witnesses[w as usize].household as usize;
+        let (region, device) = (self.hh[h].region as usize, self.hh[h].device as usize);
+        let wit = &mut self.witnesses[w as usize];
+        if wit.points.at(now_s, reset) == 0 {
+            wit.points_loadshed_only = true;
+        }
+        if cause != cause_index(bit::LOADSHED) {
+            wit.points_loadshed_only = false;
+        }
+        let total = wit.points.award(now_s, &spec.steps, spec.cap, reset);
+        let loadshed_only = wit.points_loadshed_only;
+        self.res.point_awards[region][device] += 1;
+        self.res.point_awards_by_cause[cause as usize] += 1;
+        if total < spec.cap {
+            return;
+        }
+        self.res.points_capped[region][device] += 1;
+        if loadshed_only {
+            self.res.points_capped_loadshed_only[region][device] += 1;
+        }
+        self.witnesses[w as usize].points.clear();
+        match spec.outcome {
+            OfflinePointsOutcome::SeatLoss => {
+                let until = now + micros(spec.seat_cooldown_s);
+                self.witnesses[w as usize].seat_cooldown_until = until;
+                self.placements.retain(|(_, x)| *x != w);
+                if self.witnesses[w as usize].seat != NONE {
+                    self.res.seats_lost[region][device] += 1;
+                    self.remove_seat(w);
+                }
+                self.q
+                    .push_lane(lane::SEAT_COOLDOWN, until, Ev::SeatCooldown { w });
+            }
+            OfflinePointsOutcome::Blacklist => {
+                self.res.ids_blacklisted[region][device] += 1;
+                self.remove_banned(w);
+            }
+        }
+    }
+
+    /// A seat-loss cooldown ends: a reachable member may take a seat again.
+    pub(crate) fn on_seat_cooldown(&mut self, now: Micros, w: u32) {
+        let wit = &self.witnesses[w as usize];
+        if wit.removed() || wit.seat != NONE || now < wit.seat_cooldown_until {
+            return;
+        }
+        if self.witness_reachable(w) && !self.placements.iter().any(|(_, x)| *x == w) {
+            let target = self.network_height() + self.p.confirmation_depth + self.p.beacon_delay;
+            self.placements.push((target, w));
+        }
+    }
+
+    /// A scripted regional blackout (E3) starts or ends: every household of the region goes
+    /// offline, as in a random regional blackout (no UPS covers it).
+    pub(crate) fn on_scripted_blackout(&mut self, now: Micros, index: u32, start: bool) {
+        let (region, _, seconds_off) = self.spec.scripted_blackouts[index as usize];
+        let Some(&p) = self.shared.blackout_of.get(region) else {
+            return;
+        };
+        if p == NONE {
+            return;
+        }
+        let members = self.shared.processes[p as usize].members.clone();
+        if start {
+            let ends = now + micros(seconds_off);
+            let mut miners = 0u64;
+            for h in &members {
+                self.set_cause(now, *h, bit::SCRIPTED_BLACKOUT, true, false, ends);
+                if let Some(m) = self.hh[*h as usize].miner {
+                    if matches!(
+                        self.miners[m as usize].phase,
+                        Phase::Mining | Phase::Waiting
+                    ) {
+                        miners += 1;
+                    }
+                }
+            }
+            self.q.push(
+                ends,
+                Ev::ScriptedBlackout {
+                    index,
+                    start: false,
+                },
+            );
+            if self.spec.track_outages {
+                let r =
+                    self.start_outage_record(now, 2, region, seconds_off, members.len(), miners);
+                self.outage_of_script[index as usize] = r;
+            }
+        } else {
+            for h in members {
+                self.set_cause(now, h, bit::SCRIPTED_BLACKOUT, false, false, now);
+            }
+            if let Some(r) = self.outage_of_script.get_mut(index as usize) {
+                *r = NONE;
+            }
+        }
+    }
+
+    /// Opens an outage record (E3) and schedules its first sample a round in.
+    fn start_outage_record(
+        &mut self,
+        now: Micros,
+        kind: u8,
+        region: usize,
+        duration_s: f64,
+        households: usize,
+        miners_lost_power: u64,
+    ) -> u32 {
+        let index = self.res.outages.len() as u32;
+        self.res.outages.push(crate::job::OutageRecord {
+            kind,
+            region: region as u8,
+            start_s: seconds(now),
+            duration_s,
+            households: households as u64,
+            miners_lost_power,
+            ..crate::job::OutageRecord::default()
+        });
+        self.q.push(
+            now + micros(self.p.interval_s as f64),
+            Ev::OutageSample { index },
+        );
+        index
+    }
+
+    /// Samples a tracked outage's effect on mining: miners mining with their household online
+    /// whose KWC cannot issue entropy. Every round while the outage lasts.
+    pub(crate) fn on_outage_sample(&mut self, now: Micros, index: u32) {
+        let (start, duration) = {
+            let r = &self.res.outages[index as usize];
+            (r.start_s, r.duration_s)
+        };
+        if seconds(now) > start + duration {
+            return;
+        }
+        let kwcs = self.alloc.active_wcs() as usize;
+        let mut able: Vec<Option<bool>> = vec![None; kwcs];
+        let mut unable_kwcs = 0u64;
+        let mut lost = 0u64;
+        for m in 0..self.miners.len() {
+            let miner = &self.miners[m];
+            if miner.phase != Phase::Mining
+                || miner.idle
+                || miner.kwc == NONE
+                || miner.kwc as usize >= kwcs
+                || !self.hh[miner.household as usize].online()
+            {
+                continue;
+            }
+            let k = miner.kwc as usize;
+            let can = match able[k] {
+                Some(x) => x,
+                None => {
+                    let x = self.kwc_can_issue(k as u32);
+                    able[k] = Some(x);
+                    if !x {
+                        unable_kwcs += 1;
+                    }
+                    x
+                }
+            };
+            if !can {
+                lost += 1;
+            }
+        }
+        let r = &mut self.res.outages[index as usize];
+        r.samples += 1;
+        r.witnessing_lost_max = r.witnessing_lost_max.max(lost);
+        r.witnessing_lost_miner_rounds += lost;
+        r.kwcs_unable_max = r.kwcs_unable_max.max(unable_kwcs);
+        let next = now + micros(self.p.interval_s as f64);
+        if seconds(next) <= start + duration {
+            self.q.push(next, Ev::OutageSample { index });
+        }
+    }
+
+    /// Removes a witness's ID for good without a One Chance ban record (points blacklist).
+    fn remove_banned(&mut self, w: u32) {
+        let old = self.witness_status(w);
+        let reg = self.witnesses[w as usize].reg as usize;
+        self.witnesses[w as usize].banned = true;
+        self.commit_witness(w, old);
+        self.registry.set_status(reg, IdStatus::Banned);
+        self.active.remove(reg);
+        self.committee.depart(reg);
+        self.remove_seat(w);
+        self.placements.retain(|(_, x)| *x != w);
     }
 
     // ------------------------------------------------------------------ invariants
@@ -2451,5 +2938,153 @@ mod tests {
         sim.set_cause(t + 60 * SECOND, h, bit::USER, false, false, t + 60 * SECOND);
         assert_eq!(sim.miners[0].phase, Phase::Admitting);
         assert_eq!(sim.res.quick_readmits, 1);
+    }
+
+    #[test]
+    fn failover_moves_miners_off_a_kwc_below_quorum_after_two_rounds() {
+        let cfg = gb_config::Config::default();
+        let mut spec = small_sim(&cfg);
+        spec.instant_admission = false;
+        spec.failover_after_rounds = Some(2);
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let k = sim.miners[0].kwc;
+        // 14 of its 40 members go offline: 26 online, below the quorum of 27.
+        let t = 100 * SECOND;
+        for w in sim.kwc_members(k).into_iter().take(14) {
+            let h = sim.witnesses[w as usize].household;
+            sim.set_cause(t, h, bit::CRASH, true, false, u64::MAX);
+        }
+        assert!(sim.kwc_below_quorum(k));
+        // One round below quorum moves nobody; the second moves its miners.
+        sim.on_failover(t);
+        assert_eq!((sim.miners[0].kwc, sim.res.failover_moves), (k, 0));
+        sim.on_failover(t + 30 * SECOND);
+        assert_eq!(sim.miners[0].phase, Phase::Idle);
+        assert!(sim.res.failover_moves >= 1 && sim.res.failover_triggers >= 1);
+        // It re-admits to a KWC that can issue entropy and mines again about 450 s later.
+        while let Some((now, ev)) = sim.q.pop() {
+            if now > t + 3_600 * SECOND || !sim.res.failover_s.is_empty() {
+                break;
+            }
+            sim.handle(now, ev);
+        }
+        let took = sim.res.failover_s.first().copied().unwrap_or(0.0);
+        assert!((440.0..470.0).contains(&took), "{took}");
+        assert_ne!(sim.miners[0].kwc, k);
+        assert!(!sim.kwc_below_quorum(sim.miners[0].kwc));
+    }
+
+    fn points_spec() -> crate::job::OfflinePointsSpec {
+        crate::job::OfflinePointsSpec {
+            after_s: 3_600.0,
+            steps: vec![1, 1, 2, 3, 4, 5],
+            cap: 20,
+            reset_s: 31_536_000.0,
+            outcome: OfflinePointsOutcome::SeatLoss,
+            seat_cooldown_s: 2_592_000.0,
+        }
+    }
+
+    #[test]
+    fn offline_points_need_a_kwc_decision_and_the_cap_costs_the_seat_for_a_cooldown() {
+        let cfg = gb_config::Config::default();
+        let mut spec = small_sim(&cfg);
+        spec.offline_points = Some(points_spec());
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let w = 0u32;
+        assert_ne!(sim.witnesses[0].seat, NONE);
+        let h = sim.witnesses[0].household;
+        let (hour, day) = (3_600 * SECOND, 86_400 * SECOND);
+        // Six offline periods of two hours (n = 1 h): 1, 1, 2, 3, 4 and 5 points.
+        for i in 1..=6u64 {
+            let t = i * day;
+            sim.set_cause(t, h, bit::USER, true, true, t + 2 * hour);
+            let token = sim.witnesses[0].token;
+            sim.on_points_due(t + hour, w, token);
+            sim.set_cause(t + 2 * hour, h, bit::USER, false, false, t + 2 * hour);
+        }
+        assert_eq!(sim.witnesses[0].points.total, 16);
+        // A period shorter than n earns nothing: the member is back when it would be due.
+        let t = 7 * day;
+        sim.set_cause(t, h, bit::USER, true, true, t + hour / 2);
+        let token = sim.witnesses[0].token;
+        sim.set_cause(t + hour / 2, h, bit::USER, false, false, t + hour / 2);
+        sim.on_points_due(t + hour, w, token);
+        assert_eq!(sim.witnesses[0].points.total, 16);
+        // Every other witness away: no KWC can decide, so the next award waits.
+        let t = 8 * day;
+        let others: Vec<u32> = (1..sim.witnesses.len() as u32)
+            .map(|x| sim.witnesses[x as usize].household)
+            .filter(|x| *x != h)
+            .collect();
+        for x in &others {
+            sim.set_cause(t, *x, bit::USER, true, true, t + 3 * hour);
+        }
+        sim.set_cause(t, h, bit::USER, true, true, t + 2 * hour);
+        let token = sim.witnesses[0].token;
+        sim.on_points_due(t + hour, w, token);
+        assert_eq!(sim.witnesses[0].points_owed.len(), 1);
+        assert_eq!(sim.witnesses[0].points.total, 16);
+        for x in &others {
+            sim.set_cause(t + 2 * hour, *x, bit::USER, false, false, t + 2 * hour);
+        }
+        // Recorded once a KWC can decide: 21 points, capped at 20, and the seat is lost.
+        sim.on_points_record(t + 2 * hour, w);
+        assert_eq!(sim.res.point_awards_delayed, 1);
+        assert_eq!(sim.witnesses[0].seat, NONE);
+        assert_eq!(sim.res.seats_lost.iter().flatten().sum::<u64>(), 1);
+        assert_eq!(sim.res.points_capped.iter().flatten().sum::<u64>(), 1);
+        assert_eq!(sim.res.point_awards.iter().flatten().sum::<u64>(), 7);
+        // Back during the cooldown it takes no seat; at its end it does.
+        sim.set_cause(t + 3 * hour, h, bit::USER, false, false, t + 3 * hour);
+        assert!(!sim.placements.iter().any(|(_, x)| *x == w));
+        let until = sim.witnesses[0].seat_cooldown_until;
+        assert_eq!(until, t + 2 * hour + 30 * day);
+        sim.on_seat_cooldown(until, w);
+        assert!(sim.placements.iter().any(|(_, x)| *x == w));
+        sim.check_invariants();
+        assert_eq!(sim.res.invariant_failures, 0);
+    }
+
+    #[test]
+    fn a_scripted_blackout_takes_its_region_offline_and_is_recorded() {
+        let cfg = gb_config::Config::default();
+        let mut spec = small_sim(&cfg);
+        spec.idealised = false;
+        spec.outages = true;
+        spec.scripted_blackouts = vec![(0, 0.5, 3_600.0)];
+        spec.track_outages = true;
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let region: Vec<u32> = sim.shared.processes[sim.shared.blackout_of[0] as usize]
+            .members
+            .clone();
+        assert!(!region.is_empty());
+        let t = micros(0.5 * 86_400.0);
+        sim.on_scripted_blackout(t, 0, true);
+        let blacked = |sim: &Sim<'_>, h: u32| sim.hh[h as usize].mask & bit::SCRIPTED_BLACKOUT != 0;
+        assert!(
+            region
+                .iter()
+                .all(|h| blacked(&sim, *h) && !sim.hh[*h as usize].online())
+        );
+        assert!(
+            (0..sim.hh.len() as u32)
+                .filter(|h| !region.contains(h))
+                .all(|h| !blacked(&sim, h))
+        );
+        assert_eq!(sim.res.outages.len(), 1);
+        let r = &sim.res.outages[0];
+        assert_eq!(
+            (r.kind, r.region, r.households),
+            (2, 0, region.len() as u64)
+        );
+        assert_eq!(r.duration_s, 3_600.0);
+        sim.on_outage_sample(t + 30 * SECOND, 0);
+        assert_eq!(sim.res.outages[0].samples, 1);
+        sim.on_scripted_blackout(t + 3_600 * SECOND, 0, false);
+        assert!(region.iter().all(|h| !blacked(&sim, *h)));
     }
 }

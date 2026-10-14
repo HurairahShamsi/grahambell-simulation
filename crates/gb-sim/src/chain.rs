@@ -14,8 +14,8 @@ use crate::engine::{Micros, SECOND, micros};
 use crate::job::ForkRule;
 use crate::rng::Purpose;
 use crate::sim::{Ev, Sim};
-use crate::world::NONE;
-use gb_config::protocol::{DifficultyCountRule, DifficultyVariant};
+use crate::world::{NONE, Phase};
+use gb_config::protocol::{DifficultyCountRule, DifficultyVariant, EquivocationScope};
 use gb_protocol::encoding::Header;
 use gb_protocol::hash::{Hash, tagged};
 use gb_protocol::issuance::{
@@ -95,6 +95,8 @@ pub(crate) struct Block {
     /// The witness registered from this block once it passed confirmation depth (`NONE`
     /// before, or after its ID was voided by a reorganisation).
     pub registered: u32,
+    /// The round this block was mined in (`NONE` for genesis).
+    pub round: u32,
 }
 
 /// A view: the node whose acceptance is computed.
@@ -128,6 +130,9 @@ pub(crate) struct Group {
     pub eligible: u64,
     /// Member lists of the KWCs this round has used, fixed at first use (`round_members`).
     pub kwc_members: Vec<(u32, Vec<u32>)>,
+    /// Miners whose KWC issued entropy for this round (count rule `IssuedEntropy`), counted
+    /// when the round's first block is added.
+    pub issued: Option<u64>,
 }
 
 /// A miner's candidate block, between its winning step and its decision to broadcast.
@@ -136,6 +141,9 @@ pub(crate) struct Candidate {
     pub miner: u32,
     pub group: u32,
     pub step: u64,
+    /// Where its chain started: the round's start under rule (a), its own attested entropy
+    /// issue time under rule (r).
+    pub t0: u64,
     pub timestamp: u64,
     pub broadcast: Micros,
     pub header: Header,
@@ -147,6 +155,10 @@ pub(crate) struct Candidate {
     pub signers: Vec<u32>,
     pub members: Vec<u32>,
     pub entropy_signers: Vec<bool>,
+    /// Signatures its entropy needed: the quorum of online members, or the threshold t.
+    pub entropy_quorum: u32,
+    /// Uses of this candidate slot (slots are reused once done); events carry it.
+    pub uses: u32,
 }
 
 impl Sim<'_> {
@@ -187,6 +199,7 @@ impl Sim<'_> {
             hop_active: false,
             beyond_horizon: false,
             registered: NONE,
+            round: NONE,
         });
         self.settled_ids.push(0);
         self.network_tip = 0;
@@ -195,13 +208,102 @@ impl Sim<'_> {
             .push(micros(self.p.interval_s as f64), Ev::PanelUpdate);
     }
 
-    /// Variant B's admitted online count under the run's count rule (SPEC §3.8).
+    /// Variant B's admitted online count under the run's count rule (SPEC §3.8). Under the
+    /// issued-entropy rule this is the count before any round (genesis); rounds have their own
+    /// ([`Sim::issued_count`]).
     pub(crate) fn count_for_difficulty(&self) -> u64 {
         match self.spec.count_rule {
-            DifficultyCountRule::AfterPostAdmissionWait => self.counts.after_wait,
+            DifficultyCountRule::AfterPostAdmissionWait | DifficultyCountRule::IssuedEntropy => {
+                self.counts.after_wait
+            }
             DifficultyCountRule::AllGloballyActive => self.counts.all,
         }
         .max(1)
+    }
+
+    /// Count rule `IssuedEntropy` (the M3a.1 experiment E2): the miners whose KWC issued
+    /// entropy for round `g`, counted when the round's first block is added (at `now`) and
+    /// kept for the round, so each branch has its own count. A miner counts when it mines
+    /// (past its post-admission wait, not idle) with its household online, its KWC can
+    /// issue entropy, and its header is on the round's parent: under one header per height a
+    /// miner that signed on another block at that height sat the round out, and under the
+    /// [P] rule a miner mines on the best block it holds. The block mined in round `g` sets
+    /// the difficulty of the next round, so the count lags one round. Tier 1 takes the count
+    /// as known exactly (ASSUMPTIONS SIM-36).
+    pub(crate) fn issued_count(&mut self, g: u32, now: Micros) -> u64 {
+        if let Some(n) = self.groups[g as usize].issued {
+            return n;
+        }
+        let parent = self.groups[g as usize].parent;
+        let height = self.blocks[parent as usize].height;
+        let siblings: Vec<u32> = if height == 0 {
+            Vec::new()
+        } else {
+            self.unsettled
+                .iter()
+                .copied()
+                .filter(|b| *b != parent && self.blocks[*b as usize].height == height)
+                .collect()
+        };
+        let mut able: Vec<Option<bool>> = vec![None; self.alloc.active_wcs() as usize];
+        let mut n = 0u64;
+        for m in 0..self.miners.len() as u32 {
+            let (h, k, mine_at) = {
+                let miner = &self.miners[m as usize];
+                if miner.phase != Phase::Mining || miner.idle || miner.kwc == NONE {
+                    continue;
+                }
+                (miner.household, miner.kwc, miner.mine_at)
+            };
+            if mine_at > now || !self.hh[h as usize].online() {
+                continue;
+            }
+            let Some(slot) = able.get_mut(k as usize) else {
+                continue;
+            };
+            let can = match *slot {
+                Some(x) => x,
+                None => {
+                    let x = self.kwc_can_issue(k);
+                    able[k as usize] = Some(x);
+                    x
+                }
+            };
+            if !can {
+                continue;
+            }
+            if !siblings.is_empty() {
+                let node = self.node_of(h);
+                let mut level: Vec<(u32, Micros)> = Vec::new();
+                for s in std::iter::once(parent).chain(siblings.iter().copied()) {
+                    let (a_s, late) = self.accept(&node, s);
+                    if a_s != INF && !late && a_s <= now {
+                        level.push((s, a_s));
+                    }
+                }
+                let Some(first) = level.iter().map(|x| x.1).min() else {
+                    continue;
+                };
+                let by = if self.spec.equivocation == EquivocationScope::SameHeight {
+                    first.max(mine_at)
+                } else {
+                    now
+                };
+                let mut chosen: Option<(u32, Micros)> = None;
+                for &(s, a_s) in &level {
+                    if a_s <= by && chosen.is_none_or(|(c, a_c)| self.prefer_block(s, a_s, c, a_c))
+                    {
+                        chosen = Some((s, a_s));
+                    }
+                }
+                if chosen.map(|x| x.0) != Some(parent) {
+                    continue;
+                }
+            }
+            n += 1;
+        }
+        self.groups[g as usize].issued = Some(n);
+        n
     }
 
     // ------------------------------------------------------------------ views
@@ -394,6 +496,7 @@ impl Sim<'_> {
             hop_active,
             beyond_horizon: cand.beyond_horizon,
             registered: NONE,
+            round: cand.group,
         });
         self.unsettled.push(id);
         self.watch_fork_storm(now, height);
@@ -475,7 +578,15 @@ impl Sim<'_> {
         } else {
             match self.spec.difficulty {
                 DifficultyVariant::CountBased => {
-                    let n = self.count_for_difficulty();
+                    let round = self.blocks[b as usize].round;
+                    let n = if self.spec.count_rule == DifficultyCountRule::IssuedEntropy
+                        && round != NONE
+                    {
+                        let now = self.blocks[b as usize].broadcast;
+                        self.issued_count(round, now).max(1)
+                    } else {
+                        self.count_for_difficulty()
+                    };
                     let factor = match &self.spec.correction {
                         Some(c) => update_correction_ppm(
                             c,
@@ -929,6 +1040,12 @@ impl Sim<'_> {
                     self.res.canonical += 1;
                     self.res.ids_by_group[block.group as usize] += 1;
                     self.res.ids_by_region[block.region as usize] += 1;
+                    if block.household != NONE {
+                        let device = self.hh[block.household as usize].device as usize;
+                        self.res.ids_by_group_device[block.group as usize][device] += 1;
+                        self.res.ids_by_group_region[block.group as usize]
+                            [block.region as usize] += 1;
+                    }
                     let day = (block.broadcast / (86_400 * SECOND)) as usize;
                     if self.res.daily_ids.len() <= day {
                         self.res.daily_ids.resize(day + 1, 0);
@@ -992,6 +1109,7 @@ impl Sim<'_> {
             h += k;
         }
         let mut last_broadcast: Option<Micros> = None;
+        let mut gaps: Vec<(Micros, Micros)> = Vec::new();
         for height in 1..=last {
             let id = chain[height as usize];
             if id == NONE {
@@ -1003,8 +1121,26 @@ impl Sim<'_> {
                     self.res.pauses += 1;
                     self.res.pause_s += (b - p) as f64 / SECOND as f64;
                 }
+                if p >= self.p.warmup {
+                    gaps.push((p, b));
+                    let gap = b.saturating_sub(p) as f64 / SECOND as f64;
+                    if gap > self.res.max_gap_s {
+                        self.res.max_gap_s = gap;
+                        self.res.max_gap_start_s = p as f64 / SECOND as f64;
+                    }
+                }
             }
             last_broadcast = Some(b);
+        }
+        // The longest gap that overlaps each tracked outage (E3).
+        for record in &mut self.res.outages {
+            let from = micros(record.start_s);
+            let to = micros(record.start_s + record.duration_s);
+            record.max_gap_s = gaps
+                .iter()
+                .filter(|(p, b)| *b > from && *p < to)
+                .map(|(p, b)| b.saturating_sub(*p) as f64 / SECOND as f64)
+                .fold(0.0, f64::max);
         }
         let split = &self.panel_split;
         self.res.split_panel_nodes = tips
@@ -1021,8 +1157,17 @@ impl Sim<'_> {
         self.res.waiting_newcomers = self
             .miners
             .iter()
-            .filter(|m| m.newcomer && !m.first_id && m.phase != crate::world::Phase::Gone)
+            .filter(|m| m.newcomer && !m.first_id && m.phase != Phase::Gone)
             .count() as u64;
+        // A6: every newcomer's arrival and wait to a first ID.
+        let day = 86_400.0 * SECOND as f64;
+        for miner in self.miners.iter().filter(|m| m.newcomer).take(200_000) {
+            let wait = (miner.first_id_at != u64::MAX)
+                .then(|| miner.first_id_at.saturating_sub(miner.joined_at) as f64 / day);
+            self.res
+                .newcomers
+                .push((miner.joined_at as f64 / day, wait));
+        }
         // Witness ID-time by region and device.
         let end = now;
         for w in &self.witnesses {
@@ -1090,6 +1235,7 @@ mod tests {
             hop_active: false,
             beyond_horizon: false,
             registered: NONE,
+            round: NONE,
         });
         let id = (sim.blocks.len() - 1) as u32;
         sim.unsettled.push(id);
@@ -1317,5 +1463,58 @@ mod tests {
         assert_ne!(target(a2), target(b2));
         // Height 3 is not a retarget height: A3 passes on A2's target.
         assert_eq!(target(a3), target(a2));
+    }
+
+    /// Two blocks at height 1: S reaches every miner at once, P (the better block, with the
+    /// earlier timestamp) 100 s later. Returns the issued-entropy counts of the rounds on P
+    /// and on S, read at 200 s.
+    fn issued_on_a_fork(scope: EquivocationScope) -> (u64, u64) {
+        let cfg = gb_config::Config::default();
+        let mut spec = spec(&cfg);
+        spec.count_rule = DifficultyCountRule::IssuedEntropy;
+        spec.equivocation = scope;
+        spec.deadline = None;
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let s = block(&mut sim, 0, 2, 1);
+        let p = block(&mut sim, 0, 1, 2);
+        sim.blocks[p as usize].broadcast = 100 * SECOND;
+        sim.open_group(p, 100 * SECOND);
+        let gp = (sim.groups.len() - 1) as u32;
+        sim.open_group(s, 100 * SECOND);
+        let gs = (sim.groups.len() - 1) as u32;
+        (
+            sim.issued_count(gp, 200 * SECOND),
+            sim.issued_count(gs, 200 * SECOND),
+        )
+    }
+
+    #[test]
+    fn the_issued_entropy_count_leaves_out_miners_that_sat_the_round_out() {
+        // One header per height: every miner signed on S, the first block it held, so none of
+        // them gets entropy for the round on P.
+        assert_eq!(issued_on_a_fork(EquivocationScope::SameHeight), (0, 4));
+        // [P] same parent: each miner mines on the better block, P.
+        assert_eq!(issued_on_a_fork(EquivocationScope::SameParent), (4, 0));
+        // At an unforked height every mining miner counts, unless its KWC cannot issue.
+        let cfg = gb_config::Config::default();
+        let mut spec = spec(&cfg);
+        spec.count_rule = DifficultyCountRule::IssuedEntropy;
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let b = block(&mut sim, 0, 1, 3);
+        sim.open_group(b, 0);
+        let g = (sim.groups.len() - 1) as u32;
+        let k = sim.miners[0].kwc;
+        let w = sim.kwc_members(k)[0];
+        let h = sim.witnesses[w as usize].household;
+        // A member away without announcing it stalls every KWC it sits in (all-online-members
+        // rule; its WC is in four KWCs).
+        sim.set_cause(0, h, crate::household::bit::CRASH, true, false, u64::MAX);
+        let stalled = (0..4)
+            .filter(|m| sim.kwc_members(sim.miners[*m].kwc).contains(&w))
+            .count() as u64;
+        assert!(stalled >= 1);
+        assert_eq!(sim.issued_count(g, 10 * SECOND), 4 - stalled);
     }
 }

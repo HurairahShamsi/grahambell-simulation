@@ -85,7 +85,7 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "issuance.difficulty_count_rule",
         "§3.8",
         "",
-        "Which admitted miners Variant B counts: those past the post-admission wait, or all Globally Active.",
+        "Which admitted miners Variant B counts: those past the post-admission wait, all Globally Active, or (the M3a.1 experiment) those whose KWC issued entropy for the round.",
     ),
     doc(
         "issuance.min_attack_time_floor_years",
@@ -115,7 +115,7 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "issuance.start_rule",
         "§3.5",
         "",
-        "Where the PoW-ID hash chain starts; rule (b) is kept for comparison in S13.",
+        "Where the PoW-ID hash chain starts; rule (b) is kept for comparison in S13, rule (r) (the KWC-attested entropy issue time) is the M3a.1 experiment.",
     ),
     doc(
         "issuance.same_height_tie_break",
@@ -211,7 +211,7 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "entropy.signers",
         "§2, §3.4",
         "",
-        "KWC members whose signatures the entropy aggregate must include.",
+        "KWC members whose signatures the entropy must include: every online member, or (the M3a.1 experiment) a threshold of the seated members.",
     ),
     doc(
         "entropy.equivocation_scope",
@@ -304,6 +304,12 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "Registered peers a newcomer bootstraps from.",
     ),
     doc(
+        "admission.failover_after_rounds",
+        "§3.1, §3.4",
+        "rounds",
+        "Failover (M3a.1 experiment): rounds a miner's KWC may stay below quorum before the miner moves to a KWC that can issue entropy; unset is off.",
+    ),
+    doc(
         "cac.size",
         "§2, §4.3",
         "members",
@@ -393,6 +399,42 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "§4.6, §4.8",
         "",
         "Penalty for a failed One Chance under the strict rule: the ladder, the ladder with a yearly reset [P], or a ban.",
+    ),
+    doc(
+        "penalties.offline_points_after_s",
+        "§4.7, §4.8",
+        "s",
+        "Offline points (M3a.1 experiment): an offline period at least this long earns points, whatever its cause; unset is off.",
+    ),
+    doc(
+        "penalties.offline_points_steps",
+        "§4.7, §4.8",
+        "points",
+        "Points added by successive awards since the points last reset; the last step repeats.",
+    ),
+    doc(
+        "penalties.offline_points_cap",
+        "§4.7, §4.8",
+        "points",
+        "Points at which the outcome applies.",
+    ),
+    doc(
+        "penalties.offline_points_reset_s",
+        "§4.7, §4.8",
+        "s",
+        "Block time after the most recent award at which the points reset to zero.",
+    ),
+    doc(
+        "penalties.offline_points_outcome",
+        "§4.7, §4.8",
+        "",
+        "Outcome at the cap: the witness seat is lost (the ID can still mine), or the ID is blacklisted.",
+    ),
+    doc(
+        "penalties.offline_points_seat_cooldown_s",
+        "§4.7, §4.8",
+        "s",
+        "After a seat loss, how long before the member may take a seat again.",
     ),
     doc("crypto.signature_scheme", "§2", "", "Signature scheme."),
     doc("crypto.hash_function", "§2", "", "Hash function."),
@@ -551,6 +593,13 @@ pub const OUTSIDE_SECTION_2: &[(&str, &str)] = &[
     ("timing.witness_signing", "§3.6"),
     ("offline.unreachable_rule", "§4.6"),
     ("penalties.strict_offence", "§4.6, §4.8"),
+    ("admission.failover_after_rounds", "§3.1, §3.4"),
+    ("penalties.offline_points_after_s", "§4.7, §4.8"),
+    ("penalties.offline_points_steps", "§4.7, §4.8"),
+    ("penalties.offline_points_cap", "§4.7, §4.8"),
+    ("penalties.offline_points_reset_s", "§4.7, §4.8"),
+    ("penalties.offline_points_outcome", "§4.7, §4.8"),
+    ("penalties.offline_points_seat_cooldown_s", "§4.7, §4.8"),
 ];
 
 /// One row of the SPEC §2 parameter table.

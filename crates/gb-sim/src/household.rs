@@ -46,8 +46,10 @@ pub mod bit {
     pub const SCRIPT: u16 = 1 << 9;
     /// Scheduled load-shedding of the feeder group.
     pub const LOADSHED: u16 = 1 << 10;
+    /// A scripted regional blackout (E3).
+    pub const SCRIPTED_BLACKOUT: u16 = 1 << 11;
     /// Number of cause bits.
-    pub const COUNT: usize = 11;
+    pub const COUNT: usize = 12;
 }
 
 /// The household's own processes, in the order of [`Household::next`].

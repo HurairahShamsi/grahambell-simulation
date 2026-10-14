@@ -24,7 +24,7 @@ const C6: &str = "C6";
 const C7: &str = "C7";
 const A6: &str = "A6";
 
-fn realistic(
+pub(crate) fn realistic(
     ctx: &Ctx<'_>,
     id: &str,
     section: &str,
@@ -61,7 +61,7 @@ fn tags() -> Vec<GroupSpec> {
     ]
 }
 
-fn region_names(ctx: &Ctx<'_>) -> Vec<String> {
+pub(crate) fn region_names(ctx: &Ctx<'_>) -> Vec<String> {
     ctx.cfg.sim.network.regions.clone()
 }
 
@@ -113,6 +113,96 @@ pub(crate) fn c1_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
     ideal.groups = tags();
     jobs.push(ideal);
     jobs
+}
+
+/// The tagged groups' blocks and mining time by region and by device (M3a.1: the honest 10 %
+/// group's deficit). For each group and each region (or device): the group's share of its own
+/// slot time there and the network's, its blocks per slot-second there relative to the whole
+/// network's, and its amplification within that region (or device).
+fn group_breakdown(runs: &[&JobResult], m: u32, regions: &[String], table: &mut Table) {
+    let devices = [
+        "always_on".to_string(),
+        "desktop".to_string(),
+        "laptop".to_string(),
+    ];
+    let total_ids: f64 = runs.iter().map(|r| r.canonical as f64).sum();
+    let total_slot: f64 = runs
+        .iter()
+        .map(|r| r.slot_s_by_group.iter().sum::<f64>())
+        .sum();
+    for (by, names, ids_of, slot_of) in [
+        (
+            "region",
+            regions,
+            (|r: &JobResult| &r.ids_by_group_region) as fn(&JobResult) -> &Vec<Vec<u64>>,
+            (|r: &JobResult| &r.slot_s_by_group_region) as fn(&JobResult) -> &Vec<Vec<f64>>,
+        ),
+        (
+            "device",
+            &devices[..],
+            |r: &JobResult| &r.ids_by_group_device,
+            |r: &JobResult| &r.slot_s_by_group_device,
+        ),
+    ] {
+        for (g, label) in [(1usize, "x=0.1"), (2, "x=0.5"), (0, "untagged")] {
+            let cell = |x: usize| {
+                let ids: f64 = runs
+                    .iter()
+                    .map(|r| {
+                        ids_of(r)
+                            .get(g)
+                            .and_then(|v| v.get(x))
+                            .copied()
+                            .unwrap_or(0) as f64
+                    })
+                    .sum();
+                let slot: f64 = runs
+                    .iter()
+                    .map(|r| {
+                        slot_of(r)
+                            .get(g)
+                            .and_then(|v| v.get(x))
+                            .copied()
+                            .unwrap_or(0.0)
+                    })
+                    .sum();
+                let all_ids: f64 = runs
+                    .iter()
+                    .map(|r| {
+                        ids_of(r)
+                            .iter()
+                            .map(|v| v.get(x).copied().unwrap_or(0) as f64)
+                            .sum::<f64>()
+                    })
+                    .sum();
+                let all_slot: f64 = runs
+                    .iter()
+                    .map(|r| {
+                        slot_of(r)
+                            .iter()
+                            .map(|v| v.get(x).copied().unwrap_or(0.0))
+                            .sum::<f64>()
+                    })
+                    .sum();
+                (ids, slot, all_ids, all_slot)
+            };
+            let group_slot: f64 = (0..names.len()).map(|x| cell(x).1).sum();
+            for (x, name) in names.iter().enumerate() {
+                let (ids, slot, all_ids, all_slot) = cell(x);
+                table.push(vec![
+                    n(u64::from(m)),
+                    label.to_string(),
+                    by.to_string(),
+                    name.clone(),
+                    f(ids),
+                    f(div(slot, group_slot)),
+                    f(div(all_slot, total_slot)),
+                    f(div(div(ids, slot), div(total_ids, total_slot))),
+                    f(div(div(ids, all_ids), div(slot, all_slot))),
+                ]);
+            }
+        }
+    }
 }
 
 pub(crate) fn c1_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
@@ -191,6 +281,20 @@ pub(crate) fn c1_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             }
         }
     };
+    let mut breakdown = Table::new(
+        "C1_group_breakdown.csv",
+        &[
+            "miners",
+            "group",
+            "by",
+            "value",
+            "final_chain_ids",
+            "group_slot_share",
+            "network_slot_share",
+            "win_rate_vs_network",
+            "amplification_within",
+        ],
+    );
     let mut i = 0;
     for m in &sizes {
         let runs: Vec<&JobResult> = results[i..i + seeds].iter().collect();
@@ -203,6 +307,7 @@ pub(crate) fn c1_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             &mut summary,
             &mut chart_points,
         );
+        group_breakdown(&runs, *m, &regions, &mut breakdown);
         // By region, pooled over seeds.
         for (rg, name) in regions.iter().enumerate() {
             let mut daily = Vec::new();
@@ -272,6 +377,7 @@ pub(crate) fn c1_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
     }
     out.tables.push(table);
     out.tables.push(by_region);
+    out.tables.push(breakdown);
     out.charts.push(Chart {
         file: "C1_amplification.png".to_string(),
         title: "C1 — honest control: amplification of a tagged group".to_string(),
@@ -1442,8 +1548,47 @@ pub(crate) fn a6_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
         j.patience_median_days = *patience;
         jobs.push(j);
     }
+    // M3a.1: the wait to a first ID at 1, 2 and 3 × R arrivals, with no patience limit.
+    for (i, mult) in A6_ARRIVALS.iter().enumerate() {
+        let mut j = realistic(
+            ctx,
+            &format!("A6-arrivals{mult}R-no-patience"),
+            A6,
+            30 + i as u64,
+            ctx.pick(10_000, 300),
+            ctx.pick(29_000, 2_900),
+            ctx.days(60.0, 0.5),
+        );
+        j.arrivals_multiple_of_r = *mult;
+        j.patience_median_days = 1e9;
+        jobs.push(j);
+    }
+    // M3a.1 (H4): V2's current-design restarters with and without the post-admission wait.
+    let m = ctx.pick(1_000, 100);
+    for (i, wait) in [0u32, 5].iter().enumerate() {
+        let mut j = ctx.job(&format!("A6-H4-wait{wait}"), A6, 40 + i as u64);
+        j.miners = m;
+        j.registered_ids = ctx.pick(2_900, 1_300);
+        j.outages = false;
+        j.frozen_target = Some(gb_protocol::issuance::variant_b_target(u64::from(m), 30));
+        j.days = ctx.days(30.0, 0.5);
+        j.post_wait_rounds = Some(*wait);
+        j.groups = vec![GroupSpec {
+            label: "restarter".to_string(),
+            share: 0.5,
+            strategy: Strategy::Restart {
+                old_design: false,
+                window_s: 3_600.0,
+            },
+            always_online: false,
+        }];
+        jobs.push(j);
+    }
     jobs
 }
+
+/// A6 arrival rates of the M3a.1 wait study, multiples of R.
+const A6_ARRIVALS: [f64; 3] = [1.0, 2.0, 3.0];
 
 pub(crate) fn a6_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
     let mut out = SectionOut::default();
@@ -1505,10 +1650,96 @@ pub(crate) fn a6_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
         ));
     }
     out.tables.push(table);
+    // M3a.1: the wait to a first ID, among newcomers followed for 30 days or more.
+    let mut waits = Table::new(
+        "A6_first_id_wait.csv",
+        &[
+            "arrivals_multiple_of_r",
+            "arrivals_followed_30_days",
+            "share_within_1_day",
+            "share_within_7_days",
+            "share_within_30_days",
+            "median_wait_days",
+        ],
+    );
+    let base = ctx.cfg.sim.growth.patience_median_days.len();
+    let mut wait_lines = Vec::new();
+    for (k, mult) in A6_ARRIVALS.iter().enumerate() {
+        let Some(res) = results.get(base + k) else {
+            continue;
+        };
+        let end = res.sim_s / 86_400.0;
+        let followed: Vec<f64> = res
+            .newcomers
+            .iter()
+            .filter(|(joined, _)| *joined <= end - 30.0)
+            .map(|(_, w)| w.unwrap_or(f64::INFINITY))
+            .collect();
+        let share = |d: f64| {
+            div(
+                followed.iter().filter(|w| **w <= d).count() as f64,
+                followed.len() as f64,
+            )
+        };
+        let mut sorted = followed.clone();
+        sorted.sort_by(f64::total_cmp);
+        let median = sorted.get(sorted.len() / 2).copied().unwrap_or(f64::NAN);
+        waits.push(vec![
+            f(*mult),
+            n(followed.len() as u64),
+            f(share(1.0)),
+            f(share(7.0)),
+            f(share(30.0)),
+            f(median),
+        ]);
+        wait_lines.push(format!(
+            "{mult}·R arrivals: of {} newcomers followed 30 days, {} % had a first ID within a day, {} % within 7 days, {} % within 30 days; median wait {} days",
+            followed.len(),
+            r(100.0 * share(1.0), 1),
+            r(100.0 * share(7.0), 1),
+            r(100.0 * share(30.0), 1),
+            r(median, 2)
+        ));
+    }
+    let mut h4 = Table::new(
+        "A6_post_admission_wait.csv",
+        &[
+            "post_admission_wait_rounds",
+            "restarts",
+            "restarter_advantage",
+            "se",
+        ],
+    );
+    let mut h4_lines = Vec::new();
+    for (k, wait) in [0u32, 5].iter().enumerate() {
+        let Some(res) = results.get(base + A6_ARRIVALS.len() + k) else {
+            continue;
+        };
+        let (adv, se) = super::v::per_slot_advantage(res, 0.5, ctx.pick(1_000, 100));
+        h4.push(vec![n(u64::from(*wait)), n(res.restarts), f(adv), f(se)]);
+        h4_lines.push(format!(
+            "post-admission wait {wait} rounds: {} restarts, restarter advantage {} (SE {})",
+            res.restarts,
+            r(adv, 3),
+            r(se, 3)
+        ));
+    }
+    out.tables.push(waits);
+    out.tables.push(h4);
     out.summary = format!(
-        "## A6 — honest growth and patience\n\nNew honest miners arrive at {}·R per year (`A6_growth_and_patience.csv`):\n\n{}\n",
+        "## A6 — honest growth and patience\n\nNew honest miners arrive at {}·R per year (`A6_growth_and_patience.csv`):\n\n{}\n\nThe wait to a first ID with no patience limit (`A6_first_id_wait.csv`):\n\n{}\n\nH4 — is the post-admission wait still needed now that restarts gain nothing? V2's current-design restarters (half the slots, keep window 1 h) with and without it (`A6_post_admission_wait.csv`):\n\n{}\n",
         ctx.cfg.sim.growth.arrivals_multiple_of_r,
         summary
+            .iter()
+            .map(|s| format!("- {s}"))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        wait_lines
+            .iter()
+            .map(|s| format!("- {s}"))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        h4_lines
             .iter()
             .map(|s| format!("- {s}"))
             .collect::<Vec<_>>()

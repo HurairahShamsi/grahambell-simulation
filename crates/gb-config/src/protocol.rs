@@ -35,6 +35,15 @@ pub enum EntropySigners {
     /// Every online member; the online count must be at least the quorum.
     #[default]
     AllOnlineMembers,
+    /// The M3a.1 experiment E3 (architect, 2026-10-14): a threshold signature of
+    /// t = ⌈2n/3⌉ of the n members seated when the KWC's key was set up. Any t members give
+    /// the same group signature, so the entropy is unique per miner and round whichever
+    /// members sign; absent members are not waited for and need no offline record, and a
+    /// member that returns mid-round signs from the next round.
+    ThresholdTwoThirds,
+    /// Comparison: the same with t = ⌊n/2⌋ + 1 (21 of 40), and the PoWit then needs 21 of 40
+    /// too: just over half for witness signatures, two-thirds for decisions.
+    ThresholdMajority,
 }
 
 /// Chain Allocation Committee membership policy (SPEC §4.3).
@@ -107,6 +116,10 @@ pub enum DifficultyCountRule {
     /// Comparison: every Globally Active miner recorded online, including those still in the
     /// post-admission wait.
     AllGloballyActive,
+    /// The M3a.1 experiment E2 (architect, 2026-10-14): only miners whose KWC issued entropy
+    /// for the round, so miners that sat out, were offline, or whose KWC could not issue are
+    /// not counted. Each KWC would commit its issued count in its entropy attestations.
+    IssuedEntropy,
 }
 
 /// What counts as miner equivocation (SPEC §3.4, Appendix A; architect, 2026-10-12).
@@ -258,6 +271,19 @@ pub enum PenaltyFinalStep {
     Permanent,
 }
 
+/// What happens to a witness member that reaches the offline-points cap (the M3a.1 E4
+/// ladder; architect, 2026-10-14).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OfflinePointsOutcome {
+    /// It loses its witness seat but keeps its ID and can still mine; it may take a seat
+    /// again after a cooldown.
+    #[default]
+    SeatLoss,
+    /// Its ID is blacklisted (banned).
+    Blacklist,
+}
+
 /// Signature scheme (SPEC §2).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -286,6 +312,10 @@ pub enum StartRule {
     A,
     /// Rule (b), comparison only: when the miner's entropy arrives locally.
     B,
+    /// Rule (r), the M3a.1 experiment E1 (architect, 2026-10-14): at the entropy issue time
+    /// its KWC attests (the t-th required signature, rounded up to a whole second), never
+    /// before rule (a)'s start.
+    R,
 }
 
 /// Choice between two valid PoW-ID blocks at the same height (SPEC §3.7).
@@ -385,9 +415,10 @@ impl Default for Issuance {
                     Sweep::values(vec![
                         DifficultyCountRule::AfterPostAdmissionWait,
                         DifficultyCountRule::AllGloballyActive,
+                        DifficultyCountRule::IssuedEntropy,
                     ])
                     .with_note(
-                        "all Globally Active miners is the comparison (architect, 2026-10-12)",
+                        "all Globally Active miners is the comparison (architect, 2026-10-12); issued entropy is the M3a.1 experiment (2026-10-14)",
                     ),
                 ),
             min_attack_time_floor_years: Param::with_status(2.0, Status::P)
@@ -397,8 +428,9 @@ impl Default for Issuance {
             cap_safety_factor: Param::decided(Fraction::new(7, 6)),
             confirmation_depth_blocks: Param::with_status(6, Status::O).swept(Sweep::range(3, 12)),
             start_rule: Param::decided(StartRule::A).swept(
-                Sweep::values(vec![StartRule::A, StartRule::B])
-                    .with_note("rule (b) is the rejected alternative, kept for S13"),
+                Sweep::values(vec![StartRule::A, StartRule::B, StartRule::R]).with_note(
+                    "rule (b) is the rejected alternative, kept for S13; rule (r) is the M3a.1 experiment (architect, 2026-10-14)",
+                ),
             ),
             same_height_tie_break: Param::with_status(TieBreak::LowerBlockHash, Status::P).swept(
                 Sweep::values(vec![TieBreak::LowerBlockHash, TieBreak::FirstSeen]),
@@ -503,7 +535,14 @@ pub struct Entropy {
 impl Default for Entropy {
     fn default() -> Self {
         Entropy {
-            signers: Param::decided(EntropySigners::AllOnlineMembers),
+            signers: Param::decided(EntropySigners::AllOnlineMembers).swept(
+                Sweep::values(vec![
+                    EntropySigners::AllOnlineMembers,
+                    EntropySigners::ThresholdTwoThirds,
+                    EntropySigners::ThresholdMajority,
+                ])
+                .with_note("threshold entropy is the M3a.1 experiment (architect, 2026-10-14)"),
+            ),
             equivocation_scope: Param::decided(EquivocationScope::SameHeight).swept(
                 Sweep::values(vec![
                     EquivocationScope::SameHeight,
@@ -633,6 +672,11 @@ pub struct Admission {
     pub convergence_interval_epochs: Param<f64>,
     /// Registered peers a newcomer bootstraps from.
     pub peer_bootstrap_count: Param<u32>,
+    /// Failover (the M3a.1 experiment E3; architect, 2026-10-14): a miner whose KWC cannot
+    /// issue entropy because it is below quorum for this many consecutive rounds moves, by a
+    /// self-service offline request and re-admission, to a KWC with spare capacity that can;
+    /// unset turns failover off.
+    pub failover_after_rounds: Param<Option<u32>>,
 }
 
 impl Default for Admission {
@@ -642,6 +686,10 @@ impl Default for Admission {
             convergence_interval_epochs: Param::with_status(1.0, Status::O)
                 .swept(Sweep::range(0.5, 3.0)),
             peer_bootstrap_count: Param::decided(8).swept(Sweep::range(4, 8)),
+            failover_after_rounds: Param::with_status(None, Status::P).swept(
+                Sweep::values(vec![Some(2)])
+                    .with_note("off by default; the M3a.1 experiment (architect, 2026-10-14)"),
+            ),
         }
     }
 }
@@ -775,6 +823,21 @@ pub struct Penalties {
     pub final_step: Param<PenaltyFinalStep>,
     /// The penalty for a failed One Chance under the strict rule.
     pub strict_offence: Param<StrictOffencePenalty>,
+    /// Offline points (the M3a.1 experiment E4; architect, 2026-10-14): a witness member
+    /// earns points for every offline period of at least this length, whatever its cause;
+    /// unset turns the ladder off.
+    pub offline_points_after_s: Param<Option<f64>>,
+    /// Points added by the first, second, … award since the points last reset; the last
+    /// step repeats.
+    pub offline_points_steps: Param<Vec<u32>>,
+    /// Points at which the outcome applies.
+    pub offline_points_cap: Param<u32>,
+    /// Block time after the most recent award at which the points reset to zero.
+    pub offline_points_reset_s: Param<f64>,
+    /// What happens at the cap.
+    pub offline_points_outcome: Param<OfflinePointsOutcome>,
+    /// After a seat loss, how long before the member may take a seat again.
+    pub offline_points_seat_cooldown_s: Param<f64>,
 }
 
 impl Default for Penalties {
@@ -792,6 +855,20 @@ impl Default for Penalties {
                     "yearly reset is [P]; immediate ban is §4.6 read literally (architect, 2026-10-12)",
                 ),
             ),
+            offline_points_after_s: Param::with_status(None, Status::O).swept(
+                Sweep::values(vec![Some(3_600.0), Some(21_600.0), Some(86_400.0)]).with_note(
+                    "off by default; n of the M3a.1 experiment (architect, 2026-10-14)",
+                ),
+            ),
+            offline_points_steps: Param::with_status(vec![1, 1, 2, 3, 4, 5], Status::O),
+            offline_points_cap: Param::with_status(20, Status::O),
+            offline_points_reset_s: Param::with_status(31_536_000.0, Status::O),
+            offline_points_outcome: Param::with_status(OfflinePointsOutcome::SeatLoss, Status::O)
+                .swept(Sweep::values(vec![
+                    OfflinePointsOutcome::SeatLoss,
+                    OfflinePointsOutcome::Blacklist,
+                ])),
+            offline_points_seat_cooldown_s: Param::with_status(2_592_000.0, Status::O),
         }
     }
 }
