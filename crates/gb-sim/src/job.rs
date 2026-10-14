@@ -340,8 +340,14 @@ pub struct JobResult {
     pub early_pairs: u64,
     /// Panel node-block pairs checked.
     pub panel_pairs: u64,
-    /// Panel nodes whose final tip is off the final chain.
+    /// Panel nodes whose final tip is off the final chain: split for good, or on another
+    /// branch at the top when the run ends.
     pub split_panel_nodes: u64,
+    /// Of those, the panel nodes split for good: they can never accept a settled block (for
+    /// example one they rejected as late or early under a permanent rule). Checkpoints written
+    /// before this field existed read 0.
+    #[serde(default)]
+    pub permanent_split_panel_nodes: u64,
     /// Reorgs of the network chain deeper than the confirmation depth.
     pub deep_reorgs: u64,
     /// Deepest reorg of the network chain, blocks.

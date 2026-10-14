@@ -1142,6 +1142,8 @@ impl Sim<'_> {
                 .map(|(p, b)| b.saturating_sub(*p) as f64 / SECOND as f64)
                 .fold(0.0, f64::max);
         }
+        self.res.permanent_split_panel_nodes =
+            self.panel_split.iter().filter(|x| **x).count() as u64;
         let split = &self.panel_split;
         self.res.split_panel_nodes = tips
             .iter()
@@ -1440,6 +1442,37 @@ mod tests {
         assert_eq!(sim.res.max_reorg, 3);
         assert_eq!(sim.res.deep_reorgs, 1);
         assert_eq!(sim.confirmed_height, 0);
+    }
+
+    #[test]
+    fn a_validator_that_can_never_accept_a_settled_block_is_split_for_good() {
+        let cfg = gb_config::Config::default();
+        let spec = spec(&cfg);
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start_chain();
+        // A chain of 14 blocks; validators 0, 1 and 2 rejected its first block for good, so
+        // they hold none of it.
+        let mut b = 0;
+        let mut chain = Vec::new();
+        for i in 0..14u64 {
+            b = block(&mut sim, b, 30 * (i + 1), i as u8 + 1);
+            chain.push(b);
+        }
+        for x in &chain {
+            for v in 0..3 {
+                sim.blocks[*x as usize].panel[v] = INF;
+            }
+        }
+        let tips: Vec<u32> = (0..sim.panel.len())
+            .map(|v| if v < 3 { 0 } else { b })
+            .collect();
+        sim.update_network_tip(0, &tips);
+        sim.settle(0, &tips);
+        assert_eq!(sim.settled_ids.len(), 3);
+        assert_eq!(sim.panel_split.iter().filter(|x| **x).count(), 3);
+        sim.finish(0);
+        assert_eq!(sim.res.permanent_split_panel_nodes, 3);
+        assert!(sim.res.split_panel_nodes >= 3);
     }
 
     #[test]

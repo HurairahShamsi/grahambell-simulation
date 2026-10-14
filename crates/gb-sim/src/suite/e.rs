@@ -578,7 +578,8 @@ fn e1_runs<'r>(
 }
 
 /// Criteria 1–3 of E1, from stage 1: (zero reorgs below confirmation, withholder
-/// amplification ≤ 1, no split validators) for each configuration.
+/// amplification ≤ 1, no validator split for good) for each configuration. A validator merely
+/// on another branch at the top when a run ends is not split for good.
 fn e1_criteria(ctx: &Ctx<'_>, results: &[JobResult]) -> Vec<(bool, bool, bool)> {
     e1_runs(ctx, results)
         .iter()
@@ -587,7 +588,7 @@ fn e1_criteria(ctx: &Ctx<'_>, results: &[JobResult]) -> Vec<(bool, bool, bool)> 
             let c1 = all.clone().all(|r| r.deep_reorgs == 0);
             let (amp, _, _) = amplification(with, 1);
             let c2 = amp <= 1.0;
-            let c3 = all.clone().all(|r| r.split_panel_nodes == 0);
+            let c3 = all.clone().all(|r| r.permanent_split_panel_nodes == 0);
             (c1, c2, c3)
         })
         .collect()
@@ -739,7 +740,8 @@ pub(crate) fn e1_analyse(
             "max_reorg",
             "withholder_amplification",
             "withholder_amplification_se",
-            "split_validators_max",
+            "permanently_split_validators_max",
+            "validators_off_chain_at_end_max",
             "c1_no_deep_reorg",
             "c2_amplification_at_most_1",
             "c3_no_split",
@@ -771,7 +773,12 @@ pub(crate) fn e1_analyse(
         let deep: u64 = all.iter().map(|r| r.deep_reorgs).sum();
         let max_reorg = all.iter().map(|r| r.max_reorg).max().unwrap_or(0);
         let (amp, amp_se, _) = amplification(with, 1);
-        let split = all.iter().map(|r| r.split_panel_nodes).max().unwrap_or(0);
+        let split = all
+            .iter()
+            .map(|r| r.permanent_split_panel_nodes)
+            .max()
+            .unwrap_or(0);
+        let off_chain = all.iter().map(|r| r.split_panel_nodes).max().unwrap_or(0);
         let c4 = crit4[i].as_ref();
         table.push(vec![
             c.name(),
@@ -792,6 +799,7 @@ pub(crate) fn e1_analyse(
             f(amp),
             f(amp_se),
             n(split),
+            n(off_chain),
             criteria[i].0.to_string(),
             criteria[i].1.to_string(),
             criteria[i].2.to_string(),
@@ -825,7 +833,7 @@ pub(crate) fn e1_analyse(
             ]);
         }
         lines.push(format!(
-            "{}: orphans {} % (±{}), interval {} s (±{}), {} reorgs below confirmation (deepest {}), withholder amplification {} (SE {}), at most {} split validators{}",
+            "{}: orphans {} % (±{}), interval {} s (±{}), {} reorgs below confirmation (deepest {}), withholder amplification {} (SE {}), at most {} validators split for good ({} off the final chain at the end){}",
             c.name(),
             r(100.0 * om, 2),
             r(100.0 * oh, 2),
@@ -836,6 +844,7 @@ pub(crate) fn e1_analyse(
             r(amp, 3),
             r(amp_se, 3),
             split,
+            off_chain,
             super::storm_note(&all.iter().map(|x| **x).collect::<Vec<_>>())
         ));
     }
@@ -884,7 +893,7 @@ pub(crate) fn e1_analyse(
         ),
     };
     out.summary = format!(
-        "## E1 — fork choice\n\nC3 setup (RIPE latency, 0.5 % loss, one 5-minute partition per region per day, realistic churn), {} seeds per configuration, honest and with a 10 % withholder (`E1_fork_choice.csv`, `E1_region_win_share.csv`, `E1_criterion4.csv`). Criteria, fixed in advance and applied mechanically: 1. zero reorgs below confirmation in every run (and in every criterion-4 rerun); 2. withholder amplification ≤ 1; 3. no validator split at the end of any run; 4. the smallest |mean interval − 30 s| with the configuration's best H5-passing E2 variant; 5. the lowest orphan rate. A tie is a 95 % CI of the paired difference over seeds that includes zero; ties go to the simplest rule ((a) before (r), v0.6 before first seen, literal before [P], D = 10 s soft before no deadline).\n\n{verdict}\n\n{}\n",
+        "## E1 — fork choice\n\nC3 setup (RIPE latency, 0.5 % loss, one 5-minute partition per region per day, realistic churn), {} seeds per configuration, honest and with a 10 % withholder (`E1_fork_choice.csv`, `E1_region_win_share.csv`, `E1_criterion4.csv`). Criteria, fixed in advance and applied mechanically: 1. zero reorgs below confirmation in every run (and in every criterion-4 rerun); 2. withholder amplification ≤ 1; 3. no validator split for good (one that can never accept a settled block) in any run; 4. the smallest |mean interval − 30 s| with the configuration's best H5-passing E2 variant; 5. the lowest orphan rate. A tie is a 95 % CI of the paired difference over seeds that includes zero; ties go to the simplest rule ((a) before (r), v0.6 before first seen, literal before [P], D = 10 s soft before no deadline).\n\n{verdict}\n\n{}\n",
         seeds,
         lines
             .iter()
