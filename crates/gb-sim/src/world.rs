@@ -400,10 +400,15 @@ impl<'a> Sim<'a> {
         } else {
             &cfg.households.reliable_grid
         };
+        // Feeder group and provider are drawn uniformly from the region's (SIM-12–SIM-14).
+        // Until 2026-10-14 they were drawn from the bit pattern of a uniform float, whose top
+        // bits barely vary, so every household of a region shared one feeder group and one
+        // provider, and each feeder fault, load-shedding block and provider outage took the
+        // whole region offline (ASSUMPTIONS SIM-35).
         let feeders = grid.feeder_groups as usize;
-        let grid_group = (region * feeders + household::pick(w[1].to_bits(), feeders)) as u32;
+        let grid_group = (region * feeders + household::uniform_index(w[1], feeders)) as u32;
         let isps = cfg.households.isps_per_region.max(1) as usize;
-        let isp = (region * isps + household::pick(w[2].to_bits(), isps)) as u32;
+        let isp = (region * isps + household::uniform_index(w[2], isps)) as u32;
         let ups = w[3] < grid.ups_share;
         let (skew, access) = if self.spec.idealised {
             (0.0, 0.0)
@@ -2361,6 +2366,43 @@ mod tests {
         sim.register_winner(2 * SECOND, b);
         assert_eq!((sim.res.first_ids, sim.res.dropouts), (1, 0));
         assert!(sim.miners[m as usize].first_id);
+    }
+
+    #[test]
+    fn households_spread_over_every_feeder_group_and_provider_of_their_region() {
+        // SIM-12–SIM-14: a feeder fault or provider outage takes one group of a region
+        // offline, not the whole region.
+        let cfg = gb_config::Config::default();
+        let mut spec = small_sim(&cfg);
+        spec.idealised = false;
+        spec.outages = true;
+        spec.registered_ids = 20_000;
+        let sim = Sim::build(&spec, &cfg).unwrap();
+        let feeders = cfg.sim.households.reliable_grid.feeder_groups as usize;
+        let isps = cfg.sim.households.isps_per_region as usize;
+        for region in 0..cfg.sim.network.regions.len() {
+            let homes: Vec<&Household> = sim
+                .hh
+                .iter()
+                .filter(|h| h.region as usize == region)
+                .collect();
+            if homes.len() < 1_000 {
+                continue;
+            }
+            let groups: std::collections::BTreeSet<u32> =
+                homes.iter().map(|h| h.grid_group).collect();
+            let providers: std::collections::BTreeSet<u32> = homes.iter().map(|h| h.isp).collect();
+            assert_eq!(groups.len(), feeders, "region {region}");
+            assert_eq!(providers.len(), isps, "region {region}");
+            // No feeder group holds more than twice its fair share.
+            for g in groups {
+                let n = homes.iter().filter(|h| h.grid_group == g).count();
+                assert!(
+                    n * feeders < 2 * homes.len(),
+                    "region {region} group {g}: {n}"
+                );
+            }
+        }
     }
 
     #[test]

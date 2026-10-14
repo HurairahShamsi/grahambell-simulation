@@ -382,6 +382,11 @@ pub fn pick(word: u64, n: usize) -> usize {
     ((unit(word) * n as f64) as usize).min(n.saturating_sub(1))
 }
 
+/// An index in `0..n` from a uniform `u` in [0, 1), each index equally likely.
+pub fn uniform_index(u: f64, n: usize) -> usize {
+    ((u * n as f64) as usize).min(n.saturating_sub(1))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
