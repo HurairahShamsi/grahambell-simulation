@@ -135,6 +135,7 @@ pub(crate) struct Params {
     pub warmup: Micros,
     pub settle_depth: u64,
     pub signing_tolerance: f64,
+    pub fork_storm_width: usize,
 }
 
 /// One simulation run.
@@ -175,6 +176,8 @@ pub(crate) struct Sim<'a> {
     pub committee_ticks: u64,
     pub v1_attacker: u64,
     pub stopped: bool,
+    /// When a fork storm stopped the run ([`Micros::MAX`] if none did).
+    pub stop_at: Micros,
     pub panel_update_at: Micros,
     pub hop_state: Vec<u8>,
     pub withheld: Vec<u32>,
@@ -207,7 +210,7 @@ impl<'a> Sim<'a> {
             }
             sim.handle(now, ev);
         }
-        let now = sim.end.min(sim.q.now());
+        let now = sim.end.min(sim.q.now()).min(sim.stop_at);
         sim.finish(now);
         sim.res.events = sim.q.processed();
         sim.res.wall_s = started.elapsed().as_secs_f64();

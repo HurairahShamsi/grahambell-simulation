@@ -2,7 +2,7 @@
 
 use super::{
     Chart, ChartPanel, ChartSeries, Ctx, SectionOut, Table, amplification, count_check, div, f,
-    mc_check, mean_se, n, quantile, r,
+    mc_check, mean_se, n, quantile, r, storm_day, storm_note,
 };
 use crate::job::{ForkRule, GroupSpec, JobResult, JobSpec, Strategy};
 use gb_analytic::exact::decimal;
@@ -180,10 +180,11 @@ pub(crate) fn c1_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
                 n(batches),
             ]);
             summary.push(format!(
-                "{m} miners, {rule}, x = {share}: amplification {} (95 % CI {}–{})",
+                "{m} miners, {rule}, x = {share}: amplification {} (95 % CI {}–{}){}",
                 r(amp, 4),
                 r(lo, 4),
-                r(hi, 4)
+                r(hi, 4),
+                storm_note(runs)
             ));
             if rule == "literal" {
                 chart[g - 1].1.push((f64::from(m), amp));
@@ -373,11 +374,12 @@ fn fork_row(label: &[String], res: &JobResult) -> Vec<String> {
         f(div(res.interval_sum_s, res.interval_count as f64)),
         n(res.pauses),
         f(res.pause_s),
+        storm_day(res),
     ]);
     row
 }
 
-const FORK_COLUMNS: [&str; 13] = [
+const FORK_COLUMNS: [&str; 14] = [
     "final_chain_blocks",
     "orphans",
     "orphan_rate",
@@ -391,6 +393,7 @@ const FORK_COLUMNS: [&str; 13] = [
     "mean_interval_s",
     "pauses_over_120s",
     "pause_seconds",
+    "fork_storm_day",
 ];
 
 pub(crate) fn c2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
@@ -589,6 +592,7 @@ pub(crate) fn c3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             "max_reorg",
             "reorgs_deeper_than_confirmation",
             "pauses_over_120s",
+            "fork_storm_day",
         ],
     );
     let mut regional = Table::new(
@@ -613,6 +617,7 @@ pub(crate) fn c3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             "honest_blocks_displaced",
             "withholder_amplification",
             "se",
+            "fork_storm_day",
         ],
     );
     let base_forks = div(results[0].fork_heights as f64, results[0].canonical as f64);
@@ -635,6 +640,7 @@ pub(crate) fn c3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             n(res.max_reorg),
             n(res.deep_reorgs),
             n(res.pauses),
+            storm_day(res),
         ]);
         for (rg, name) in regions.iter().enumerate() {
             let blocks = res.blocks_by_region.get(rg).copied().unwrap_or(0);
@@ -675,12 +681,13 @@ pub(crate) fn c3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             n(wres.displaced_by_withheld),
             f(amp),
             f(se),
+            storm_day(wres),
         ]);
         if *scope == DeadlineScope::Permanent {
             success_pts.push((d.unwrap_or(120.0), 100.0 * success));
         }
         summary.push(format!(
-            "D = {dl} ({}): {} % of blocks late at the panel majority, fork rate {} % (no deadline: {} %), split panel nodes {}, deepest reorg {} ({} below a confirmed ID); withholder success {} %, amplification {}",
+            "D = {dl} ({}): {} % of blocks late at the panel majority, fork rate {} % (no deadline: {} %), split panel nodes {}, deepest reorg {} ({} below a confirmed ID){}; withholder success {} %, amplification {}{}",
             scope_name(*scope),
             r(100.0 * div(res.late_majority as f64, res.blocks as f64), 3),
             r(100.0 * div(res.fork_heights as f64, res.canonical as f64), 2),
@@ -688,8 +695,10 @@ pub(crate) fn c3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             res.split_panel_nodes,
             res.max_reorg,
             res.deep_reorgs,
+            storm_note(&[res]),
             r(100.0 * success, 1),
-            r(amp, 3)
+            r(amp, 3),
+            storm_note(&[wres])
         ));
     }
     out.tables.push(table);
@@ -831,6 +840,7 @@ pub(crate) fn c4_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             "ids_per_half_day_sd",
             "final_factor_ppm",
             "pauses_over_120s",
+            "fork_storm_day",
         ],
     );
     let mut i = 0;
@@ -857,6 +867,7 @@ pub(crate) fn c4_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
                     f(sd(&halves)),
                     res.factor_ppm.last().map_or(String::new(), |x| n(*x)),
                     n(res.pauses),
+                    storm_day(res),
                 ]);
                 if churn == "realistic" && rname == "after_wait" {
                     summary.push(format!(
@@ -1040,11 +1051,12 @@ pub(crate) fn c5_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
                 }
             }
             summary.push(format!(
-                "W = {w}, {name}: stalls {} s mean, glitches under the grace epoch recorded offline {} %, honest IDs lost {} % per year, global pauses {}",
+                "W = {w}, {name}: stalls {} s mean, glitches under the grace epoch recorded offline {} %, honest IDs lost {} % per year, global pauses {}{}",
                 r(stall, 1),
                 r(100.0 * div(res.short_glitches_recorded as f64, res.short_glitches as f64), 1),
                 r(100.0 * div(bans as f64, id_years), 2),
-                res.pauses
+                res.pauses,
+                storm_note(&[res])
             ));
         }
     }
@@ -1383,12 +1395,13 @@ pub(crate) fn c7_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             f(mg),
         ]);
         summary.push(format!(
-            "household profiles, departures {d}/yr: witnesses online {} %; KWCs below the unregistered quorum {} % (M1 at that online fraction: {} %), below 7 + 21 {} % (M1: {} %)",
+            "household profiles, departures {d}/yr: witnesses online {} %; KWCs below the unregistered quorum {} % (M1 at that online fraction: {} %), below 7 + 21 {} % (M1: {} %){}",
             r(100.0 * online, 1),
             r(100.0 * u, 2),
             r(100.0 * mu, 2),
             r(100.0 * g, 2),
-            r(100.0 * mg, 2)
+            r(100.0 * mg, 2),
+            storm_note(&[res])
         ));
     }
     out.tables.push(table);
@@ -1476,10 +1489,11 @@ pub(crate) fn a6_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             0.0,
         ));
         summary.push(format!(
-            "patience median {patience} days: {} arrivals, {} % gave up before a first ID, median wait to a first ID {} days",
+            "patience median {patience} days: {} arrivals, {} % gave up before a first ID, median wait to a first ID {} days{}",
             res.arrivals,
             r(100.0 * div(res.dropouts as f64, resolved as f64), 1),
-            r(quantile(&res.waits_days, 0.5), 2)
+            r(quantile(&res.waits_days, 0.5), 2),
+            storm_note(&[res])
         ));
     }
     out.tables.push(table);

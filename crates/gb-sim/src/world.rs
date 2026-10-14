@@ -208,6 +208,7 @@ impl<'a> Sim<'a> {
             },
             settle_depth: 12,
             signing_tolerance: witness_signing_tolerance(spec.witness_signing, spec.delta),
+            fork_storm_width: cfg.sim.world.fork_storm_width as usize,
         };
         let mut keyed = Keyed::new(spec.seed, "gb-sim");
         let net_cfg = &cfg.sim.network;
@@ -345,6 +346,7 @@ impl<'a> Sim<'a> {
             committee_ticks: 0,
             v1_attacker: 0,
             stopped: false,
+            stop_at: u64::MAX,
             panel_update_at: u64::MAX,
             hop_state: vec![0; groups],
             withheld: Vec::new(),

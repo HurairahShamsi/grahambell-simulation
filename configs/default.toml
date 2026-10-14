@@ -265,6 +265,9 @@ registered_ids = 290000
 winners_readmit = true
 panel_nodes = 101
 deactivation_threshold_s = 86400.0
+# A run stops early, recorded as a fork storm, once more unsettled blocks than this share one
+# height (SIM-29; a simulation budget, illustrative).
+fork_storm_width = 64
 
 [sim.network]
 latency_source = "ripe_atlas"

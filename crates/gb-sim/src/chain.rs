@@ -372,6 +372,7 @@ impl Sim<'_> {
             beyond_horizon: cand.beyond_horizon,
         });
         self.unsettled.push(id);
+        self.watch_fork_width(now, height);
         self.set_difficulty(id);
         self.panel_accept(id);
         self.res.blocks += 1;
@@ -394,6 +395,24 @@ impl Sim<'_> {
         self.q.push(latest + 1, Ev::PanelUpdate);
         self.open_group(id, now);
         id
+    }
+
+    /// Records how many blocks are unsettled, and at one height, after a block at `height` is
+    /// added. Once more than `sim.world.fork_storm_width` share a height the run stops, as a
+    /// fork storm (ASSUMPTIONS SIM-29): the event loop ends before the next event.
+    fn watch_fork_width(&mut self, now: Micros, height: u64) {
+        let width = self
+            .unsettled
+            .iter()
+            .filter(|b| self.blocks[**b as usize].height == height)
+            .count();
+        self.res.max_unsettled = self.res.max_unsettled.max(self.unsettled.len() as u64);
+        self.res.max_fork_width = self.res.max_fork_width.max(width as u64);
+        if width > self.p.fork_storm_width && self.res.fork_storm_s.is_none() {
+            self.res.fork_storm_s = Some(crate::engine::seconds(now));
+            self.stop_at = now;
+            self.stopped = true;
+        }
     }
 
     /// The timestamp of the ancestor of `b` at `height`.
@@ -971,6 +990,20 @@ impl Sim<'_> {
                     (end - from) as f64 / SECOND as f64;
             }
         }
+        // A run stopped by a fork storm keeps only the complete days before it in its daily
+        // series: its last, partial day would read as a fall in issuance.
+        if self.res.fork_storm_s.is_some() {
+            let days = (now / (86_400 * SECOND)) as usize;
+            self.res.daily_ids.truncate(days);
+            self.res.daily_ids_by_group.truncate(days);
+            self.res.daily_ids_by_region.truncate(days);
+            self.res.daily_slot_s_by_group.truncate(days);
+            self.res.daily_slot_s_by_region.truncate(days);
+            self.res.daily_kwc.truncate(days);
+            self.res
+                .halfday_ids
+                .truncate((now / (43_200 * SECOND)) as usize);
+        }
     }
 }
 
@@ -1040,6 +1073,54 @@ mod tests {
         let b3 = block(sim, b2, 120, 6);
         let b4 = block(sim, b3, 160, 7);
         ([a1, a2, a3], [b1, b2, b3, b4])
+    }
+
+    #[test]
+    fn a_fork_storm_stops_the_run_once_too_many_blocks_share_a_height() {
+        let mut cfg = gb_config::Config::default();
+        cfg.sim.world.fork_storm_width = 3;
+        let spec = spec(&cfg);
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start_chain();
+        let a1 = block(&mut sim, 0, 31, 1);
+        sim.watch_fork_width(SECOND, 1);
+        for tag in 2..=3 {
+            block(&mut sim, 0, 30 + u64::from(tag), tag);
+            sim.watch_fork_width(5 * SECOND, 1);
+        }
+        block(&mut sim, a1, 62, 9);
+        sim.watch_fork_width(6 * SECOND, 2);
+        assert!(!sim.stopped);
+        assert_eq!(sim.res.max_fork_width, 3);
+        assert_eq!(sim.res.max_unsettled, 4);
+        // A fourth block at height 1 is one more than the width allows.
+        block(&mut sim, 0, 40, 4);
+        sim.watch_fork_width(7 * SECOND, 1);
+        assert!(sim.stopped);
+        assert_eq!(sim.res.fork_storm_s, Some(7.0));
+        assert_eq!(sim.stop_at, 7 * SECOND);
+        assert_eq!(sim.res.max_fork_width, 4);
+        assert_eq!(sim.res.max_unsettled, 5);
+        // The first storm is the one recorded.
+        block(&mut sim, 0, 41, 5);
+        sim.watch_fork_width(9 * SECOND, 1);
+        assert_eq!(sim.res.fork_storm_s, Some(7.0));
+    }
+
+    #[test]
+    fn a_run_stopped_by_a_fork_storm_keeps_only_its_complete_days() {
+        let cfg = gb_config::Config::default();
+        let spec = spec(&cfg);
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start_chain();
+        sim.res.daily_ids = vec![1; 4];
+        sim.res.daily_kwc = vec![[1, 1, 1]; 4];
+        sim.res.halfday_ids = vec![1; 7];
+        sim.res.fork_storm_s = Some(2.6 * 86_400.0);
+        sim.finish(micros(2.6 * 86_400.0));
+        assert_eq!(sim.res.daily_ids.len(), 2);
+        assert_eq!(sim.res.daily_kwc.len(), 2);
+        assert_eq!(sim.res.halfday_ids.len(), 5);
     }
 
     #[test]

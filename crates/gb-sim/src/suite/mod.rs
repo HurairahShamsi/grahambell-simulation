@@ -434,6 +434,30 @@ fn take_traces(out: &mut SuiteOutput, runs: &mut [JobResult]) {
 /// Checks that must hold in every run of the suite: the recounts of `check_invariants`,
 /// self-validation of every broadcast block, and no reorg of the network chain below a
 /// confirmed ID. Also the index of every run (`ALL_runs.csv`).
+/// "; stopped by a fork storm on day …" for the runs that a fork storm stopped (SIM-29), for
+/// summary lines; empty when every run went to its end.
+pub(crate) fn storm_note(runs: &[&JobResult]) -> String {
+    let days: Vec<String> = runs
+        .iter()
+        .filter_map(|run| run.fork_storm_s.map(|s| r(s / 86_400.0, 2)))
+        .collect();
+    match days.len() {
+        0 => String::new(),
+        1 => format!("; stopped by a fork storm on day {} (SIM-29)", days[0]),
+        _ => format!(
+            "; stopped by fork storms on days {} (SIM-29)",
+            days.join(", ")
+        ),
+    }
+}
+
+/// The simulated day a fork storm stopped the run, or an empty cell (SIM-29).
+pub(crate) fn storm_day(res: &JobResult) -> String {
+    res.fork_storm_s
+        .map(|s| f(s / 86_400.0))
+        .unwrap_or_default()
+}
+
 fn invariants(specs: &[JobSpec], runs: &[JobResult]) -> SectionOut {
     let all: Vec<&JobResult> = runs.iter().collect();
     let mut table = Table::new(
@@ -455,6 +479,9 @@ fn invariants(specs: &[JobSpec], runs: &[JobResult]) -> SectionOut {
             "pause_seconds",
             "invariant_failures",
             "self_invalid",
+            "max_unsettled",
+            "max_fork_width",
+            "fork_storm_day",
             "events",
         ],
     );
@@ -476,6 +503,9 @@ fn invariants(specs: &[JobSpec], runs: &[JobResult]) -> SectionOut {
             f(res.pause_s),
             n(res.invariant_failures),
             n(res.self_invalid),
+            n(res.max_unsettled),
+            n(res.max_fork_width),
+            storm_day(res),
             n(res.events),
         ]);
     }
@@ -483,6 +513,13 @@ fn invariants(specs: &[JobSpec], runs: &[JobResult]) -> SectionOut {
         .iter()
         .filter(|r| r.deep_reorgs > 0)
         .map(|r| format!("`{}` ({}, deepest {})", r.id, r.deep_reorgs, r.max_reorg))
+        .collect();
+    let storms: Vec<String> = all
+        .iter()
+        .filter_map(|run| {
+            run.fork_storm_s
+                .map(|s| format!("`{}` (day {})", run.id, r(s / 86_400.0, 2)))
+        })
         .collect();
     let sum = |field: fn(&JobResult) -> u64| all.iter().map(|r| field(r)).sum::<u64>();
     let checks = vec![
@@ -527,9 +564,19 @@ fn invariants(specs: &[JobSpec], runs: &[JobResult]) -> SectionOut {
             deep.join(", ")
         )
     };
+    let widest = all.iter().map(|r| r.max_fork_width).max().unwrap_or(0);
+    let storm_text = if storms.is_empty() {
+        format!("No run had a fork storm: at most {widest} unsettled blocks ever shared a height.")
+    } else {
+        format!(
+            "**Fork storms stopped {} runs early**, when more unsettled blocks than `sim.world.fork_storm_width` shared a height (SIM-29): {}. Their tables cover the time before (`ALL_runs.csv`, column `fork_storm_day`).",
+            storms.len(),
+            storms.join(", ")
+        )
+    };
     SectionOut {
         summary: format!(
-            "## Invariants of every run\n\n**{passed} of {} hold** across all {} runs: recounted caches and counters, self-validation of every broadcast block, and no reorg below a confirmed ID (`validation.csv`, section ALL; every run in `ALL_runs.csv`). {deep_text}\n",
+            "## Invariants of every run\n\n**{passed} of {} hold** across all {} runs: recounted caches and counters, self-validation of every broadcast block, and no reorg below a confirmed ID (`validation.csv`, section ALL; every run in `ALL_runs.csv`). {deep_text}\n\n{storm_text}\n",
             checks.len(),
             all.len()
         ),

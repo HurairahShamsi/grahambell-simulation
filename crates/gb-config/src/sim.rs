@@ -83,6 +83,12 @@ pub struct SimWorld {
     /// Offline duration after which a registered ID is deactivated, in seconds; the SPEC
     /// leaves it open (§2 sweep 1 h–7 d), and M3a uses one value of that sweep.
     pub deactivation_threshold_s: f64,
+    /// A run stops early, recorded as a fork storm, once more unsettled blocks than this share
+    /// one height (ASSUMPTIONS SIM-29). After a long stall, start rule (a) without a PoWit
+    /// deadline lets every slot with a winning step in the missed time broadcast at once, and
+    /// each competing block opens a round with the same backlog, so the storm cannot be
+    /// simulated to its end. Ties and partitions give a handful of blocks per height.
+    pub fork_storm_width: u32,
 }
 
 impl Default for SimWorld {
@@ -92,6 +98,7 @@ impl Default for SimWorld {
             winners_readmit: true,
             panel_nodes: 101,
             deactivation_threshold_s: 86_400.0,
+            fork_storm_width: 64,
         }
     }
 }
@@ -491,6 +498,10 @@ impl SimConfig {
         need(
             self.world.panel_nodes >= 1 && self.world.panel_nodes % 2 == 1,
             "sim.world.panel_nodes must be odd and positive",
+        );
+        need(
+            self.world.fork_storm_width >= 2,
+            "sim.world.fork_storm_width must be at least 2",
         );
         need(
             self.suite.days_scale > 0.0 && self.suite.replicate_scale > 0.0,

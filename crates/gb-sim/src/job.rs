@@ -397,6 +397,14 @@ pub struct JobResult {
     pub pause_s: f64,
     /// Newcomers (A6) still waiting for a first ID at the end.
     pub waiting_newcomers: u64,
+    /// The most blocks unsettled at once.
+    pub max_unsettled: u64,
+    /// The most unsettled blocks at one height.
+    pub max_fork_width: u64,
+    /// When the run stopped early because more unsettled blocks than
+    /// `sim.world.fork_storm_width` shared a height (a fork storm), in simulated seconds;
+    /// `None` when it ran to its end. Daily series then keep only the complete days before.
+    pub fork_storm_s: Option<f64>,
     /// Sampled events (only when `trace_every > 0`; not part of the tables).
     #[serde(skip)]
     pub trace: Vec<TraceRow>,
