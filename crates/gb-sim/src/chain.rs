@@ -1032,6 +1032,7 @@ impl Sim<'_> {
 mod tests {
     use super::*;
     use crate::job::JobSpec;
+    use gb_config::protocol::EquivocationScope;
     use gb_protocol::issuance::variant_a_retarget;
 
     fn spec(cfg: &gb_config::Config) -> JobSpec {
@@ -1129,6 +1130,38 @@ mod tests {
         block(&mut sim, 0, 41, 5);
         sim.watch_fork_storm(9 * SECOND, 1);
         assert_eq!(sim.res.fork_storm_s, Some(7.0));
+    }
+
+    /// A miner holds block P (from 10 s), then a better block S at the same height (from
+    /// 20 s). Under one header per height it signed on P, so S's round is not its round; under
+    /// the [P] rule it may sign again on S.
+    fn round_on_the_later_better_block(scope: EquivocationScope) -> u64 {
+        let cfg = gb_config::Config::default();
+        let mut spec = spec(&cfg);
+        spec.equivocation = scope;
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let p = block(&mut sim, 0, 8, 1);
+        let s = block(&mut sim, 0, 5, 2);
+        sim.blocks[p as usize].broadcast = 10 * SECOND;
+        sim.blocks[s as usize].broadcast = 20 * SECOND;
+        assert!(sim.prefer_block(s, 20 * SECOND, p, 10 * SECOND));
+        let g = sim.groups.len() as u32;
+        sim.open_group(s, 30 * SECOND);
+        sim.materialise(30 * SECOND, g, 0, 100);
+        sim.res.drops.get(2).copied().unwrap_or(0)
+    }
+
+    #[test]
+    fn under_one_header_per_height_a_miner_does_not_join_a_later_better_round() {
+        assert_eq!(
+            round_on_the_later_better_block(EquivocationScope::SameHeight),
+            1
+        );
+        assert_eq!(
+            round_on_the_later_better_block(EquivocationScope::SameParent),
+            0
+        );
     }
 
     #[test]

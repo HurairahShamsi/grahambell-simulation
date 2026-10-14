@@ -499,7 +499,7 @@ impl Sim<'_> {
 
     /// Turns a drawn (slot, step) into a candidate if the slot really mines this round, and
     /// schedules its decision. Returns the candidate.
-    fn materialise(&mut self, now: Micros, g: u32, m: u32, step: u64) -> Option<u32> {
+    pub(crate) fn materialise(&mut self, now: Micros, g: u32, m: u32, step: u64) -> Option<u32> {
         let (parent, height, t0, target) = {
             let grp = &self.groups[g as usize];
             (grp.parent, grp.height, grp.t0, grp.target)
@@ -531,25 +531,23 @@ impl Sim<'_> {
         }
         let first = level.iter().map(|x| x.1).min().unwrap_or(a_parent);
         let sign_time = first.max(miner.mine_at);
-        let mut committed = (parent, a_parent);
+        // The header it signed at `sign_time` is on the best block it held then, which may
+        // not be this round's parent (the parent may have arrived later).
+        let mut committed: Option<(u32, Micros)> = None;
         let mut displaced_at = INF;
         for &(s, a_s) in &level {
-            if s == parent {
-                continue;
-            }
-            let better = self.prefer_block(s, a_s, parent, a_parent);
-            if self.spec.equivocation == EquivocationScope::SameHeight
-                && a_s <= sign_time
-                && (committed.0 == parent && better
-                    || committed.0 != parent && self.prefer_block(s, a_s, committed.0, committed.1))
+            if a_s <= sign_time
+                && committed.is_none_or(|(c, a_c)| self.prefer_block(s, a_s, c, a_c))
             {
-                committed = (s, a_s);
+                committed = Some((s, a_s));
             }
-            if better {
+            if s != parent && self.prefer_block(s, a_s, parent, a_parent) {
                 displaced_at = displaced_at.min(a_s);
             }
         }
-        if self.spec.equivocation == EquivocationScope::SameHeight && committed.0 != parent {
+        if self.spec.equivocation == EquivocationScope::SameHeight
+            && committed.is_some_and(|(c, _)| c != parent)
+        {
             // Its header at this height is on another block: that round has this slot.
             self.drop(2);
             return None;
