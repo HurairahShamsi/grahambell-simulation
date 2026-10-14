@@ -569,7 +569,7 @@ fn invariants(specs: &[JobSpec], runs: &[JobResult]) -> SectionOut {
         format!("No run had a fork storm: at most {widest} unsettled blocks ever shared a height.")
     } else {
         format!(
-            "**Fork storms stopped {} runs early**, when more unsettled blocks than `sim.world.fork_storm_width` shared a height (SIM-29): {}. Their tables cover the time before (`ALL_runs.csv`, column `fork_storm_day`).",
+            "**Fork storms stopped {} runs early**, when more blocks than `sim.world.fork_storm_unsettled` were unsettled at once (SIM-29): {}. Their tables cover the time before (`ALL_runs.csv`, column `fork_storm_day`).",
             storms.len(),
             storms.join(", ")
         )
@@ -820,9 +820,12 @@ mod tests {
     /// JSON, without the event count (an implementation detail). Used to profile a job and to
     /// check that a performance change leaves results byte-identical.
     #[test]
-    #[ignore = "harness: GB_JOB_SECTION (V0, V1, … A6), GB_JOB_INDEX, GB_JOB_DAYS"]
+    #[ignore = "harness: GB_JOB_SECTION (V0, V1, … A6), GB_JOB_INDEX, GB_JOB_DAYS, GB_STORM_UNSETTLED"]
     fn run_one_full_job() {
-        let cfg = Config::default();
+        let mut cfg = Config::default();
+        if let Ok(limit) = std::env::var("GB_STORM_UNSETTLED") {
+            cfg.sim.world.fork_storm_unsettled = limit.parse().unwrap();
+        }
         let ctx = Ctx {
             cfg: &cfg,
             quick: false,
@@ -868,6 +871,10 @@ mod tests {
         println!(
             "JOB {} days {} miners {} ids {} events {events} blocks {} wall {wall:.1}s digest {digest}",
             job.id, job.days, job.miners, job.registered_ids, res.blocks
+        );
+        println!(
+            "STORM {} max_unsettled {} max_fork_width {} fork_storm_s {:?}",
+            job.id, res.max_unsettled, res.max_fork_width, res.fork_storm_s
         );
     }
 

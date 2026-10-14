@@ -135,7 +135,8 @@ pub(crate) struct Params {
     pub warmup: Micros,
     pub settle_depth: u64,
     pub signing_tolerance: f64,
-    pub fork_storm_width: usize,
+    pub fork_storm_unsettled: usize,
+    pub cache_entries: usize,
 }
 
 /// One simulation run.
@@ -184,6 +185,8 @@ pub(crate) struct Sim<'a> {
     pub pending: std::collections::BTreeMap<u32, (u64, Vec<u32>)>,
     pub panel_split: Vec<bool>,
     pub invariants_due: Micros,
+    /// Entries in the unsettled blocks' acceptance caches.
+    pub own_entries: usize,
 }
 
 impl<'a> Sim<'a> {

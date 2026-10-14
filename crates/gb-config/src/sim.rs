@@ -42,6 +42,10 @@ pub struct SimConfig {
     pub threads: u32,
     /// Fraction of events written to the optional sampled trace (0 = no trace).
     pub trace_sample: f64,
+    /// Most nodes' acceptances of unsettled blocks kept in the run's cache at once; past it
+    /// the cache is emptied and refills as needed. A cached value is what recomputing it
+    /// gives, so this bounds memory (about 80 bytes an entry) and never changes a result.
+    pub acceptance_cache_entries: u64,
     /// Population and protocol-glue settings.
     pub world: SimWorld,
     /// Network model.
@@ -60,6 +64,7 @@ impl Default for SimConfig {
             crypto_mode: CryptoMode::Fast,
             threads: 4,
             trace_sample: 0.0,
+            acceptance_cache_entries: 2_000_000,
             world: SimWorld::default(),
             network: SimNetwork::default(),
             households: SimHouseholds::default(),
@@ -83,12 +88,13 @@ pub struct SimWorld {
     /// Offline duration after which a registered ID is deactivated, in seconds; the SPEC
     /// leaves it open (§2 sweep 1 h–7 d), and M3a uses one value of that sweep.
     pub deactivation_threshold_s: f64,
-    /// A run stops early, recorded as a fork storm, once more unsettled blocks than this share
-    /// one height (ASSUMPTIONS SIM-29). After a long stall, start rule (a) without a PoWit
+    /// A run stops early, recorded as a fork storm, once more blocks than this are unsettled
+    /// at once (ASSUMPTIONS SIM-29). After a stall of hours, start rule (a) without a PoWit
     /// deadline lets every slot with a winning step in the missed time broadcast at once, and
-    /// each competing block opens a round with the same backlog, so the storm cannot be
-    /// simulated to its end. Ties and partitions give a handful of blocks per height.
-    pub fork_storm_width: u32,
+    /// each competing block opens a round with the same backlog. Most such storms resolve;
+    /// some keep growing and cannot be simulated to their end. Ordinary forks stay below
+    /// about 100 unsettled blocks.
+    pub fork_storm_unsettled: u32,
 }
 
 impl Default for SimWorld {
@@ -98,7 +104,7 @@ impl Default for SimWorld {
             winners_readmit: true,
             panel_nodes: 101,
             deactivation_threshold_s: 86_400.0,
-            fork_storm_width: 64,
+            fork_storm_unsettled: 4_000,
         }
     }
 }
@@ -500,14 +506,18 @@ impl SimConfig {
             "sim.world.panel_nodes must be odd and positive",
         );
         need(
-            self.world.fork_storm_width >= 2,
-            "sim.world.fork_storm_width must be at least 2",
+            self.world.fork_storm_unsettled >= 100,
+            "sim.world.fork_storm_unsettled must be at least 100",
         );
         need(
             self.suite.days_scale > 0.0 && self.suite.replicate_scale > 0.0,
             "sim.suite scales must be positive",
         );
         need(self.threads >= 1, "sim.threads must be at least 1");
+        need(
+            self.acceptance_cache_entries >= 1,
+            "sim.acceptance_cache_entries must be at least 1",
+        );
         problems
     }
 }

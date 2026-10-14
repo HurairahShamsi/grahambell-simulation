@@ -21,6 +21,16 @@ fn run(spec: &JobSpec) -> Result<JobResult, gb_sim::SimError> {
 }
 
 #[test]
+fn a_tiny_acceptance_cache_gives_the_same_run() {
+    let spec = job(11);
+    let mut small = gb_config::Config::default();
+    small.sim.acceptance_cache_entries = 50;
+    let mut result = run_job(&spec, &small).unwrap();
+    result.wall_s = 0.0;
+    assert_eq!(result, run(&spec).unwrap());
+}
+
+#[test]
 fn the_same_seed_gives_the_same_run_and_another_seed_does_not() {
     let first = run(&job(11)).unwrap();
     assert!(first.blocks > 100, "{} blocks", first.blocks);

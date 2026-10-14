@@ -401,9 +401,9 @@ pub struct JobResult {
     pub max_unsettled: u64,
     /// The most unsettled blocks at one height.
     pub max_fork_width: u64,
-    /// When the run stopped early because more unsettled blocks than
-    /// `sim.world.fork_storm_width` shared a height (a fork storm), in simulated seconds;
-    /// `None` when it ran to its end. Daily series then keep only the complete days before.
+    /// When the run stopped early because more blocks than `sim.world.fork_storm_unsettled`
+    /// were unsettled at once (a fork storm), in simulated seconds; `None` when it ran to its
+    /// end. Daily series then keep only the complete days before.
     pub fork_storm_s: Option<f64>,
     /// Sampled events (only when `trace_every > 0`; not part of the tables).
     #[serde(skip)]

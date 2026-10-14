@@ -278,14 +278,33 @@ impl Sim<'_> {
                 (at.max(parent_at), late)
             }
         };
-        self.blocks[b as usize].own.insert(
-            node.key,
-            Seen {
-                own,
-                full: Some((epoch, result.0, result.1)),
-            },
-        );
+        let fresh = self.blocks[b as usize]
+            .own
+            .insert(
+                node.key,
+                Seen {
+                    own,
+                    full: Some((epoch, result.0, result.1)),
+                },
+            )
+            .is_none();
+        if fresh {
+            self.own_entries += 1;
+            if self.own_entries > self.p.cache_entries {
+                self.clear_acceptance_caches();
+            }
+        }
         result
+    }
+
+    /// Empties every unsettled block's acceptance cache, which then refills as needed
+    /// (`sim.acceptance_cache_entries`). Cached values are what recomputing them gives, so
+    /// this bounds memory, as in a fork storm, and changes no result.
+    fn clear_acceptance_caches(&mut self) {
+        for &b in &self.unsettled {
+            self.blocks[b as usize].own = OwnCache::default();
+        }
+        self.own_entries = 0;
     }
 
     /// The node's timing checks on a block that arrived at `arrived` (true time): returns the
@@ -372,7 +391,7 @@ impl Sim<'_> {
             beyond_horizon: cand.beyond_horizon,
         });
         self.unsettled.push(id);
-        self.watch_fork_width(now, height);
+        self.watch_fork_storm(now, height);
         self.set_difficulty(id);
         self.panel_accept(id);
         self.res.blocks += 1;
@@ -398,9 +417,9 @@ impl Sim<'_> {
     }
 
     /// Records how many blocks are unsettled, and at one height, after a block at `height` is
-    /// added. Once more than `sim.world.fork_storm_width` share a height the run stops, as a
-    /// fork storm (ASSUMPTIONS SIM-29): the event loop ends before the next event.
-    fn watch_fork_width(&mut self, now: Micros, height: u64) {
+    /// added. Once more than `sim.world.fork_storm_unsettled` are unsettled the run stops, as
+    /// a fork storm (ASSUMPTIONS SIM-29): the event loop ends before the next event.
+    fn watch_fork_storm(&mut self, now: Micros, height: u64) {
         let width = self
             .unsettled
             .iter()
@@ -408,7 +427,7 @@ impl Sim<'_> {
             .count();
         self.res.max_unsettled = self.res.max_unsettled.max(self.unsettled.len() as u64);
         self.res.max_fork_width = self.res.max_fork_width.max(width as u64);
-        if width > self.p.fork_storm_width && self.res.fork_storm_s.is_none() {
+        if self.unsettled.len() > self.p.fork_storm_unsettled && self.res.fork_storm_s.is_none() {
             self.res.fork_storm_s = Some(crate::engine::seconds(now));
             self.stop_at = now;
             self.stopped = true;
@@ -757,6 +776,7 @@ impl Sim<'_> {
                     block.canonical = b == chosen;
                     block.panel = Vec::new();
                     block.panel_late = Vec::new();
+                    self.own_entries = self.own_entries.saturating_sub(block.own.len());
                     block.own = OwnCache::default();
                 }
             }
@@ -776,6 +796,7 @@ impl Sim<'_> {
                         block.canonical = false;
                         block.panel = Vec::new();
                         block.panel_late = Vec::new();
+                        self.own_entries = self.own_entries.saturating_sub(block.own.len());
                         block.own = OwnCache::default();
                         changed = true;
                     }
@@ -1076,34 +1097,37 @@ mod tests {
     }
 
     #[test]
-    fn a_fork_storm_stops_the_run_once_too_many_blocks_share_a_height() {
+    fn a_fork_storm_stops_the_run_once_too_many_blocks_are_unsettled() {
         let mut cfg = gb_config::Config::default();
-        cfg.sim.world.fork_storm_width = 3;
+        cfg.sim.world.fork_storm_unsettled = 100;
         let spec = spec(&cfg);
         let mut sim = Sim::build(&spec, &cfg).unwrap();
         sim.start_chain();
         let a1 = block(&mut sim, 0, 31, 1);
-        sim.watch_fork_width(SECOND, 1);
+        sim.watch_fork_storm(SECOND, 1);
         for tag in 2..=3 {
             block(&mut sim, 0, 30 + u64::from(tag), tag);
-            sim.watch_fork_width(5 * SECOND, 1);
+            sim.watch_fork_storm(5 * SECOND, 1);
         }
-        block(&mut sim, a1, 62, 9);
-        sim.watch_fork_width(6 * SECOND, 2);
+        let mut parent = a1;
+        for i in 0..97u64 {
+            parent = block(&mut sim, parent, 62 + 31 * i, 9);
+            sim.watch_fork_storm(6 * SECOND, 2 + i);
+        }
         assert!(!sim.stopped);
         assert_eq!(sim.res.max_fork_width, 3);
-        assert_eq!(sim.res.max_unsettled, 4);
-        // A fourth block at height 1 is one more than the width allows.
+        assert_eq!(sim.res.max_unsettled, 100);
+        // The 101st unsettled block is one more than the limit allows.
         block(&mut sim, 0, 40, 4);
-        sim.watch_fork_width(7 * SECOND, 1);
+        sim.watch_fork_storm(7 * SECOND, 1);
         assert!(sim.stopped);
         assert_eq!(sim.res.fork_storm_s, Some(7.0));
         assert_eq!(sim.stop_at, 7 * SECOND);
         assert_eq!(sim.res.max_fork_width, 4);
-        assert_eq!(sim.res.max_unsettled, 5);
+        assert_eq!(sim.res.max_unsettled, 101);
         // The first storm is the one recorded.
         block(&mut sim, 0, 41, 5);
-        sim.watch_fork_width(9 * SECOND, 1);
+        sim.watch_fork_storm(9 * SECOND, 1);
         assert_eq!(sim.res.fork_storm_s, Some(7.0));
     }
 

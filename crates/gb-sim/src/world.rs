@@ -211,7 +211,8 @@ impl<'a> Sim<'a> {
             },
             settle_depth: 12,
             signing_tolerance: witness_signing_tolerance(spec.witness_signing, spec.delta),
-            fork_storm_width: cfg.sim.world.fork_storm_width as usize,
+            fork_storm_unsettled: cfg.sim.world.fork_storm_unsettled as usize,
+            cache_entries: cfg.sim.acceptance_cache_entries as usize,
         };
         let mut keyed = Keyed::new(spec.seed, "gb-sim");
         let net_cfg = &cfg.sim.network;
@@ -356,6 +357,7 @@ impl<'a> Sim<'a> {
             pending: std::collections::BTreeMap::new(),
             panel_split: Vec::new(),
             invariants_due: 0,
+            own_entries: 0,
         };
         sim.build_population();
         Ok(sim)

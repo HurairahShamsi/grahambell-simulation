@@ -259,15 +259,17 @@ dkg_threshold = { numerator = 2, denominator = 3 }
 crypto_mode = "fast"
 threads = 4
 trace_sample = 0.0
+# Memory bound of the acceptance cache (about 80 bytes an entry); never changes a result.
+acceptance_cache_entries = 2000000
 
 [sim.world]
 registered_ids = 290000
 winners_readmit = true
 panel_nodes = 101
 deactivation_threshold_s = 86400.0
-# A run stops early, recorded as a fork storm, once more unsettled blocks than this share one
-# height (SIM-29; a simulation budget, illustrative).
-fork_storm_width = 64
+# A run stops early, recorded as a fork storm, once more blocks than this are unsettled at once
+# (SIM-29; a simulation budget, not a protocol rule).
+fork_storm_unsettled = 4000
 
 [sim.network]
 latency_source = "ripe_atlas"
