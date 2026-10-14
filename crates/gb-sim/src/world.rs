@@ -51,6 +51,9 @@ pub(crate) struct Miner {
     pub vote_failures: u8,
     pub decision_at: Micros,
     pub decision_kind: u8,
+    /// End of the epoch after its own offline request (restart or switch): it re-admits then,
+    /// not earlier, even if its household reconnects meanwhile (SPEC §3.2, SIM-18).
+    pub rejoin_at: Micros,
     pub joined_at: Micros,
     pub newcomer: bool,
     pub first_id: bool,
@@ -581,6 +584,7 @@ impl<'a> Sim<'a> {
             vote_failures: 0,
             decision_at: 0,
             decision_kind: 0,
+            rejoin_at: 0,
             joined_at: now,
             newcomer,
             first_id: false,
@@ -1313,6 +1317,7 @@ impl<'a> Sim<'a> {
         } else {
             self.p.grace + micros(0.5)
         };
+        self.miners[m as usize].rejoin_at = now + wait;
         self.q.push(now + wait, Ev::MinerRejoin { m, token });
     }
 
@@ -1371,7 +1376,9 @@ impl<'a> Sim<'a> {
             return;
         }
         self.commit_miner(now, m, old);
-        if self.miners[m as usize].phase == Phase::Idle {
+        // A miner within the epoch after its own offline request waits for its rejoin.
+        if self.miners[m as usize].phase == Phase::Idle && now >= self.miners[m as usize].rejoin_at
+        {
             self.start_admission(now, m);
         }
     }
@@ -1761,6 +1768,11 @@ impl<'a> Sim<'a> {
         let first = !self.miners[miner as usize].first_id;
         if self.miners[miner as usize].newcomer && first {
             self.res.first_ids += 1;
+            // A newcomer that gave up while its block awaited confirmation got an ID after
+            // all: it is a first ID, not a dropout.
+            if self.miners[miner as usize].phase == Phase::Gone {
+                self.res.dropouts -= 1;
+            }
             let waited =
                 (now - self.miners[miner as usize].joined_at) as f64 / (86_400.0 * SECOND as f64);
             if self.res.waits_days.len() < 50_000 {
@@ -2115,5 +2127,60 @@ mod tests {
         // The next round reads the allocation afresh.
         sim.open_group(0, 0);
         assert_eq!(sim.round_members(1, 0), sim.kwc_members(0));
+    }
+
+    fn small_sim(cfg: &gb_config::Config) -> JobSpec {
+        let mut spec = JobSpec::from_config(cfg, "world-test", "T", 5).idealised();
+        spec.miners = 4;
+        spec.registered_ids = 400;
+        spec
+    }
+
+    #[test]
+    fn a_household_glitch_during_a_switch_does_not_cut_the_epoch_wait() {
+        let cfg = gb_config::Config::default();
+        let mut spec = small_sim(&cfg);
+        spec.instant_admission = false;
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        assert_eq!(sim.miners[0].phase, Phase::Mining);
+        let t = 1_000 * SECOND;
+        sim.self_offline(t, 0, 2);
+        let rejoin = sim.miners[0].rejoin_at;
+        assert_eq!(rejoin, t + sim.p.grace + micros(0.5));
+        let token = sim.miners[0].token;
+        // The household drops out and comes back within the epoch: no admission yet.
+        let h = sim.miners[0].household;
+        let (down, up) = (t + 30 * SECOND, t + 60 * SECOND);
+        sim.set_cause(down, h, bit::GLITCH, true, false, up);
+        sim.set_cause(up, h, bit::GLITCH, false, false, up);
+        assert_eq!(sim.miners[0].phase, Phase::Idle);
+        assert_eq!(sim.miners[0].token, token);
+        // The rejoin at the end of the epoch starts it.
+        sim.on_miner_rejoin(rejoin, 0, token);
+        assert_eq!(sim.miners[0].phase, Phase::Admitting);
+    }
+
+    #[test]
+    fn a_newcomer_that_gave_up_before_its_block_confirmed_counts_once() {
+        let cfg = gb_config::Config::default();
+        let spec = small_sim(&cfg);
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let m = sim.add_miner(0, 0, true, true, 0);
+        let mut block = sim.blocks[0].clone();
+        block.parent = 0;
+        block.height = 1;
+        block.miner = m;
+        block.hash = tagged(b"test-block", &[]);
+        sim.blocks.push(block);
+        let b = (sim.blocks.len() - 1) as u32;
+        // Patience runs out while the block awaits confirmation...
+        sim.on_patience(SECOND, m);
+        assert_eq!((sim.res.first_ids, sim.res.dropouts), (0, 1));
+        // ...and the block confirms: a first ID, not a dropout.
+        sim.register_winner(2 * SECOND, b);
+        assert_eq!((sim.res.first_ids, sim.res.dropouts), (1, 0));
+        assert!(sim.miners[m as usize].first_id);
     }
 }
