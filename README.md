@@ -77,7 +77,7 @@ cargo run --release -p gb-cli -- sim --only C2,C3       # V0 (always) and the na
 cargo run --release -p gb-cli -- sim --profile quick    # tiny sizes, for tests; not results
 ```
 
-`gb sim` takes the options of `gb analytic` and also refuses a dirty working tree. It runs the V0 gate first (the three crypto modes agree, the fast sampler is exact, the horizon audit finds nothing); if the gate fails, it reports no result that relies on the stand-in or fast modes. A full run takes about an hour of wall time with 4 threads on a laptop (`perf/PERF.md` records the machine and the time of every run). It exits with a non-zero status if any check fails, after writing all outputs.
+`gb sim` takes the options of `gb analytic` and also refuses a dirty working tree. It runs the V0 gate first (the three crypto modes agree, the fast sampler is exact, the horizon audit finds nothing); if the gate fails, it reports no result that relies on the stand-in or fast modes. A full run takes about an hour of wall time with 4 threads on a laptop (55 minutes and 3.4 CPU-hours for the reference run; `perf/PERF.md` records the machine and the time of every run). It exits with a non-zero status if any check fails, after writing all outputs.
 
 | Option | Meaning |
 |---|---|

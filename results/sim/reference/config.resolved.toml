@@ -1,0 +1,670 @@
+[pacing.hashes_per_second]
+value = 1.0
+status = "D"
+
+[issuance.pow_id_target_interval_s]
+value = 30.0
+status = "D"
+
+[issuance.rate_mode]
+value = "fixed"
+status = "P"
+
+[issuance.rate_mode.sweep]
+values = ["fixed", "adaptive"]
+note = "fixed is decided; adaptive is the proposed variant (SPEC §3.9)"
+
+[issuance.difficulty_variant]
+value = "count_based"
+status = "D"
+
+[issuance.difficulty_variant.sweep]
+values = ["count_based", "bitcoin_retarget"]
+note = "Variant A (Bitcoin-style retarget) is the comparison (SPEC §3.8)"
+
+[issuance.retarget_window_blocks]
+value = 144
+status = "D"
+
+[issuance.retarget_clamp_factor]
+value = 4.0
+status = "D"
+
+[issuance.count_based_correction]
+status = "P"
+
+[issuance.count_based_correction.sweep]
+note = "P1, P2 and B-exact, proposed and compared in M3"
+
+[[issuance.count_based_correction.sweep.values]]
+form = "recent_interval_ratio"
+window_blocks = 144
+bound = 0.1
+
+[[issuance.count_based_correction.sweep.values]]
+form = "accumulated"
+window_blocks = 144
+bound = 0.1
+
+[[issuance.count_based_correction.sweep.values]]
+form = "discrete_exact"
+
+[issuance.difficulty_count_rule]
+value = "after_post_admission_wait"
+status = "D"
+
+[issuance.difficulty_count_rule.sweep]
+values = ["after_post_admission_wait", "all_globally_active"]
+note = "all Globally Active miners is the comparison (architect, 2026-10-12)"
+
+[issuance.min_attack_time_floor_years]
+value = 2.0
+status = "P"
+
+[issuance.min_attack_time_floor_years.sweep]
+range = [1.0, 10.0]
+
+[issuance.cap_checkpoint_interval_fraction_of_t_min]
+value = 1.0
+status = "D"
+
+[issuance.cap_checkpoint_interval_fraction_of_t_min.sweep]
+values = [0.25, 0.5, 1.0]
+
+[issuance.cap_safety_factor]
+status = "D"
+
+[issuance.cap_safety_factor.value]
+numerator = 7
+denominator = 6
+
+[issuance.confirmation_depth_blocks]
+value = 6
+status = "O"
+
+[issuance.confirmation_depth_blocks.sweep]
+range = [3, 12]
+
+[issuance.start_rule]
+value = "a"
+status = "D"
+
+[issuance.start_rule.sweep]
+values = ["a", "b"]
+note = "rule (b) is the rejected alternative, kept for S13"
+
+[issuance.same_height_tie_break]
+value = "lower_block_hash"
+status = "P"
+
+[issuance.same_height_tie_break.sweep]
+values = ["lower_block_hash", "first_seen"]
+
+[transactions.pow_tx_interval_s]
+value = 10.0
+status = "O"
+
+[transactions.pow_tx_interval_s.sweep]
+range = [1.0, 10.0]
+
+[witness.wc_size]
+value = 10
+status = "D"
+
+[witness.subordinate_wcs_per_kwc]
+value = 3
+status = "D"
+
+[witness.subordinate_wcs_per_kwc.sweep]
+values = [3, 2]
+note = "1 + 2 (30 nodes) for comparison"
+
+[witness.kwc_count_rule]
+value = "equals_wc_count"
+status = "D"
+
+[witness.ring_offsets]
+value = [1, 4, 6]
+status = "D"
+
+[witness.ring_offsets_30_node]
+value = [1, 3]
+status = "D"
+
+[witness.allocation_beacon_delay_blocks]
+value = 6
+status = "O"
+
+[witness.allocation_beacon_delay_blocks.sweep]
+values = [3, 6, 12]
+
+[witness.watched_registered_per_node]
+value = 800
+status = "D"
+
+[witness.watched_unregistered_per_node]
+value = 200
+status = "D"
+
+[quorum.registered_leader_min]
+value = 7
+status = "D"
+
+[quorum.registered_subordinate_min]
+value = 21
+status = "D"
+
+[quorum.registered_subordinate_min_30_node]
+value = 14
+status = "D"
+
+[quorum.unregistered_total_min]
+value = 27
+status = "D"
+
+[quorum.unregistered_total_min_30_node]
+value = 20
+status = "D"
+
+[entropy.signers]
+value = "all_online_members"
+status = "D"
+
+[entropy.equivocation_scope]
+value = "same_height"
+status = "D"
+
+[entropy.equivocation_scope.sweep]
+values = ["same_height", "same_parent"]
+note = "same parent is the [P] comparison (architect, 2026-10-12)"
+
+[capacity.miners_per_leader_wc]
+value = 250
+status = "D"
+
+[capacity.unregistered_per_leader_wc]
+value = 50
+status = "O"
+
+[capacity.unregistered_per_leader_wc.sweep]
+values = [50, 150, 235]
+note = "registered/unregistered split 200/50, 100/150, 15/235"
+
+[capacity.spare_target_fraction]
+value = 0.33
+status = "D"
+
+[network.node_request_rate_limit_per_s]
+value = 1000
+status = "D"
+
+[timing.grace_epoch_rounds]
+value = 5
+status = "D"
+
+[timing.clock_tolerance_s]
+value = 2.0
+status = "O"
+
+[timing.clock_tolerance_s.sweep]
+range = [0.5, 10.0]
+
+[timing.one_chance_wait_rounds]
+value = 5
+status = "O"
+
+[timing.one_chance_wait_rounds.sweep]
+values = [1, 2, 5]
+
+[timing.powit_deadline_s]
+status = "O"
+
+[timing.powit_deadline_s.sweep]
+values = [5.0, 10.0, 30.0, 60.0]
+
+[timing.powit_deadline_scope]
+value = "permanent"
+status = "D"
+
+[timing.powit_deadline_scope.sweep]
+values = ["permanent", "not_extended_only"]
+note = "not extended only is the comparison (architect, 2026-10-12)"
+
+[timing.early_block]
+value = "permanent"
+status = "D"
+
+[timing.early_block.sweep]
+values = ["permanent", "reevaluate_later"]
+note = "re-evaluation is the comparison (architect, 2026-10-12)"
+
+[timing.witness_signing]
+value = "on_time"
+status = "D"
+
+[timing.witness_signing.sweep]
+values = ["on_time", "earliest_within_tolerance"]
+note = "earliest within δ (the earlier P-4 reading) is the comparison"
+
+[admission.post_admission_wait_rounds]
+value = 5
+status = "O"
+
+[admission.post_admission_wait_rounds.sweep]
+range = [1, 10]
+
+[admission.convergence_interval_epochs]
+value = 1.0
+status = "O"
+
+[admission.convergence_interval_epochs.sweep]
+range = [0.5, 3.0]
+
+[admission.peer_bootstrap_count]
+value = 8
+status = "D"
+
+[admission.peer_bootstrap_count.sweep]
+range = [4, 8]
+
+[cac.size]
+value = 600
+status = "D"
+
+[cac.size.sweep]
+range = [100, 1000]
+note = "100–1,000 for comparison"
+
+[cac.membership_policy]
+value = "first_in_first_out"
+status = "D"
+
+[cac.join_every_n_tx_blocks]
+value = 10
+status = "D"
+
+[cac.seat_selection]
+value = "lottery"
+status = "D"
+
+[cac.seat_selection.sweep]
+values = ["lottery", "tenth_block_miner"]
+note = "the v0.2 rule (miner of every 10th PoW-Tx block) is the comparison"
+
+[cac.lottery_beacon_offset_blocks]
+value = 3
+status = "O"
+
+[cac.lottery_beacon_offset_blocks.sweep]
+values = [1, 3, 6, 12]
+
+[cac.approval_threshold]
+status = "D"
+
+[cac.approval_threshold.value]
+numerator = 2
+denominator = 3
+
+[genesis.ids]
+value = 2900000
+status = "D"
+
+[genesis.ids.sweep]
+values = [1000000, 2100000, 2900000, 5000000, 10000000]
+
+[genesis.distribution]
+value = "kyc_one_per_verified_person"
+status = "D"
+
+[genesis.secretly_controlled_fraction]
+value = 0.0
+status = "O"
+
+[genesis.secretly_controlled_fraction.sweep]
+range = [0.0, 0.2]
+
+[offline.deactivation_threshold_s]
+status = "O"
+
+[offline.deactivation_threshold_s.sweep]
+values = [3600.0, 21600.0, 86400.0, 259200.0, 604800.0]
+
+[offline.reactivation_wait_s]
+status = "O"
+
+[offline.reactivation_wait_s.sweep]
+values = [86400.0, 604800.0, 1209600.0, 2592000.0]
+
+[offline.long_absence_threshold_s]
+value = 2592000.0
+status = "O"
+
+[offline.long_absence_threshold_s.sweep]
+values = [259200.0, 604800.0, 2592000.0, 7776000.0, 31536000.0]
+
+[offline.unreachable_rule]
+value = "strict"
+status = "O"
+
+[offline.unreachable_rule.sweep]
+values = ["strict", "unreachable_is_not_refusal"]
+note = "strict is the interim default; unreachable is not refusal is [P] (SPEC §4.6, §12)"
+
+[penalties.suspension_ladder_s]
+value = [86400, 2592000]
+status = "D"
+
+[penalties.final_step]
+value = "permanent"
+status = "D"
+
+[penalties.strict_offence]
+value = "ladder"
+status = "D"
+
+[penalties.strict_offence.sweep]
+values = ["ladder", "ladder_yearly_reset", "immediate_ban"]
+note = "yearly reset is [P]; immediate ban is §4.6 read literally (architect, 2026-10-12)"
+
+[crypto.signature_scheme]
+value = "bls12_381_aggregate_bitfield_pop"
+status = "D"
+
+[crypto.hash_function]
+value = "sha256"
+status = "P"
+
+[model]
+seconds_per_year = 31536000
+
+[analytic.time_to_threshold]
+genesis_ids = [1000000, 2100000, 2900000, 5000000, 10000000]
+attacker_shares = [0.05, 0.1, 0.2, 0.25, 0.3, 0.34, 0.4, 0.52, 0.55, 0.6, 0.75, 1.0]
+thresholds = [0.33, 0.51, 0.67]
+online_fractions = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+honest_growth_multiples_of_r = [0.0, 0.5, 1.0, 2.0]
+t_min_years = [1.0, 2.0, 5.0, 10.0]
+checkpoint_fractions_of_t_min = [0.25, 0.5, 1.0]
+floor_threshold = 0.51
+trajectory_horizon_years = 50.0
+trajectory_step_years = 0.5
+
+[analytic.witness]
+attacker_fractions = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.33, 0.4]
+kwc_counts = [10000, 100000, 1000000]
+composition_horizon_years = 10.0
+composition_initial_kwc_counts = [10000, 100000, 290000, 1000000]
+ban_rates_per_year = [0.0, 0.01, 0.05]
+
+[analytic.cac]
+committee_sizes = [30, 100, 600, 1000]
+attacker_fractions = [0.1, 0.2, 0.25, 0.3, 0.33, 0.4]
+active_population = 2900000
+honest_mining_fractions = [0.5, 0.7, 1.0]
+
+[analytic.restart]
+competing_miners = [1000000, 5000000]
+restart_costs_s = [60.0, 300.0, 600.0]
+keep_windows_s = [3600, 86400, 259200]
+
+[analytic.hopping]
+attacker_ratios = [0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 4.0]
+
+[analytic.ties]
+competing_miners = [1000000, 5000000]
+intervals_s = [10.0, 30.0, 60.0]
+max_tie_size = 4
+
+[analytic.quorum_tradeoff]
+attacker_fractions = [0.05, 0.1, 0.2, 0.25, 0.3, 0.33, 0.4, 0.45, 0.49]
+kwc_counts = [100000, 1000000]
+
+[[analytic.quorum_tradeoff.quorum_fractions]]
+numerator = 51
+denominator = 100
+
+[[analytic.quorum_tradeoff.quorum_fractions]]
+numerator = 55
+denominator = 100
+
+[[analytic.quorum_tradeoff.quorum_fractions]]
+numerator = 60
+denominator = 100
+
+[[analytic.quorum_tradeoff.quorum_fractions]]
+numerator = 2
+denominator = 3
+
+[[analytic.quorum_tradeoff.quorum_fractions]]
+numerator = 75
+denominator = 100
+
+[[analytic.quorum_tradeoff.powit_quorum_fractions]]
+numerator = 51
+denominator = 100
+
+[[analytic.quorum_tradeoff.powit_quorum_fractions]]
+numerator = 55
+denominator = 100
+
+[[analytic.quorum_tradeoff.powit_quorum_fractions]]
+numerator = 60
+denominator = 100
+
+[analytic.quorum_tradeoff.decision_quorum]
+numerator = 2
+denominator = 3
+
+[[analytic.quorum_tradeoff.cac_quorum_fractions]]
+numerator = 51
+denominator = 100
+
+[[analytic.quorum_tradeoff.cac_quorum_fractions]]
+numerator = 2
+denominator = 3
+
+[analytic.absence]
+absences_per_id_per_year = [1.0, 4.0]
+duration_scale_days = 2.0
+duration_shape = 1.5
+comparison_exponential_mean_days = 7.0
+departures_per_id_per_year = [0.0, 0.1, 0.25]
+
+[analytic.quorum_feasibility]
+online_fractions = [0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99]
+attacker_fractions = [0.0, 0.1, 0.2, 0.25, 0.33]
+failure_targets = [0.01, 0.001]
+comparison_kwcs = 100000
+
+[analytic.kwc_size]
+wcs_per_kwc = [3, 4, 5, 6, 8, 10]
+ring_offsets = [[1, 3], [1, 4, 6], [1, 4, 9, 11], [1, 4, 10, 12, 17], [1, 4, 9, 15, 22, 32, 34], [1, 6, 10, 23, 26, 34, 41, 53, 55]]
+attacker_fractions = [0.1, 0.2, 0.25, 0.3, 0.33, 0.4, 0.45]
+liveness_attacker_fractions = [0.0, 0.1, 0.2, 0.25, 0.33]
+comparison_kwcs = 100000
+unregistered_per_wc_policy_c = [50, 100, 235]
+message_bytes = 295.0
+registered_cadences_s = [1.0, 5.0]
+unregistered_cadence_s = 30.0
+miner_session_changes_per_day = [2.0, 8.0]
+
+[[analytic.kwc_size.quorum_fractions]]
+numerator = 2
+denominator = 3
+
+[[analytic.kwc_size.quorum_fractions]]
+numerator = 51
+denominator = 100
+
+[crypto_tests]
+batches = 50
+grinding_trials = 1000
+grinding_budgets = [1, 4, 16, 64]
+expected_winning_attempts = 64
+grinding_members = 10
+subset_quorum = 7
+equivocation_trials = 500
+sorted_hex_trials = 10000
+beacon_trials = 100000
+beacon_offsets_k = [1, 3, 6, 12]
+beacon_attacker_shares = [0.1, 0.25]
+beacon_target_fractions = [0.01, 0.1]
+beacon_population = 100000
+placement_trials = 100000
+bench_signer_counts = [3, 10, 27, 40, 60, 100]
+bench_min_seconds = 0.5
+testnet_miners = [5000, 10000, 30000]
+testnet_witnesses_per_server = 3
+testnet_round_s = 30.0
+dkg_member_counts = [30, 40, 60, 100]
+equivalence_trials = 4000
+equivalence_members = 3
+equivalence_min_p_value = 0.001
+
+[crypto_tests.dkg_threshold]
+numerator = 2
+denominator = 3
+
+[sim]
+crypto_mode = "fast"
+threads = 4
+trace_sample = 0.0
+acceptance_cache_entries = 2000000
+
+[sim.world]
+registered_ids = 290000
+winners_readmit = true
+panel_nodes = 101
+deactivation_threshold_s = 86400.0
+fork_storm_unsettled = 4000
+
+[sim.network]
+latency_source = "ripe_atlas"
+regions = ["na_east", "na_west", "sa_east", "eu_west", "af", "as_south", "as_east", "oc"]
+region_shares = [0.065, 0.028, 0.062, 0.117, 0.117, 0.233, 0.372, 0.006]
+utc_offsets_h = [-5.0, -8.0, -3.0, 1.0, 2.0, 5.5, 8.0, 10.0]
+region_centroids = [[39.0, -80.0], [37.0, -120.0], [-20.0, -50.0], [49.0, 8.0], [0.0, 25.0], [23.0, 78.0], [25.0, 115.0], [-30.0, 145.0]]
+unreliable_grid_regions = ["as_south", "af"]
+access_delay_median_ms = 10.0
+access_delay_sigma = 0.5
+hop_processing_ms = 5.0
+loss = 0.0
+rto_initial_s = 0.2
+rto_max_retries = 6
+overlay_nodes = 2000
+overlay_sources_per_region = 20
+stylised_route_factor = 1.5
+stylised_per_hop_ms = 5.0
+skew_sd_s = 0.05
+skew_tail_fraction = 0.01
+skew_tail_sd_s = 2.0
+
+[sim.households]
+device_mix = [0.3, 0.3, 0.4]
+isps_per_region = 4
+isp_outages_per_year = 2.0
+isp_outage_median_min = 60.0
+isp_outage_sigma = 1.0
+blackouts_per_year = 0.2
+blackout_median_h = 4.0
+blackout_sigma = 0.7
+long_absences_per_year = 4.0
+long_absence_scale_days = 2.0
+long_absence_shape = 1.5
+long_absence_announced = 0.8
+departures_per_year = 0.0
+
+[sim.households.always_on]
+night_off_prob = 0.0
+off_start_h = 23.0
+off_end_h = 7.0
+jitter_h = 1.0
+user_off_per_day = 0.03333333333333333
+user_off_median_h = 0.1
+user_off_sigma = 0.5
+crashes_per_day = 0.016666666666666666
+crash_median_min = 10.0
+crash_sigma = 1.0
+glitches_per_day = 0.13
+glitch_median_s = 120.0
+glitch_sigma = 1.0
+
+[sim.households.desktop_on]
+night_off_prob = 0.0
+off_start_h = 23.0
+off_end_h = 7.0
+jitter_h = 1.0
+user_off_per_day = 0.14285714285714285
+user_off_median_h = 2.0
+user_off_sigma = 1.0
+crashes_per_day = 0.03333333333333333
+crash_median_min = 10.0
+crash_sigma = 1.0
+glitches_per_day = 0.13
+glitch_median_s = 120.0
+glitch_sigma = 1.0
+
+[sim.households.laptop_night]
+night_off_prob = 0.9
+off_start_h = 23.0
+off_end_h = 7.0
+jitter_h = 1.0
+user_off_per_day = 0.5
+user_off_median_h = 1.0
+user_off_sigma = 1.0
+crashes_per_day = 0.03333333333333333
+crash_median_min = 10.0
+crash_sigma = 1.0
+glitches_per_day = 0.2
+glitch_median_s = 120.0
+glitch_sigma = 1.0
+
+[sim.households.reliable_grid]
+faults_per_year = 1.3
+fault_median_min = 171.0
+fault_sigma = 1.0
+feeder_groups = 16
+loadshed_hours = [0.0]
+loadshed_weights = [1.0]
+loadshed_block_h = 2.0
+ups_share = 0.1
+ups_runtime_h = 1.0
+
+[sim.households.unreliable_grid]
+faults_per_year = 24.0
+fault_median_min = 60.0
+fault_sigma = 1.0
+feeder_groups = 16
+loadshed_hours = [0.0, 2.0, 6.0, 12.0]
+loadshed_weights = [0.3, 0.3, 0.25, 0.15]
+loadshed_block_h = 2.0
+ups_share = 0.5
+ups_runtime_h = 3.0
+
+[sim.growth]
+arrivals_multiple_of_r = 3.0
+patience_median_days = [3.0, 14.0]
+patience_sigma = 1.0
+
+[sim.suite]
+days_scale = 1.0
+replicate_scale = 1.0
+
+[run]
+seed = 20261005
+
+[run.monte_carlo]
+issuance_replicates = 400
+issuance_genesis_ids = 10000
+partition_replicates = 2000
+partition_wcs = 1000
+committee_refreshes = 4000000
+committee_population = 10000
+lottery_population = 100000
+restart_successes = 20000
+per_round_trials = 20000
+hopping_replicates = 4000
+tie_rounds = 200000
+tie_miners = 200
+feasibility_samples = 200000
+tolerance_standard_errors = 5.0

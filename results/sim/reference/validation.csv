@@ -1,0 +1,167 @@
+section,check,description,reference,value,tolerance,tolerance_kind,samples,passed
+V0,"V0-c6-winning-step distribution, real entropy vs stand-in (two-sample χ², 10 bins)","M2 C6 rerun: winning-step distribution, real entropy vs stand-in (two-sample χ², 10 bins) (real BLS entropy vs the 32-byte stand-in)",0.001,0.3689224117423321,0.0,lower bound (value ≥ reference − tolerance),4000,true
+V0,V0-c6-real entropy uniform (KS on the top 53 bits),M2 C6 rerun: real entropy uniform (KS on the top 53 bits) (real BLS entropy vs the 32-byte stand-in),0.001,0.3727704814599919,0.0,lower bound (value ≥ reference − tolerance),4000,true
+V0,V0-c6-stand-in entropy uniform (KS on the top 53 bits),M2 C6 rerun: stand-in entropy uniform (KS on the top 53 bits) (real BLS entropy vs the 32-byte stand-in),0.001,0.36633387617938734,0.0,lower bound (value ≥ reference − tolerance),4000,true
+V0,V0-real-vs-standin-steps,"each slot's first winning step: real BLS entropy vs stand-in entropy (two-sample χ², K-11 bins)",0.001,0.6879710253382422,0.0,lower bound (value ≥ reference − tolerance),79200,true
+V0,V0-validate-equivalence,real blocks: validate() and validate_facts give the same verdict (two receptions each),0.0,0.0,0.0,exact,0,true
+V0,V0-validate-compared,real blocks were compared by validate() and validate_facts,1.0,1054.0,0.0,lower bound (value ≥ reference − tolerance),1054,true
+V0,V0-standin-1000-nmin-law,"earliest winning step of each round vs Geometric(1 − (1 − p)^r) (randomised PIT, KS)",0.001,0.9013590691968192,0.0,lower bound (value ≥ reference − tolerance),545,true
+V0,V0-standin-1000-hash-uniform,block hashes uniform (KS on the top 53 bits),0.001,0.7511520367872987,0.0,lower bound (value ≥ reference − tolerance),546,true
+V0,V0-standin-1000-winners-uniform,blocks per slot uniform (χ² goodness of fit),0.001,0.5847574020901465,0.0,lower bound (value ≥ reference − tolerance),546,true
+V0,V0-standin-1000-tie-rate,"same-step tie rate vs M1 tie_probability(1000, 30 s)",0.016557959603462714,0.01834862385321101,0.027330623998180967,absolute (k standard errors + stated allowance),545,true
+V0,V0-gap-1000-nmin-law,"earliest winning step of each round vs Geometric(1 − (1 − p)^r) (randomised PIT, KS)",0.001,0.45152567917477743,0.0,lower bound (value ≥ reference − tolerance),10036,true
+V0,V0-gap-1000-hash-uniform,block hashes uniform (KS on the top 53 bits),0.001,0.5469267637173874,0.0,lower bound (value ≥ reference − tolerance),10057,true
+V0,V0-gap-1000-winners-uniform,blocks per slot uniform (χ² goodness of fit),0.001,0.5852776794736974,0.0,lower bound (value ≥ reference − tolerance),10057,true
+V0,V0-gap-1000-tie-rate,"same-step tie rate vs M1 tie_probability(1000, 30 s)",0.016557959603462714,0.01654045436428856,0.006368944614555087,absolute (k standard errors + stated allowance),10036,true
+V0,V0-permin-1000-nmin-law,"earliest winning step of each round vs Geometric(1 − (1 − p)^r) (randomised PIT, KS)",0.001,0.23681923359884563,0.0,lower bound (value ≥ reference − tolerance),10021,true
+V0,V0-permin-1000-hash-uniform,block hashes uniform (KS on the top 53 bits),0.001,0.9738925837550666,0.0,lower bound (value ≥ reference − tolerance),10036,true
+V0,V0-permin-1000-winners-uniform,blocks per slot uniform (χ² goodness of fit),0.001,0.575003442830846,0.0,lower bound (value ≥ reference − tolerance),10036,true
+V0,V0-permin-1000-tie-rate,"same-step tie rate vs M1 tie_probability(1000, 30 s)",0.016557959603462714,0.015367727771679473,0.0063737095305171606,absolute (k standard errors + stated allowance),10021,true
+V0,V0-gap-10-nmin-law,"earliest winning step of each round vs Geometric(1 − (1 − p)^r) (randomised PIT, KS)",0.001,0.3729682613604037,0.0,lower bound (value ≥ reference − tolerance),10047,true
+V0,V0-gap-10-hash-uniform,block hashes uniform (KS on the top 53 bits),0.001,0.49707510423291434,0.0,lower bound (value ≥ reference − tolerance),10068,true
+V0,V0-gap-10-winners-uniform,blocks per slot uniform (χ² goodness of fit),0.001,0.5884301251932555,0.0,lower bound (value ≥ reference − tolerance),10068,true
+V0,V0-gap-10-tie-rate,"same-step tie rate vs M1 tie_probability(10, 30 s)",0.014958042078526437,0.014929829799940281,0.006055033403748675,absolute (k standard errors + stated allowance),10047,true
+V0,V0-permin-10-nmin-law,"earliest winning step of each round vs Geometric(1 − (1 − p)^r) (randomised PIT, KS)",0.001,0.8747145440555782,0.0,lower bound (value ≥ reference − tolerance),10101,true
+V0,V0-permin-10-hash-uniform,block hashes uniform (KS on the top 53 bits),0.001,0.005738903041613105,0.0,lower bound (value ≥ reference − tolerance),10112,true
+V0,V0-permin-10-winners-uniform,blocks per slot uniform (χ² goodness of fit),0.001,0.8507345043998095,0.0,lower bound (value ≥ reference − tolerance),10112,true
+V0,V0-permin-10-tie-rate,"same-step tie rate vs M1 tie_probability(10, 30 s)",0.014958042078526437,0.014355014355014356,0.006038826593825386,absolute (k standard errors + stated allowance),10101,true
+V0,V0-V0-standin-1000-vs-V0-gap-1000-nmin,"earliest winning step, stand-in vs fast (two-sample χ²)",0.001,0.2732313909612361,0.0,lower bound (value ≥ reference − tolerance),10581,true
+V0,V0-V0-gap-1000-vs-V0-permin-1000-nmin,"earliest winning step, gap vs per-miner sampler (1,000 slots) (two-sample χ²)",0.001,0.2980274115643675,0.0,lower bound (value ≥ reference − tolerance),20057,true
+V0,V0-V0-gap-1000-vs-V0-permin-1000-ties,"winners at the earliest step, gap vs per-miner sampler (1,000 slots) (two-sample χ²)",0.001,0.28600026513143884,0.0,lower bound (value ≥ reference − tolerance),20057,true
+V0,V0-V0-gap-10-vs-V0-permin-10-nmin,"earliest winning step, gap vs per-miner sampler (10 slots) (two-sample χ²)",0.001,0.9604730191804551,0.0,lower bound (value ≥ reference − tolerance),20148,true
+V0,V0-V0-gap-10-vs-V0-permin-10-ties,"winners at the earliest step, gap vs per-miner sampler (10 slots) (two-sample χ²)",0.001,0.3332272769084138,0.0,lower bound (value ≥ reference − tolerance),20148,true
+V0,V0-self-validation,every broadcast block passes validate_facts at its own miner (all V0 runs),0.0,0.0,0.0,exact,0,true
+V0,V0-invariants,allocation and counter invariants (all V0 runs),0.0,0.0,0.0,exact,0,true
+V0,V0-horizon-audit,"candidates past the normal horizon that were broadcast, under loss, partitions, skew and D = 5 s (must be 0)",0.0,0.0,0.0,exact,0,true
+V4,V4-keys[0].secret,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-keys[0].public,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-keys[0].proof_of_possession,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-keys[1].secret,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-keys[1].public,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-keys[1].proof_of_possession,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-keys[2].secret,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-keys[2].public,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-keys[2].proof_of_possession,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-keys[3].secret,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-keys[3].public,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-keys[3].proof_of_possession,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-keys[4].secret,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-keys[4].public,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-keys[4].proof_of_possession,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-headers[0].encoding,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-headers[0].header_digest,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-headers[1].encoding,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-headers[1].header_digest,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-entropy.header_digest,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-entropy.miner_signature,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-entropy.member_signatures[0],the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-entropy.member_signatures[1],the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-entropy.member_signatures[2],the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-entropy.member_signatures[3],the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-entropy.signer_bitfield,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-entropy.aggregate,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-entropy.entropy,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-chain.t0,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-chain.first_steps[0],the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-chain.first_steps[1],the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-chain.first_steps[2],the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-chain.first_steps[3],the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-chain.first_steps[4],the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-chain.winning_step,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-chain.winning_hash,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-chain.timestamp,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-chain.block_hash,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-powit.signer_bitfield,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-powit.aggregate,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-validation[0].verdict,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-validation[1].verdict,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-validation[2].verdict,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-validation[3].verdict,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-witness_equivocation.second_block_hash,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-witness_equivocation.second_powit_aggregate,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-witness_equivocation.equivocating_seats,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-fork_choice[0].preferred,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-fork_choice[1].preferred,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-fork_choice[2].preferred,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-allocation[0].position,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-allocation[1].position,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-allocation[2].position,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-allocation[3].position,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-committee[0].position,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-committee[1].position,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-committee[2].position,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-committee[3].position,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-issuance[0].target,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V4,V4-issuance[1].target,the simulator's real-mode path reproduces this field of protocol_v1.json,1.0,1.0,0.0,exact,0,true
+V1,V1-s0.6-f1,"blocks to 51 % of active IDs (G = 2000, s = 0.6, f = 1) vs the M1 closed form t* + ½ Wald overshoot",11336.05555555556,11361.95,223.8026231079156,absolute (k standard errors + stated allowance),200,true
+V1,V1-s0.75-f1,"blocks to 51 % of active IDs (G = 2000, s = 0.75, f = 1) vs the M1 closed form t* + ½ Wald overshoot",4251.020833333333,4236.675,39.25978282421017,absolute (k standard errors + stated allowance),200,true
+V1,V1-s100-exact,"s = 1, f = 1: every replicate reaches 51 % at exactly ⌈0.51·G/0.49⌉ = 2082 blocks (G = 2000)",2082.0,2082.0,0.0,exact,0,true
+V1,V1-s0.6-f0.7,"blocks to 51 % of active IDs (G = 2000, s = 0.6, f = 0.7) vs the M1 closed form t* + ½ Wald overshoot",4723.842592592593,4728.505,73.03813765762517,absolute (k standard errors + stated allowance),200,true
+V1,V1-a7-long-run-share,"attacker share of active new IDs at s = 0.6, f = 0.7 vs M1 A7 s/(s + f(1 − s))",0.6818181818181819,0.6815898943281725,0.0025524326199333285,absolute (k standard errors + stated allowance),832483,true
+V1,V1-f1-tie-rate,"same-step tie rate vs M1 F1 tie_probability(1000, 30 s)",0.016557959603462714,0.016602737299021127,0.00030026152374891914,absolute (k standard errors + stated allowance),4515400,true
+V1,V1-mean-interval,mean interval with an exact count vs the whole-second law 1/(1 − (1 − p)^r) (not 30 s: see SUMMARY),30.502277769855738,30.495835851746225,0.07086181034714381,absolute (k standard errors + stated allowance),4477026,true
+V2,V2-old-w1299,"old design: restart advantage at keep window 1299 s vs M1 advantage_old_design(q, C_realised, W), allowance 1 % for tie losses",2.6997515636570397,2.422074299951657,0.24662719086550208,absolute (k standard errors + stated allowance),3428,false
+V2,V2-old-w3600,"old design: restart advantage at keep window 3600 s vs M1 advantage_old_design(q, C_realised, W), allowance 1 % for tie losses",5.294814660374247,5.096860715499981,0.39352603364834693,absolute (k standard errors + stated allowance),7101,true
+V2,V2-old-w5196,"old design: restart advantage at keep window 5196 s vs M1 advantage_old_design(q, C_realised, W), allowance 1 % for tie losses",5.682885899430172,5.631849765258216,0.41773912877631675,absolute (k standard errors + stated allowance),7892,true
+V2,V2-old-w20785,"old design: restart advantage at keep window 20785 s vs M1 advantage_old_design(q, C_realised, W), allowance 1 % for tie losses",3.0136555063221127,2.961880747552655,0.27570026357092614,absolute (k standard errors + stated allowance),4204,true
+V2,V2-restart-cost,"realised restart cost (decision to mining again, median) within [450, 455] s",450.0,450.967937,0.0,exact,0,true
+V2,V2-current-control,"current design, restarters that never restart: advantage vs 1",1.0,0.9942743576397105,0.03424680036162463,absolute (k standard errors + stated allowance),42024,true
+V3,V3-A-K144-clamp4-m0.1,Variant A hopping gain (K = 144) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 1.100,1.1165355459484683,1.075933576431733,0.10583010093569505,absolute (k standard errors + stated allowance),2584,true
+V3,V3-A-K144-clamp4-m0.1-recovery,"Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped",1.3157954564219352,1.316883637368712,0.08217126141979217,absolute (k standard errors + stated allowance),201,true
+V3,V3-A-K144-clamp4-m0.5,Variant A hopping gain (K = 144) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 1.500,1.512341364182615,1.4921681406570926,0.07791177517546684,absolute (k standard errors + stated allowance),9170,true
+V3,V3-A-K144-clamp4-m0.5-recovery,"Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped",1.7750846508721074,1.7856076388888888,0.11422309689635196,absolute (k standard errors + stated allowance),192,true
+V3,V3-A-K144-clamp4-m1,Variant A hopping gain (K = 144) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 2.000,1.9996101524207759,1.9960052115137052,0.0892747803442667,absolute (k standard errors + stated allowance),12497,true
+V3,V3-A-K144-clamp4-m1-recovery,"Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped",2.3405212204079984,2.361360153256705,0.1506024419827013,absolute (k standard errors + stated allowance),174,true
+V3,V3-A-K144-clamp4-m4,Variant A hopping gain (K = 144) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 5.000,4.7559712362459114,6.264876534860303,0.26898040977185006,absolute (k standard errors + stated allowance),13562,false
+V3,V3-A-K144-clamp4-m4-recovery,"Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped",4.739636239288823,4.7269209039548015,0.3590756098187896,absolute (k standard errors + stated allowance),118,true
+V3,V3-A-K144-clampnone-m0.1,Variant A hopping gain (K = 144) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 1.100,1.1165355459484683,1.1414007383123461,0.10954769193132026,absolute (k standard errors + stated allowance),2714,true
+V3,V3-A-K144-clampnone-m0.1-recovery,"Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped",1.3157954564219352,1.3292716970702045,0.0861964127973181,absolute (k standard errors + stated allowance),201,true
+V3,V3-A-K144-clampnone-m0.5,Variant A hopping gain (K = 144) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 1.500,1.512341364182615,1.5172421877302096,0.07898019273139183,absolute (k standard errors + stated allowance),9226,true
+V3,V3-A-K144-clampnone-m0.5-recovery,"Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped",1.7750846508721074,1.7872916666666667,0.11583244324256635,absolute (k standard errors + stated allowance),192,true
+V3,V3-A-K144-clampnone-m1,Variant A hopping gain (K = 144) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 2.000,1.9996101524207759,1.9986890845280028,0.08909588863608221,absolute (k standard errors + stated allowance),12581,true
+V3,V3-A-K144-clampnone-m1-recovery,"Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped",2.3405212204079984,2.3612021072796936,0.17600729755084582,absolute (k standard errors + stated allowance),174,true
+V3,V3-A-K144-clampnone-m4,Variant A hopping gain (K = 144) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 5.000,4.7559712362459114,5.574338776849414,0.2748147910033006,absolute (k standard errors + stated allowance),10286,false
+V3,V3-A-K144-clampnone-m4-recovery,"Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped",5.539129844736366,6.725939450686641,0.7559417061849731,absolute (k standard errors + stated allowance),89,false
+V3,V3-A-K2016-clamp4-m0.1,Variant A hopping gain (K = 2016) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 1.100,1.1165355459484683,1.1310003342860393,0.058401491460108944,absolute (k standard errors + stated allowance),9376,true
+V3,V3-A-K2016-clamp4-m0.1-recovery,"Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped",18.421136389907094,18.564944444444446,0.7210454350697348,absolute (k standard errors + stated allowance),50,true
+V3,V3-A-K2016-clamp4-m0.5,Variant A hopping gain (K = 2016) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 1.500,1.512341364182615,1.5243234272289434,0.04223296611632634,absolute (k standard errors + stated allowance),32568,true
+V3,V3-A-K2016-clamp4-m0.5-recovery,"Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped",24.851185112209507,24.916655092592592,1.1433533477058642,absolute (k standard errors + stated allowance),48,true
+V3,V3-A-K2016-clamp4-m1,Variant A hopping gain (K = 2016) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 2.000,1.9996101524207759,2.0139821000962366,0.047824699980465346,absolute (k standard errors + stated allowance),44335,true
+V3,V3-A-K2016-clamp4-m1-recovery,"Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped",32.767297085711974,32.96727390180879,1.3509109571768905,absolute (k standard errors + stated allowance),43,true
+V3,V3-A-K2016-clamp4-m4,Variant A hopping gain (K = 2016) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 5.000,4.7559712362459114,10.997565531626387,0.24209152704625927,absolute (k standard errors + stated allowance),51591,false
+V3,V3-A-K2016-clamp4-m4-recovery,"Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped",66.35490735004353,47.726527777777775,16.63337870133273,absolute (k standard errors + stated allowance),32,false
+V3,V3-A-K2016-clampnone-m0.1,Variant A hopping gain (K = 2016) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 1.100,1.1165355459484683,1.1256665793373835,0.058338007135019784,absolute (k standard errors + stated allowance),9308,true
+V3,V3-A-K2016-clampnone-m0.1-recovery,"Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped",18.421136389907094,18.425505555555556,0.6484850690205387,absolute (k standard errors + stated allowance),50,true
+V3,V3-A-K2016-clampnone-m0.5,Variant A hopping gain (K = 2016) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 1.500,1.512341364182615,1.5195159422390179,0.04222767859345514,absolute (k standard errors + stated allowance),32371,true
+V3,V3-A-K2016-clampnone-m0.5-recovery,"Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped",24.851185112209507,25.03909722222222,1.107368445522781,absolute (k standard errors + stated allowance),48,true
+V3,V3-A-K2016-clampnone-m1,Variant A hopping gain (K = 2016) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 2.000,1.9996101524207759,2.0185773940223437,0.04791383218728059,absolute (k standard errors + stated allowance),44372,true
+V3,V3-A-K2016-clampnone-m1-recovery,"Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped",32.767297085711974,32.954935400516796,1.5415289335274318,absolute (k standard errors + stated allowance),43,true
+V3,V3-A-K2016-clampnone-m4,Variant A hopping gain (K = 2016) vs the discrete equivalent of M1 E1 (1 − (29/30)^(1+m)) / q_B; M1's continuous value 5.000,4.7559712362459114,7.7464737986509915,0.23407196877191147,absolute (k standard errors + stated allowance),27381,false
+V3,V3-A-K2016-clampnone-m4-recovery,"Variant A recovery window (hours) vs the discrete first-order value, allowance K/(K − 1) − 1 when unclamped",77.54781782630913,125.60052083333333,43.604150469286466,absolute (k standard errors + stated allowance),16,false
+V3,V3-B-m0.1,"Variant B (exact count, no correction) hopping gain vs 1",1.0,0.9917544865689413,0.09756902723600526,absolute (k standard errors + stated allowance),2583,true
+V3,V3-B-m0.5,"Variant B (exact count, no correction) hopping gain vs 1",1.0,0.9988907153941724,0.05096115895740438,absolute (k standard errors + stated allowance),9605,true
+V3,V3-B-m1,"Variant B (exact count, no correction) hopping gain vs 1",1.0,0.9994995579651362,0.04163136208989061,absolute (k standard errors + stated allowance),14410,true
+V3,V3-B-m4,"Variant B (exact count, no correction) hopping gain vs 1",1.0,1.0101418705460812,0.03976566693965868,absolute (k standard errors + stated allowance),16132,true
+C1,C1-idealised-control-x0.1,idealised network: a tagged group's amplification vs 1,1.0,1.0310471847044378,0.09005744502609715,absolute (k standard errors + stated allowance),10,true
+C1,C1-idealised-control-x0.5,idealised network: a tagged group's amplification vs 1,1.0,1.0001052446939136,0.0435809219047734,absolute (k standard errors + stated allowance),10,true
+C2,C2-idealised-orphans,zero latency: orphans per final-chain block vs E[tied winners − 1] from M1 F1 (1000 slots),0.016742592328524587,0.009261533064374671,0.003831958816901555,absolute (k standard errors + stated allowance),28505,false
+C3,C3-no-deadline-no-late,D = none: no block is rejected as late at any panel node,0.0,0.0,0.0,exact,0,true
+C5,C5-scripted-stall-W1,a scripted unannounced crash stalls its KWCs' entropy for W·30 s = 30 s plus the vote (within 1 s),30.0,30.0,1.0,absolute,0,true
+C5,C5-scripted-stall-W2,a scripted unannounced crash stalls its KWCs' entropy for W·30 s = 60 s plus the vote (within 1 s),60.0,60.0,1.0,absolute,0,true
+C5,C5-scripted-stall-W5,a scripted unannounced crash stalls its KWCs' entropy for W·30 s = 150 s plus the vote (within 1 s),150.0,150.0,1.0,absolute,0,true
+C5,C5-switch-minimum,switching KWC takes at least the grace epoch plus admission (450 s),450.0,450.643756,0.0,lower bound (value ≥ reference − tolerance),120000,true
+C5,C5-switch-median,median KWC switch time at most 460 s,460.0,451.017525,0.0,upper bound (value ≤ reference + tolerance),120000,true
+C6,C6-no-skew-no-early,no clock skew: no honest block is received early at any panel node,0.0,0.0,0.0,exact,0,true
+C7,C7-independent-f0.7-unregistered,independent outages at f = 0.7: share of KWCs below 27 of 40 vs M1 fail_probability at the realised online fraction,0.2931802432872107,0.2926388888888889,0.015638208151998963,absolute (k standard errors + stated allowance),129600,true
+C7,C7-independent-f0.7-registered,independent outages at f = 0.7: share of KWCs below 7 + 21 vs M1 fail_probability at the realised online fraction,0.6140861612677367,0.6127777777777778,0.011094143946230949,absolute (k standard errors + stated allowance),129600,true
+C7,C7-independent-f0.8-unregistered,independent outages at f = 0.8: share of KWCs below 27 of 40 vs M1 fail_probability at the realised online fraction,0.020023835162760018,0.019799382716049384,0.00338189810029848,absolute (k standard errors + stated allowance),129600,true
+C7,C7-independent-f0.8-registered,independent outages at f = 0.8: share of KWCs below 7 + 21 vs M1 fail_probability at the realised online fraction,0.17702024823292917,0.17645061728395062,0.005301192212979158,absolute (k standard errors + stated allowance),129600,true
+C7,C7-independent-f0.9-unregistered,independent outages at f = 0.9: share of KWCs below 27 of 40 vs M1 fail_probability at the realised online fraction,0.000018476836968744678,7.71604938271605e-6,0.00005970040876704463,absolute (k standard errors + stated allowance),129600,true
+C7,C7-independent-f0.9-registered,independent outages at f = 0.9: share of KWCs below 7 + 21 vs M1 fail_probability at the realised online fraction,0.013244222225433411,0.013657407407407408,0.001587762615774253,absolute (k standard errors + stated allowance),129600,true
+A6,A6-conservation-p3,every newcomer is counted once: arrivals = first IDs + dropouts + still waiting,398137.0,398137.0,0.0,exact,0,true
+A6,A6-arrivals-p3,newcomer arrivals vs their Poisson mean,397440.0,398137.0,3152.1421287752873,absolute (k standard errors + stated allowance),398137,true
+A6,A6-conservation-p14,every newcomer is counted once: arrivals = first IDs + dropouts + still waiting,396570.0,396570.0,0.0,exact,0,true
+A6,A6-arrivals-p14,newcomer arrivals vs their Poisson mean,397440.0,396570.0,3152.1421287752873,absolute (k standard errors + stated allowance),396570,true
+ALL,ALL-invariants,"cached active list, seats, WC, miner and KWC counters equal a recount, daily and at the end (1011 runs)",0.0,0.0,0.0,exact,0,true
+ALL,ALL-self-validation,every broadcast block passes validate_facts at its own miner (1011 runs),0.0,0.0,0.0,exact,0,true
+ALL,ALL-deep-reorgs,reorgs of the network chain below a confirmed ID (1011 runs),0.0,1871.0,0.0,exact,0,false
