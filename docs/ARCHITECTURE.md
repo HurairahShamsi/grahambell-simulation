@@ -54,7 +54,7 @@ Dependencies point one way: `gb-cli` → analysis crates (`gb-analytic`, `gb-cry
 - **Households.** Per-node on/off timelines: device schedules, crashes, glitches, grid faults and load-shedding (with UPS), provider and regional outages, long absences and departures, each tagged announced or unannounced by its cause.
 - **Network chain.** 101 ideal validators spread over the regions stand for the network: the network chain is the longest chain more than half of them hold. An ID passes confirmation depth when 6 blocks are built on its block there.
 - **Invariants.** Every run recounts its caches (active list, seats, WC, miner and KWC counters) daily and at the end, and every broadcast block must pass `validate_facts` at its own miner.
-- **Fork storms.** After a stall of hours with no PoWit deadline, start rule (a) lets hundreds of blocks compete for each height, and the run's memory grows by gigabytes within seconds of simulated time. A run therefore stops once more than `sim.world.fork_storm_width` (64) unsettled blocks share a height, and the outputs flag it (ASSUMPTIONS SIM-29). The limit never touches a run without a storm.
+- **Fork storms.** After a stall of hours with no PoWit deadline, start rule (a) lets hundreds of blocks compete for each height. Most such storms resolve; some keep growing until the run crawls. A run therefore stops once more than `sim.world.fork_storm_unsettled` (4,000) blocks are unsettled at once, and the outputs flag it (ASSUMPTIONS SIM-29). The limit never touches a run that stays below it.
 
 ### Tier 2 — `gb-scale` (aggregate model)
 
@@ -152,7 +152,7 @@ Each M1 table becomes a check that a later simulator must pass.
   - timers set a constant delay after the current time (One Chance retries, deactivation and long-absence checks) wait in FIFO lanes that share the event heap's sequence numbers;
   - the canonical active list is a Fenwick tree, so the committee lottery reads it without copying it;
   - a keyed draw computes only the ChaCha20 block it needs, bit-identical to `rand_chacha` (a test compares them);
-  - each node's acceptance of an unsettled block is cached: its own reception for good, the acceptance through the parent chain until the next height settles.
+  - each node's acceptance of an unsettled block is cached: its own reception for good, the acceptance through the parent chain until the next height settles. The cache holds at most `sim.acceptance_cache_entries` entries (2 million, about 160 MB); past that it is emptied and refills as needed, which bounds memory in a fork storm (a test runs a job with a 50-entry cache and gets the same result).
 - **Resuming.** `gb sim` saves each finished job's result, with its specification, in the run directory's `checkpoint/`. `gb sim --resume <run-dir>` continues an interrupted run from the same commit and configuration and reuses every saved result whose specification matches exactly (floats round-trip exactly). The checkpoints and `resume.json` are removed when the run finishes, so a resumed run's outputs equal those of a run done in one go.
 - **Run directory:** `results/<analysis>/<run-id>/` holds the tables (CSV), charts (PNG), `SUMMARY.md`, `config.resolved.toml` and `run.json`. `run.json` records commit, dirty flag, seed, config hash, toolchain and a SHA-256 for every output file. Machine-dependent timings go to a sub-directory that reproduction checks leave out (`bench/` for `gb crypto`, `perf/` for `gb sim`); `gb sim --trace` adds sampled event traces in `trace/`.
 - **Front ends** read these outputs only (SPEC §11.6).

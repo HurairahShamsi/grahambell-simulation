@@ -90,7 +90,7 @@ cargo run --release -p gb-cli -- sim --profile quick    # tiny sizes, for tests;
 
 While it runs, `gb sim` prints a line per finished job with an estimate of the time left. It saves each finished job's result in the run directory's `checkpoint/`; if the run is interrupted (the machine sleeps, the process is killed), `gb sim --resume results/sim/<run-id>` continues it, and the finished run is the same as one done in one go.
 
-A run that enters a fork storm (more than `sim.world.fork_storm_width` unsettled blocks at one height, which happens after a stall of hours when no PoWit deadline is set) stops there to keep memory bounded. `SUMMARY.md` lists such runs, and `ALL_runs.csv` gives the day each one stopped (ASSUMPTIONS SIM-29).
+A run whose fork storm grows past `sim.world.fork_storm_unsettled` (4,000) unsettled blocks stops there; such storms follow a stall of hours when no PoWit deadline is set. `SUMMARY.md` lists those runs, and `ALL_runs.csv` gives the day each one stopped (ASSUMPTIONS SIM-29).
 
 Every run is single-threaded and seeded and is stored by its index, so the tables are byte-identical whatever the thread count. Wall times depend on the machine, so they go to `perf/` and are left out of reproducibility checks, as `bench/` is for `gb crypto`.
 
