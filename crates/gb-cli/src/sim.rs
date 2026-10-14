@@ -11,12 +11,16 @@ use crate::charts::{Figure, Panel, Reference, Scale, Series, draw_figure};
 use crate::tables::write_csv;
 use crate::{load_config, machine_description};
 use anyhow::{Context, bail, ensure};
+use gb_analytic::validation::Check;
 use gb_config::Config;
 use gb_runlog::{
     GitInfo, RESOLVED_CONFIG_FILE, RunDetails, RunIdentity, UtcTimestamp, finish_run,
     write_resolved_config,
 };
-use gb_sim::suite::{Chart, Profile, RunControl, SuiteOptions, SuiteOutput, Table, run_suite};
+use gb_sim::suite::{
+    Chart, CheckStatus, Profile, RunControl, SuiteOptions, SuiteOutput, Table, check_status,
+    run_suite,
+};
 use plotters::prelude::{RGBColor, SeriesLabelPosition};
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
@@ -120,8 +124,10 @@ pub struct SimOutcome {
     pub run_dir: PathBuf,
     /// Validation checks run.
     pub checks: usize,
-    /// Identifiers of failed checks.
+    /// Identifiers of failed checks (reference-limited checks are not failures).
     pub failed: Vec<String>,
+    /// Checks reported as reference-limited.
+    pub reference_limited: usize,
     /// Whether the V0 gate passed.
     pub gate_passed: bool,
 }
@@ -138,7 +144,8 @@ pub fn produce(
     for table in &out.tables {
         write_table(&dir.join(&table.name), table)?;
     }
-    write_csv(&dir.join("validation.csv"), &out.checks)?;
+    let rows: Vec<CheckRow<'_>> = out.checks.iter().map(CheckRow::from).collect();
+    write_csv(&dir.join("validation.csv"), &rows)?;
     if !out.charts.is_empty() {
         let charts = dir.join(CHART_DIR);
         std::fs::create_dir_all(&charts)?;
@@ -355,11 +362,48 @@ pub fn resume_sim(run_dir: &Path, options: &SimOptions) -> anyhow::Result<SimOut
         failed: out
             .checks
             .iter()
-            .filter(|c| !c.passed)
+            .filter(|c| check_status(c) == CheckStatus::Fail)
             .map(|c| c.check.clone())
             .collect(),
+        reference_limited: out
+            .checks
+            .iter()
+            .filter(|c| check_status(c) == CheckStatus::ReferenceLimited)
+            .count(),
         gate_passed: out.gate_passed,
     })
+}
+
+/// A row of the simulator's `validation.csv`: the check and its status.
+#[derive(serde::Serialize)]
+struct CheckRow<'a> {
+    section: &'a str,
+    check: &'a str,
+    description: &'a str,
+    reference: f64,
+    value: f64,
+    tolerance: f64,
+    tolerance_kind: &'a str,
+    samples: u64,
+    passed: bool,
+    status: &'static str,
+}
+
+impl<'a> From<&'a Check> for CheckRow<'a> {
+    fn from(c: &'a Check) -> Self {
+        CheckRow {
+            section: c.section,
+            check: &c.check,
+            description: &c.description,
+            reference: c.reference,
+            value: c.value,
+            tolerance: c.tolerance,
+            tolerance_kind: c.tolerance_kind,
+            samples: c.samples,
+            passed: c.passed,
+            status: check_status(c).name(),
+        }
+    }
 }
 
 /// Writes a suite table as CSV.
@@ -572,12 +616,22 @@ pub fn render_summary(
     let _ = writeln!(s, "- Runs: {}\n", out.perf.len());
     let _ = writeln!(
         s,
-        "Every run is seeded and single-threaded, so these tables are reproducible bit for bit whatever the thread count; wall times are machine-dependent and are in `perf/`. Every protocol decision goes through `gb-protocol` (SPEC v0.6 and the architect's M3a decisions of 2026-10-12). Values marked as checks are compared with M1's closed forms or with exact expectations at 5 standard errors (`validation.csv`); every other number is a measurement, reported as it came out.\n"
+        "Every run is seeded and single-threaded, so these tables are reproducible bit for bit whatever the thread count; wall times are machine-dependent and are in `perf/`. Every protocol decision goes through `gb-protocol` (SPEC v0.6 and the architect's decisions of 2026-10-12 and 2026-10-14). Values marked as checks are compared with M1's closed forms or with exact expectations at 5 standard errors (`validation.csv`); every other number is a measurement, reported as it came out.\n"
     );
-    let passed = out.checks.iter().filter(|c| c.passed).count();
+    let count = |status: CheckStatus| {
+        out.checks
+            .iter()
+            .filter(|c| check_status(c) == status)
+            .count()
+    };
+    let (passed, failed, limited) = (
+        count(CheckStatus::Pass),
+        count(CheckStatus::Fail),
+        count(CheckStatus::ReferenceLimited),
+    );
     let _ = writeln!(
         s,
-        "## Validation\n\n**{passed} of {} checks passed.** The V0 gate {}.",
+        "## Validation\n\n**{passed} of {} checks pass, {failed} fail and {limited} are reference-limited.** The V0 gate {}. A reference-limited check is kept and reported, but its reference does not model what the simulator does, so it is not a failure either way (ASSUMPTIONS SIM-31).",
         out.checks.len(),
         if out.gate_passed {
             "passed, so the stand-in and fast modes are used for the other sections"
@@ -585,10 +639,15 @@ pub fn render_summary(
             "failed, so no result that relies on the stand-in or fast modes is reported"
         }
     );
-    for f in out.checks.iter().filter(|c| !c.passed) {
+    for f in out.checks.iter() {
+        let label = match check_status(f) {
+            CheckStatus::Pass => continue,
+            CheckStatus::Fail => "**failed**",
+            CheckStatus::ReferenceLimited => "*reference-limited*",
+        };
         let _ = writeln!(
             s,
-            "- **failed** `{}`: {} (reference {}, value {})",
+            "- {label} `{}`: {} (reference {}, value {})",
             f.check, f.description, f.reference, f.value
         );
     }

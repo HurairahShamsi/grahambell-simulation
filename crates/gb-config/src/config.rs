@@ -72,7 +72,8 @@ impl Config {
     /// Parses TOML text and merges it over the defaults.
     ///
     /// The text only needs the keys it overrides. Unknown keys and changed status tags are
-    /// errors, and the merged result is validated.
+    /// errors, and the merged result is validated. An optional parameter is unset with
+    /// `value = "none"` ([`NO_VALUE`]).
     pub fn from_toml_str(text: &str) -> Result<Config, ConfigError> {
         let overrides: Table =
             toml::from_str(text).map_err(|e| ConfigError::Parse(e.to_string()))?;
@@ -80,21 +81,41 @@ impl Config {
         let mut merged = defaults.clone();
         merge_tables(&mut merged, overrides);
         check_statuses_unchanged(&defaults, &merged, "")?;
+        let mut unset = Vec::new();
+        take_unset_values(&mut merged, "", &mut unset);
         let config: Config = merged
             .try_into()
             .map_err(|e: toml::de::Error| ConfigError::Structure(e.to_string()))?;
+        // Only an optional parameter reads back without a value; any other would silently take
+        // its type's default.
+        let plain = config.to_plain_table()?;
+        if let Some(path) = unset.iter().find(|path| has_value(&plain, path)) {
+            return Err(ConfigError::Structure(format!(
+                "{path}.value = \"{NO_VALUE}\" is only allowed for an optional parameter"
+            )));
+        }
         config.validate()?;
         Ok(config)
     }
 
     /// Serializes the configuration to a TOML table.
+    ///
+    /// An optional parameter without a value is normally left out, but where the default has
+    /// a value it is written as `value = "none"`, because a file is merged over the defaults
+    /// and leaving it out would bring the default back.
     pub fn to_table(&self) -> Result<Table, ConfigError> {
+        let mut table = self.to_plain_table()?;
+        mark_unset_values(&mut table, &Config::default().to_plain_table()?);
+        Ok(table)
+    }
+
+    fn to_plain_table(&self) -> Result<Table, ConfigError> {
         Table::try_from(self).map_err(|e| ConfigError::Serialize(e.to_string()))
     }
 
-    /// Serializes the configuration to TOML text.
+    /// Serializes the configuration to TOML text (see [`Config::to_table`] for unset values).
     pub fn to_toml_string(&self) -> Result<String, ConfigError> {
-        toml::to_string(self).map_err(|e| ConfigError::Serialize(e.to_string()))
+        toml::to_string(&self.to_table()?).map_err(|e| ConfigError::Serialize(e.to_string()))
     }
 
     /// PoW-ID issuance per year at the target interval, R = seconds_per_year / interval.
@@ -621,6 +642,58 @@ pub(crate) fn merge_tables(base: &mut Table, overlay: Table) {
     }
 }
 
+/// A parameter's `value` in a configuration file that leaves an optional parameter unset.
+/// TOML has no null, and a file is merged over the defaults, so leaving `value` out would
+/// keep the default's value.
+pub const NO_VALUE: &str = "none";
+
+/// Removes every parameter `value` equal to [`NO_VALUE`] from `table`, recording its path.
+fn take_unset_values(table: &mut Table, prefix: &str, unset: &mut Vec<String>) {
+    for (key, value) in table.iter_mut() {
+        let Value::Table(child) = value else {
+            continue;
+        };
+        let path = join_path(prefix, key);
+        if child.contains_key("status") {
+            if child.get("value").and_then(Value::as_str) == Some(NO_VALUE) {
+                child.remove("value");
+                unset.push(path);
+            }
+        } else {
+            take_unset_values(child, &path, unset);
+        }
+    }
+}
+
+/// Writes [`NO_VALUE`] as the value of each parameter of `table` that has no value where the
+/// same parameter in `defaults` has one.
+fn mark_unset_values(table: &mut Table, defaults: &Table) {
+    for (key, value) in table.iter_mut() {
+        let (Value::Table(child), Some(Value::Table(default_child))) = (value, defaults.get(key))
+        else {
+            continue;
+        };
+        if child.contains_key("status") {
+            if !child.contains_key("value") && default_child.contains_key("value") {
+                // First, where a set value would be written.
+                let mut marked = Table::new();
+                marked.insert("value".to_string(), Value::String(NO_VALUE.to_string()));
+                marked.extend(std::mem::take(child));
+                *child = marked;
+            }
+        } else {
+            mark_unset_values(child, default_child);
+        }
+    }
+}
+
+/// Whether the parameter at dotted path `path` in `table` has a value.
+fn has_value(table: &Table, path: &str) -> bool {
+    path.split('.')
+        .try_fold(table, |current, part| current.get(part)?.as_table())
+        .is_some_and(|param| param.contains_key("value"))
+}
+
 /// Fails if any parameter's `status` differs between the defaults and the merged table.
 fn check_statuses_unchanged(
     defaults: &Table,
@@ -818,6 +891,45 @@ mod tests {
     fn default_config_round_trips_through_toml_text() {
         let text = Config::default().to_toml_string().unwrap();
         assert_eq!(Config::from_toml_str(&text).unwrap(), Config::default());
+    }
+
+    #[test]
+    fn writing_through_a_table_keeps_the_struct_layout() {
+        let config = Config::default();
+        assert_eq!(
+            config.to_toml_string().unwrap(),
+            toml::to_string(&config).unwrap()
+        );
+    }
+
+    #[test]
+    fn an_optional_parameter_with_a_default_can_be_unset_and_read_back() {
+        // The PoWit deadline defaults to 10 s (architect, 2026-10-14); "none" removes it.
+        let text = "[timing]\npowit_deadline_s.value = \"none\"\n";
+        let config = Config::from_toml_str(text).unwrap();
+        assert_eq!(config.timing.powit_deadline_s.value, None);
+        let written = config.to_toml_string().unwrap();
+        assert!(written.contains("value = \"none\""), "{written}");
+        assert_eq!(Config::from_toml_str(&written).unwrap(), config);
+        // An optional parameter whose default is already unset is still left out.
+        assert!(
+            !Config::default()
+                .to_toml_string()
+                .unwrap()
+                .contains(NO_VALUE)
+        );
+    }
+
+    #[test]
+    fn none_is_rejected_for_a_parameter_that_is_not_optional() {
+        let error = Config::from_toml_str("[genesis]\nids.value = \"none\"\n").unwrap_err();
+        assert!(error.to_string().contains("genesis.ids"), "{error}");
+        let error =
+            Config::from_toml_str("[offline]\nunreachable_rule.value = \"none\"\n").unwrap_err();
+        assert!(
+            error.to_string().contains("offline.unreachable_rule"),
+            "{error}"
+        );
     }
 
     #[test]

@@ -152,6 +152,10 @@ pub struct SimNetwork {
     pub skew_tail_fraction: f64,
     /// Clock skew: standard deviation of the tail, in seconds.
     pub skew_tail_sd_s: f64,
+    /// A witness online but cut off by a partition counts as unreachable for its KWCs, so
+    /// One Chance applies to it (architect, 2026-10-14; ASSUMPTIONS SIM-7). `false` restores
+    /// the M3a model, in which entropy across a partition waits until it heals.
+    pub partition_cuts_witnesses: bool,
 }
 
 impl Default for SimNetwork {
@@ -188,6 +192,7 @@ impl Default for SimNetwork {
             skew_sd_s: 0.05,
             skew_tail_fraction: 0.01,
             skew_tail_sd_s: 2.0,
+            partition_cuts_witnesses: true,
         }
     }
 }

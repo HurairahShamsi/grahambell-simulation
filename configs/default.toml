@@ -76,8 +76,9 @@ grace_epoch_rounds = { value = 5, status = "D" }
 clock_tolerance_s = { value = 2.0, status = "O", sweep = { range = [0.5, 10.0] } }
 # One Chance wait: one grace epoch (5 rounds) by default.
 one_chance_wait_rounds = { value = 5, status = "O", sweep = { values = [1, 2, 5] } }
-powit_deadline_s = { status = "O", sweep = { values = [5.0, 10.0, 30.0, 60.0] } }
-powit_deadline_scope = { value = "permanent", status = "D", sweep = { values = ["permanent", "not_extended_only"], note = "not extended only is the comparison (architect, 2026-10-12)" } }
+# PoWit deadline D: 10 s with the soft scope (architect, 2026-10-14). value = "none" turns it off.
+powit_deadline_s ={ value = 10.0, status = "O", sweep = { values = [5.0, 10.0, 30.0, 60.0], note = "no deadline is the comparison (architect, 2026-10-14)" } }
+powit_deadline_scope = { value = "not_extended_only", status = "D", sweep = { values = ["not_extended_only", "permanent"], note = "permanent is the comparison (architect, 2026-10-14)" } }
 early_block = { value = "permanent", status = "D", sweep = { values = ["permanent", "reevaluate_later"], note = "re-evaluation is the comparison (architect, 2026-10-12)" } }
 witness_signing = { value = "on_time", status = "D", sweep = { values = ["on_time", "earliest_within_tolerance"], note = "earliest within δ (the earlier P-4 reading) is the comparison" } }
 
@@ -108,7 +109,7 @@ deactivation_threshold_s = { status = "O", sweep = { values = [3600.0, 21600.0, 
 reactivation_wait_s = { status = "O", sweep = { values = [86400.0, 604800.0, 1209600.0, 2592000.0] } }
 # Long-absence threshold L: 30 days; sweep 3, 7, 30, 90, 365 days.
 long_absence_threshold_s = { value = 2592000.0, status = "O", sweep = { values = [259200.0, 604800.0, 2592000.0, 7776000.0, 31536000.0] } }
-unreachable_rule = { value = "strict", status = "O", sweep = { values = ["strict", "unreachable_is_not_refusal"], note = "strict is the interim default; unreachable is not refusal is [P] (SPEC §4.6, §12)" } }
+unreachable_rule = { value = "unreachable_is_not_refusal", status = "D", sweep = { values = ["unreachable_is_not_refusal", "strict"], note = "strict is the comparison (architect, 2026-10-14)" } }
 
 # ---------------------------------------------------------------- SPEC §2, §4.8: penalties (seconds)
 [penalties]
@@ -291,6 +292,8 @@ stylised_per_hop_ms = 5.0
 skew_sd_s = 0.05
 skew_tail_fraction = 0.01
 skew_tail_sd_s = 2.0
+# A witness cut off by a partition counts as unreachable (One Chance applies; SIM-7).
+partition_cuts_witnesses = true
 
 [sim.households]
 device_mix = [0.3, 0.3, 0.4]

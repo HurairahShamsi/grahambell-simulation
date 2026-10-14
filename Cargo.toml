@@ -27,7 +27,8 @@ gb-sim = { path = "crates/gb-sim" }
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-toml = "1.1"
+# Tables keep field order, so a configuration written through a table reads like the struct.
+toml = { version = "1.1", features = ["preserve_order"] }
 csv = "1.4"
 clap = { version = "4.6", features = ["derive"] }
 thiserror = "2"

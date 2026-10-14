@@ -451,6 +451,50 @@ pub(crate) fn storm_note(runs: &[&JobResult]) -> String {
     }
 }
 
+/// How a check counts in the simulator's `validation.csv` (architect, 2026-10-14).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CheckStatus {
+    /// Within tolerance of its reference.
+    Pass,
+    /// Outside tolerance: a failure.
+    Fail,
+    /// Kept and reported, but not a failure either way, because its reference does not model
+    /// what the simulator does (ASSUMPTIONS SIM-31).
+    ReferenceLimited,
+}
+
+impl CheckStatus {
+    /// The status as written in `validation.csv`.
+    pub fn name(self) -> &'static str {
+        match self {
+            CheckStatus::Pass => "pass",
+            CheckStatus::Fail => "fail",
+            CheckStatus::ReferenceLimited => "reference-limited",
+        }
+    }
+}
+
+/// Checks whose references are limited (architect, 2026-10-14): M1 section D's old-design
+/// restart advantage, which models neither one-header sit-outs nor start-rule catch-up (V2),
+/// and M1 E1's first-order hopping gain, which does not hold for hops of four times the
+/// network (V3 Variant A at m = 4). No new references are used.
+pub fn reference_limited(check: &str) -> bool {
+    check.starts_with("V2-old-")
+        || (check.starts_with("V3-A-")
+            && (check.ends_with("-m4") || check.ends_with("-m4-recovery")))
+}
+
+/// The status of a check.
+pub fn check_status(check: &Check) -> CheckStatus {
+    if reference_limited(&check.check) {
+        CheckStatus::ReferenceLimited
+    } else if check.passed {
+        CheckStatus::Pass
+    } else {
+        CheckStatus::Fail
+    }
+}
+
 /// The simulated day a fork storm stopped the run, or an empty cell (SIM-29).
 pub(crate) fn storm_day(res: &JobResult) -> String {
     res.fork_storm_s
@@ -482,6 +526,9 @@ fn invariants(specs: &[JobSpec], runs: &[JobResult]) -> SectionOut {
             "max_unsettled",
             "max_fork_width",
             "fork_storm_day",
+            "partition_cuts",
+            "voided_ids",
+            "quick_readmits",
             "events",
         ],
     );
@@ -506,6 +553,9 @@ fn invariants(specs: &[JobSpec], runs: &[JobResult]) -> SectionOut {
             n(res.max_unsettled),
             n(res.max_fork_width),
             storm_day(res),
+            n(res.partition_cuts),
+            n(res.voided_ids),
+            n(res.quick_readmits),
             n(res.events),
         ]);
     }
@@ -820,9 +870,12 @@ mod tests {
     /// JSON, without the event count (an implementation detail). Used to profile a job and to
     /// check that a performance change leaves results byte-identical.
     #[test]
-    #[ignore = "harness: GB_JOB_SECTION (V0, V1, … A6), GB_JOB_INDEX, GB_JOB_DAYS, GB_STORM_UNSETTLED"]
+    #[ignore = "harness: GB_JOB_SECTION (V0, V1, … A6), GB_JOB_INDEX, GB_JOB_DAYS, GB_STORM_UNSETTLED, GB_JOB_CONFIG (a file merged over the defaults), GB_JOB_JSON (write the result here)"]
     fn run_one_full_job() {
-        let mut cfg = Config::default();
+        let mut cfg = match std::env::var("GB_JOB_CONFIG") {
+            Ok(path) => Config::from_file(std::path::Path::new(&path)).unwrap(),
+            Err(_) => Config::default(),
+        };
         if let Ok(limit) = std::env::var("GB_STORM_UNSETTLED") {
             cfg.sim.world.fork_storm_unsettled = limit.parse().unwrap();
         }
@@ -867,7 +920,11 @@ mod tests {
         let wall = started.elapsed().as_secs_f64();
         let events = res.events;
         res.events = 0;
-        let digest = gb_runlog::sha256_hex(serde_json::to_string(&res).unwrap().as_bytes());
+        let json = serde_json::to_string(&res).unwrap();
+        if let Ok(path) = std::env::var("GB_JOB_JSON") {
+            std::fs::write(path, &json).unwrap();
+        }
+        let digest = gb_runlog::sha256_hex(json.as_bytes());
         println!(
             "JOB {} days {} miners {} ids {} events {events} blocks {} wall {wall:.1}s digest {digest}",
             job.id, job.days, job.miners, job.registered_ids, res.blocks
@@ -876,6 +933,35 @@ mod tests {
             "STORM {} max_unsettled {} max_fork_width {} fork_storm_s {:?}",
             job.id, res.max_unsettled, res.max_fork_width, res.fork_storm_s
         );
+    }
+
+    #[test]
+    fn v2_old_and_v3_large_hop_checks_are_reference_limited() {
+        for id in [
+            "V2-old-w1299",
+            "V2-old-w20785",
+            "V3-A-K144-clamp4-m4",
+            "V3-A-K2016-clampnone-m4-recovery",
+        ] {
+            assert!(reference_limited(id), "{id}");
+        }
+        for id in [
+            "V2-restart-cost",
+            "V2-current-control",
+            "V3-A-K144-clamp4-m1",
+            "V3-A-K144-clamp4-m0.5-recovery",
+            "V3-B-m4",
+            "C2-idealised-orphans",
+        ] {
+            assert!(!reference_limited(id), "{id}");
+        }
+        let mut c = Check::exact("V2", "V2-old-w1299", "test", 1.0, 2.0, false);
+        assert!(!c.passed);
+        assert_eq!(check_status(&c), CheckStatus::ReferenceLimited);
+        c.check = "C2-idealised-orphans".to_string();
+        assert_eq!(check_status(&c), CheckStatus::Fail);
+        c.passed = true;
+        assert_eq!(check_status(&c), CheckStatus::Pass);
     }
 
     #[test]

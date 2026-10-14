@@ -44,6 +44,9 @@ pub enum IdStatus {
     Deactivated,
     /// Banned.
     Banned,
+    /// Void: its PoW-ID block was replaced by a reorganisation below confirmation depth, so
+    /// the ID never existed. Not a ban or a penalty (architect, 2026-10-14).
+    Void,
 }
 
 /// The registration index: every registered ID in registration order (genesis first, then
@@ -330,13 +333,14 @@ mod tests {
     }
 
     #[test]
-    fn canonical_active_list_excludes_banned_and_deactivated_ids() {
+    fn canonical_active_list_excludes_banned_deactivated_and_void_ids() {
         let mut r = Registry::default();
-        for i in 0..5 {
+        for i in 0..6 {
             r.register(id(i));
         }
         r.set_status(1, IdStatus::Deactivated);
         r.set_status(3, IdStatus::Banned);
+        r.set_status(5, IdStatus::Void);
         assert_eq!(r.canonical_active_list(), vec![0, 2, 4]);
         assert_eq!(r.id(2), Some(id(2)));
     }

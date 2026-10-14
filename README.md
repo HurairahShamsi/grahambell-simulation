@@ -54,7 +54,7 @@ Options:
 
 | Option | Meaning |
 |---|---|
-| `--config FILE` | TOML file with the values you want to change, merged over the defaults |
+| `--config FILE` | TOML file with the values you want to change, merged over the defaults; `value = "none"` unsets an optional parameter, such as `timing.powit_deadline_s` |
 | `--seed N` | Master seed for the Monte Carlo cross-checks (default 20261005) |
 | `--out DIR` | Where run directories go (default `results/analytic`) |
 | `--allow-dirty` | Allow uncommitted changes (recorded in `run.json`) |

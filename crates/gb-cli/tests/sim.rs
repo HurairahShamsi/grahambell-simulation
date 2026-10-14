@@ -10,7 +10,7 @@ use gb_cli::sim::{
 };
 use gb_config::Config;
 use gb_runlog::{GitInfo, OutputFile, RESOLVED_CONFIG_FILE, build_manifest};
-use gb_sim::suite::{Profile, RunControl, SuiteOptions};
+use gb_sim::suite::{CheckStatus, Profile, RunControl, SuiteOptions, check_status};
 use std::path::Path;
 
 fn clean_git() -> GitInfo {
@@ -86,17 +86,29 @@ fn the_quick_profile_writes_every_output_and_its_checks_pass() {
     assert!(written.contains(&format!("{PERF_DIR}/perf.csv")));
     assert!(written.contains(&format!("{PERF_DIR}/PERF.md")));
     assert!(out.gate_passed, "the V0 gate failed");
-    // `ALL-deep-reorgs` measures the protocol, not the simulator: under SPEC v0.6 the PoWit
-    // deadline has no default, and a stall followed by a catch-up burst (start rule (a)) can
-    // reorganise the chain below a confirmed ID. It is reported in SUMMARY.md and
-    // validation.csv as it comes out, so it is not asserted here.
+    // `ALL-deep-reorgs` measures the protocol, not the simulator: a stall followed by a
+    // catch-up burst (start rule (a)) can reorganise the chain below a confirmed ID. It is
+    // reported in SUMMARY.md and validation.csv as it comes out, so it is not asserted here.
+    // Reference-limited checks are reported but are not failures (ASSUMPTIONS SIM-31).
     assert!(out.checks.iter().any(|c| c.check == "ALL-deep-reorgs"));
     let failed: Vec<_> = out
         .checks
         .iter()
-        .filter(|c| !c.passed && c.check != "ALL-deep-reorgs")
+        .filter(|c| check_status(c) == CheckStatus::Fail && c.check != "ALL-deep-reorgs")
         .collect();
     assert!(failed.is_empty(), "failed checks: {failed:#?}");
+    let validation = std::fs::read_to_string(dir.path().join("validation.csv")).unwrap();
+    assert!(
+        validation
+            .lines()
+            .next()
+            .unwrap()
+            .ends_with(",passed,status")
+    );
+    assert!(
+        validation.contains(",reference-limited\n")
+            || validation.contains(",reference-limited\r\n")
+    );
 }
 
 fn options(repo: &Path, out: &Path, allow_dirty: bool, only: &[&str]) -> SimOptions {

@@ -54,6 +54,10 @@ pub(crate) struct Miner {
     /// End of the epoch after its own offline request (restart or switch): it re-admits then,
     /// not earlier, even if its household reconnects meanwhile (SPEC §3.2, SIM-18).
     pub rejoin_at: Micros,
+    /// When its household last shut down with an offline request (`u64::MAX` if never).
+    pub announced_off_at: Micros,
+    /// Valid IDs won by this slot (voided IDs excluded).
+    pub ids: u32,
     pub joined_at: Micros,
     pub newcomer: bool,
     pub first_id: bool,
@@ -80,6 +84,19 @@ pub(crate) struct Witness {
     pub offences: Vec<u64>,
     pub registered_at: Micros,
     pub short_outage: bool,
+    /// Its ID was voided: its PoW-ID block was replaced below confirmation depth. Not a ban.
+    pub void: bool,
+    /// Online but cut off by a partition, so unreachable for its KWCs (architect,
+    /// 2026-10-14), until `cut_until`.
+    pub cut_off: bool,
+    pub cut_until: Micros,
+}
+
+impl Witness {
+    /// No longer a witness: banned, or its ID voided.
+    pub(crate) fn removed(&self) -> bool {
+        self.banned || self.void
+    }
 }
 
 /// Counters of one WC's seated members.
@@ -587,6 +604,8 @@ impl<'a> Sim<'a> {
             decision_at: 0,
             decision_kind: 0,
             rejoin_at: 0,
+            announced_off_at: u64::MAX,
+            ids: 0,
             joined_at: now,
             newcomer,
             first_id: false,
@@ -618,6 +637,9 @@ impl<'a> Sim<'a> {
             offences: Vec::new(),
             registered_at: now,
             short_outage: false,
+            void: false,
+            cut_off: false,
+            cut_until: 0,
         });
         self.hh[h as usize].witnesses.push(w);
         w
@@ -796,6 +818,25 @@ impl<'a> Sim<'a> {
             let at = micros(self.spec.scripted_crashes[0].0 * 86_400.0);
             self.q.push(at, Ev::ScriptedCrash { index: 0 });
         }
+        if self.spec.partition_cuts_witnesses {
+            let parts: Vec<(Micros, Micros)> = self
+                .net
+                .partitions
+                .iter()
+                .map(|p| (p.start, p.end))
+                .collect();
+            for (i, (start, end)) in parts.into_iter().enumerate() {
+                let index = i as u32;
+                self.q.push(start, Ev::Partition { index, start: true });
+                self.q.push(
+                    end,
+                    Ev::Partition {
+                        index,
+                        start: false,
+                    },
+                );
+            }
+        }
         self.d_max = micros(self.net.max_delay(self.max_access) + 0.2);
         self.start_chain();
     }
@@ -879,20 +920,114 @@ impl<'a> Sim<'a> {
             }
         }
         let online = self.hh[h as usize].online();
+        // A witness cut off by a partition is already down for its KWCs: the household's
+        // changes reach it when the partition heals.
         if was_online && !online {
             if let Some((m, old)) = miner_old {
                 self.miner_down(now, m, announced, old);
             }
             for (w, old) in witness_olds {
-                self.witness_down(now, w, announced, old);
+                if !self.witnesses[w as usize].cut_off {
+                    self.witness_down(now, w, announced, old);
+                } else {
+                    self.commit_witness(w, old);
+                }
             }
         } else if !was_online && online {
             if let Some((m, old)) = miner_old {
                 self.miner_up(now, m, old);
             }
             for (w, old) in witness_olds {
-                self.witness_up(now, w, old);
+                if !self.witnesses[w as usize].cut_off {
+                    self.witness_up(now, w, old);
+                } else {
+                    self.commit_witness(w, old);
+                }
             }
+        }
+    }
+
+    /// Whether witness `w` can be reached by its KWCs: its household is online and no
+    /// partition cuts it off.
+    pub(crate) fn witness_reachable(&self, w: u32) -> bool {
+        let wit = &self.witnesses[w as usize];
+        !wit.cut_off && self.hh[wit.household as usize].online()
+    }
+
+    /// When an unreachable witness can next be reached, from `from` on (`u64::MAX` if never).
+    pub(crate) fn witness_back_at(&self, w: u32, from: Micros) -> Micros {
+        let wit = &self.witnesses[w as usize];
+        let hh = self.hh[wit.household as usize].back_at(from);
+        if wit.cut_off {
+            hh.max(wit.cut_until)
+        } else {
+            hh
+        }
+    }
+
+    /// A partition starts or heals (architect, 2026-10-14: a member online but cut off by a
+    /// partition counts as unreachable). At the start every reachable witness in the cut
+    /// region disappears for its KWCs without announcing it, so One Chance applies; at the
+    /// end it returns, if its household is online.
+    pub(crate) fn on_partition(&mut self, now: Micros, index: u32, start: bool) {
+        let part = self.net.partitions[index as usize];
+        for w in 0..self.witnesses.len() as u32 {
+            let h = self.witnesses[w as usize].household as usize;
+            if self.hh[h].region as usize != part.region || self.witnesses[w as usize].removed() {
+                continue;
+            }
+            if start {
+                self.witness_cut(now, w, part.end);
+            } else {
+                self.witness_uncut(now, w);
+            }
+        }
+    }
+
+    fn witness_cut(&mut self, now: Micros, w: u32, until: Micros) {
+        if self.witnesses[w as usize].cut_off {
+            let wit = &mut self.witnesses[w as usize];
+            wit.cut_until = wit.cut_until.max(until);
+            return;
+        }
+        if !self.witness_reachable(w) {
+            return;
+        }
+        let old = self.witness_status(w);
+        let pt = self.p.pow_tx.max(1);
+        let (one_chance, grace) = (self.p.one_chance, self.p.grace);
+        let wit = &mut self.witnesses[w as usize];
+        wit.cut_off = true;
+        wit.cut_until = until;
+        wit.token = wit.token.wrapping_add(1);
+        wit.down_at = now;
+        let token = wit.token;
+        if wit.recorded {
+            // Like an unannounced disappearance, without counting it as a household crash.
+            wit.ghost = true;
+            wit.short_outage = until.saturating_sub(now) < grace;
+            let request = (now / pt + 1) * pt;
+            wit.request_at = request;
+            wit.check_at = request + one_chance;
+            let check = wit.check_at;
+            self.res.partition_cuts += 1;
+            self.q
+                .push_lane(lane::FIRST_CHECK, check, Ev::WitnessCheck { w, token });
+        }
+        self.commit_witness(w, old);
+    }
+
+    fn witness_uncut(&mut self, now: Micros, w: u32) {
+        let wit = &self.witnesses[w as usize];
+        if !wit.cut_off || now < wit.cut_until {
+            return;
+        }
+        let old = self.witness_status(w);
+        self.witnesses[w as usize].cut_off = false;
+        if self.hh[self.witnesses[w as usize].household as usize].online() {
+            self.witness_up(now, w, old);
+        } else {
+            self.commit_witness(w, old);
         }
     }
 
@@ -1352,6 +1487,7 @@ impl<'a> Sim<'a> {
         match phase {
             Phase::Waiting | Phase::Mining => {
                 if announced {
+                    self.miners[m as usize].announced_off_at = now;
                     self.release_slot_recorded(now, m, old);
                     return;
                 }
@@ -1381,7 +1517,49 @@ impl<'a> Sim<'a> {
         // A miner within the epoch after its own offline request waits for its rejoin.
         if self.miners[m as usize].phase == Phase::Idle && now >= self.miners[m as usize].rejoin_at
         {
+            // A shutdown announced less than a grace epoch ago re-admits at once (architect,
+            // 2026-10-14); counted.
+            let off = self.miners[m as usize].announced_off_at;
+            if off != u64::MAX && now.saturating_sub(off) < self.p.grace {
+                self.res.quick_readmits += 1;
+            }
             self.start_admission(now, m);
+        }
+    }
+
+    /// Voids witness `w`'s ID, won by miner slot `miner`, whose PoW-ID block a reorganisation
+    /// below confirmation depth replaced (architect, 2026-10-14). The ID leaves the registry's
+    /// active list, the committee, its seat and any pending placement. This is not a ban or a
+    /// One Chance penalty: no ban record, no offence; the miner slot simply goes back to being
+    /// a candidate (a newcomer without another ID waits again for a first ID).
+    pub(crate) fn void_id(&mut self, w: u32, miner: u32) {
+        if self.witnesses[w as usize].void {
+            return;
+        }
+        let old = self.witness_status(w);
+        self.witnesses[w as usize].void = true;
+        self.commit_witness(w, old);
+        let reg = self.witnesses[w as usize].reg as usize;
+        self.registry.set_status(reg, IdStatus::Void);
+        self.active.remove(reg);
+        self.committee.depart(reg);
+        self.remove_seat(w);
+        self.placements.retain(|(_, x)| *x != w);
+        self.res.voided_ids += 1;
+        if miner == NONE {
+            return;
+        }
+        let slot = &mut self.miners[miner as usize];
+        slot.ids = slot.ids.saturating_sub(1);
+        if slot.ids == 0 && slot.first_id {
+            slot.first_id = false;
+            if slot.newcomer {
+                self.res.first_ids -= 1;
+                // It had given up and was counted as a first ID instead: a dropout again.
+                if slot.phase == Phase::Gone {
+                    self.res.dropouts += 1;
+                }
+            }
         }
     }
 
@@ -1428,10 +1606,10 @@ impl<'a> Sim<'a> {
 
     fn witness_status(&self, w: u32) -> WitnessStatus {
         let wit = &self.witnesses[w as usize];
-        let seated = wit.seat != NONE && !wit.banned;
+        let seated = wit.seat != NONE && !wit.removed();
         WitnessStatus {
             wc: seated.then(|| wit.seat as usize / self.p.wc_size),
-            online: self.hh[wit.household as usize].online(),
+            online: self.witness_reachable(w),
             recorded: wit.recorded,
             ghost: wit.ghost,
         }
@@ -1459,7 +1637,7 @@ impl<'a> Sim<'a> {
     }
 
     fn witness_down(&mut self, now: Micros, w: u32, announced: bool, old: WitnessStatus) {
-        if self.witnesses[w as usize].banned {
+        if self.witnesses[w as usize].removed() {
             return;
         }
         let back = self.hh[self.witnesses[w as usize].household as usize].back_at(now);
@@ -1504,7 +1682,7 @@ impl<'a> Sim<'a> {
 
     fn witness_up(&mut self, now: Micros, w: u32, old: WitnessStatus) {
         let wit = &mut self.witnesses[w as usize];
-        if wit.banned {
+        if wit.removed() {
             return;
         }
         wit.token = wit.token.wrapping_add(1);
@@ -1567,7 +1745,7 @@ impl<'a> Sim<'a> {
             wit.ghost = false;
             wit.recorded = false;
             self.res.offline_records[region][device] += 1;
-            if wit.short_outage {
+            if wit.short_outage && !wit.cut_off {
                 self.res.short_glitches_recorded += 1;
             }
         }
@@ -1628,7 +1806,7 @@ impl<'a> Sim<'a> {
 
     pub(crate) fn on_witness_deactivate(&mut self, _now: Micros, w: u32, token: u32) {
         let wit = &self.witnesses[w as usize];
-        if wit.token != token || wit.banned || self.hh[wit.household as usize].online() {
+        if wit.token != token || wit.removed() || self.hh[wit.household as usize].online() {
             return;
         }
         let reg = wit.reg as usize;
@@ -1640,7 +1818,7 @@ impl<'a> Sim<'a> {
 
     pub(crate) fn on_witness_long_absence(&mut self, _now: Micros, w: u32, token: u32) {
         let wit = &self.witnesses[w as usize];
-        if wit.token != token || wit.banned || self.hh[wit.household as usize].online() {
+        if wit.token != token || wit.removed() || self.hh[wit.household as usize].online() {
             return;
         }
         if wit.seat != NONE {
@@ -1764,6 +1942,8 @@ impl<'a> Sim<'a> {
         }
         let h = self.miners[miner as usize].household;
         let w = self.add_witness(h, hash, now);
+        self.blocks[block as usize].registered = w;
+        self.miners[miner as usize].ids += 1;
         self.placements
             .push((height + self.p.beacon_delay + self.p.confirmation_depth, w));
         // The winner is treated as offline once its block is confirmed (SPEC §3.10).
@@ -1813,7 +1993,7 @@ impl<'a> Sim<'a> {
                 .network_block_at(h)
                 .map(|b| self.blocks[b as usize].hash)
             {
-                if !self.witnesses[w as usize].banned {
+                if !self.witnesses[w as usize].removed() {
                     self.insert_seat(w, &beacon);
                 }
             }
@@ -1934,10 +2114,7 @@ impl<'a> Sim<'a> {
                 let members = self.kwc_members(k);
                 let on: Vec<bool> = members
                     .iter()
-                    .map(|w| {
-                        let wit = &self.witnesses[*w as usize];
-                        !wit.banned && self.hh[wit.household as usize].online()
-                    })
+                    .map(|w| !self.witnesses[*w as usize].removed() && self.witness_reachable(*w))
                     .collect();
                 let unreg_fail = !self.p.unregistered.is_met(&bitfield_of(&on));
                 let reg_fail = !self.p.registered.is_met(&bitfield_of(&on));
@@ -2184,5 +2361,53 @@ mod tests {
         sim.register_winner(2 * SECOND, b);
         assert_eq!((sim.res.first_ids, sim.res.dropouts), (1, 0));
         assert!(sim.miners[m as usize].first_id);
+    }
+
+    #[test]
+    fn a_partition_cuts_its_witnesses_off_and_they_go_through_one_chance() {
+        let cfg = gb_config::Config::default();
+        let mut spec = small_sim(&cfg);
+        spec.idealised = false;
+        spec.outages = false;
+        spec.partitions = vec![(0, 0.01, 300.0)];
+        spec.partition_cuts_witnesses = true;
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let in_region: Vec<u32> = (0..sim.witnesses.len() as u32)
+            .filter(|w| sim.hh[sim.witnesses[*w as usize].household as usize].region == 0)
+            .collect();
+        assert!(!in_region.is_empty());
+        let part = sim.net.partitions[0];
+        sim.on_partition(part.start, 0, true);
+        for w in &in_region {
+            let wit = &sim.witnesses[*w as usize];
+            assert!(wit.cut_off && wit.ghost && !sim.witness_reachable(*w));
+            assert_eq!(wit.cut_until, part.end);
+        }
+        assert_eq!(sim.res.partition_cuts, in_region.len() as u64);
+        // Household crash and glitch counters are for household outages only.
+        assert_eq!(sim.res.witness_crashes, 0);
+        sim.on_partition(part.end, 0, false);
+        for w in &in_region {
+            assert!(sim.witness_reachable(*w) && !sim.witnesses[*w as usize].cut_off);
+        }
+        sim.check_invariants();
+        assert_eq!(sim.res.invariant_failures, 0);
+    }
+
+    #[test]
+    fn an_announced_shutdown_that_returns_within_the_epoch_re_admits_at_once() {
+        let cfg = gb_config::Config::default();
+        let mut spec = small_sim(&cfg);
+        spec.instant_admission = false;
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let h = sim.miners[0].household;
+        let t = 1_000 * SECOND;
+        sim.set_cause(t, h, bit::USER, true, true, t + 60 * SECOND);
+        assert_eq!(sim.miners[0].phase, Phase::Idle);
+        sim.set_cause(t + 60 * SECOND, h, bit::USER, false, false, t + 60 * SECOND);
+        assert_eq!(sim.miners[0].phase, Phase::Admitting);
+        assert_eq!(sim.res.quick_readmits, 1);
     }
 }

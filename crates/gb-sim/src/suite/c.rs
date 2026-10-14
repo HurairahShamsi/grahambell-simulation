@@ -476,16 +476,24 @@ pub(crate) fn c2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
         ],
         ideal,
     ));
-    // Zero latency: an orphan per extra block at the earliest step.
+    // Zero latency: the K winners tied at the earliest step decide one after another, and a
+    // miner that already holds a better block does not broadcast, so the blocks broadcast are
+    // the records (successive minima) of the hash order: H_K of them in expectation, H_K the
+    // harmonic number. Orphans per round are E[H_K − 1]. Until 2026-10-14 this check used
+    // E[K − 1], which assumes every tied winner broadcasts; it failed in the M3a reference run
+    // (ASSUMPTIONS SIM-30).
     let m = u64::from(ctx.pick(1_000u32, 200));
-    let expected: f64 = (2..=12)
-        .map(|k| (k - 1) as f64 * gb_analytic::ties::tie_size_probability(m, 30.0, k))
+    let expected: f64 = (2..=12u64)
+        .map(|k| {
+            let harmonic: f64 = (1..=k).map(|i| 1.0 / i as f64).sum();
+            (harmonic - 1.0) * gb_analytic::ties::tie_size_probability(m, 30.0, k)
+        })
         .sum();
     let per_round = div(ideal.orphans as f64, ideal.canonical as f64);
     out.checks.push(mc_check(
         C2,
         "C2-idealised-orphans",
-        &format!("zero latency: orphans per final-chain block vs E[tied winners − 1] from M1 F1 ({m} slots)"),
+        &format!("zero latency: orphans per final-chain block vs E[H_K − 1] (K tied winners, M1 F1; H_K the harmonic number; {m} slots)"),
         expected,
         per_round,
         (expected / ideal.canonical.max(1) as f64).sqrt(),

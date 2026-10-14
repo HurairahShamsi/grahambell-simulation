@@ -600,7 +600,7 @@ impl Sim<'_> {
             .iter()
             .map(|w| {
                 let wit = &self.witnesses[*w as usize];
-                wit.recorded && !wit.banned
+                wit.recorded && !wit.removed()
             })
             .collect();
         let Some((broadcast, signers)) = self.powit_time(&node, m, k, t0, step, e_ready, g) else {
@@ -674,7 +674,7 @@ impl Sim<'_> {
             .copied()
             .filter(|w| {
                 let wit = &self.witnesses[*w as usize];
-                wit.recorded && !wit.banned
+                wit.recorded && !wit.removed()
             })
             .collect();
         if recorded.len() < self.p.quorum_unregistered {
@@ -687,8 +687,7 @@ impl Sim<'_> {
             let member = self.node_of(h);
             let out = self.direct(node, &member, g, m, 2 * i as u64);
             let back = self.direct(&member, node, g, m, 2 * i as u64 + 1);
-            let hh = &self.hh[h as usize];
-            let signed = if hh.online() {
+            let signed = if self.witness_reachable(*w) {
                 let (a_p, _) = self.accept(&member, parent);
                 if a_p == INF {
                     continue;
@@ -697,7 +696,7 @@ impl Sim<'_> {
             } else {
                 stalled = true;
                 let wit = &self.witnesses[*w as usize];
-                let back_at = hh.back_at(start);
+                let back_at = self.witness_back_at(*w, start);
                 let record = if wit.ghost { wit.check_at } else { INF };
                 back_at.min(record)
             };
@@ -726,19 +725,18 @@ impl Sim<'_> {
         let members = self.round_members(g, k);
         let mut arrivals: Vec<(Micros, u32)> = Vec::with_capacity(members.len());
         for (i, w) in members.iter().enumerate() {
-            if self.witnesses[*w as usize].banned {
+            if self.witnesses[*w as usize].removed() {
                 continue;
             }
             let h = self.witnesses[*w as usize].household;
             let member = self.node_of(h);
             let out = self.direct(node, &member, g, m, 100 + 2 * i as u64);
             let back = self.direct(&member, node, g, m, 101 + 2 * i as u64);
-            let hh = &self.hh[h as usize];
             let mut sign = (e_ready + micros(out)).max(micros(
                 ((t0 + step) as f64 - self.p.signing_tolerance - member.skew).max(0.0),
             ));
-            if !hh.online() {
-                let back_at = hh.back_at(e_ready);
+            if !self.witness_reachable(*w) {
+                let back_at = self.witness_back_at(*w, e_ready);
                 if back_at == u64::MAX {
                     continue;
                 }

@@ -126,12 +126,13 @@ pub enum EquivocationScope {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum UnreachableRule {
-    /// The strict rule, the interim default (architect, 2026-10-12): failing One Chance is
-    /// refusal and is penalised.
-    #[default]
+    /// Comparison: failing One Chance is refusal and is penalised (the interim default
+    /// until 2026-10-14).
     Strict,
-    /// \[P\] "unreachable is not refusal": an unreachable member is recorded offline; a
-    /// penalty needs proof that it refused while demonstrably online.
+    /// "Unreachable is not refusal", the default (architect, 2026-10-14): an unreachable
+    /// member is recorded offline; a ban needs verifiable evidence, such as equivocation or a
+    /// signed refusal while demonstrably online.
+    #[default]
     UnreachableIsNotRefusal,
 }
 
@@ -167,11 +168,12 @@ pub enum WitnessSigning {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DeadlineScope {
-    /// Literal: the block, and any chain containing it, is invalid at that node for good.
-    #[default]
+    /// Comparison (the literal reading): the block, and any chain containing it, is invalid
+    /// at that node for good. It split 63 of 101 validators in M3a.
     Permanent,
-    /// Comparison: the node does not extend the block, but accepts a longer chain that
-    /// contains it.
+    /// The default (architect, 2026-10-14): the node does not extend the block, but accepts
+    /// a longer chain that contains it.
+    #[default]
     NotExtendedOnly,
 }
 
@@ -588,12 +590,12 @@ pub struct Timing {
 impl Default for Timing {
     fn default() -> Self {
         Timing {
-            powit_deadline_scope: Param::decided(DeadlineScope::Permanent).swept(
+            powit_deadline_scope: Param::decided(DeadlineScope::NotExtendedOnly).swept(
                 Sweep::values(vec![
-                    DeadlineScope::Permanent,
                     DeadlineScope::NotExtendedOnly,
+                    DeadlineScope::Permanent,
                 ])
-                .with_note("not extended only is the comparison (architect, 2026-10-12)"),
+                .with_note("permanent is the comparison (architect, 2026-10-14)"),
             ),
             early_block: Param::decided(EarlyBlockRule::Permanent).swept(
                 Sweep::values(vec![
@@ -613,12 +615,10 @@ impl Default for Timing {
             clock_tolerance_s: Param::with_status(2.0, Status::O).swept(Sweep::range(0.5, 10.0)),
             one_chance_wait_rounds: Param::with_status(5, Status::O)
                 .swept(Sweep::values(vec![1, 2, 5])),
-            powit_deadline_s: Param::with_status(None, Status::O).swept(Sweep::values(vec![
-                Some(5.0),
-                Some(10.0),
-                Some(30.0),
-                Some(60.0),
-            ])),
+            powit_deadline_s: Param::with_status(Some(10.0), Status::O).swept(
+                Sweep::values(vec![Some(5.0), Some(10.0), Some(30.0), Some(60.0)])
+                    .with_note("no deadline is the comparison (architect, 2026-10-14)"),
+            ),
         }
     }
 }
@@ -730,14 +730,12 @@ impl Default for Offline {
         const HOUR: f64 = 3_600.0;
         const DAY: f64 = 86_400.0;
         Offline {
-            unreachable_rule: Param::with_status(UnreachableRule::Strict, Status::O).swept(
+            unreachable_rule: Param::decided(UnreachableRule::UnreachableIsNotRefusal).swept(
                 Sweep::values(vec![
-                    UnreachableRule::Strict,
                     UnreachableRule::UnreachableIsNotRefusal,
+                    UnreachableRule::Strict,
                 ])
-                .with_note(
-                    "strict is the interim default; unreachable is not refusal is [P] (SPEC §4.6, §12)",
-                ),
+                .with_note("strict is the comparison (architect, 2026-10-14)"),
             ),
             deactivation_threshold_s: Param::with_status(None, Status::O).swept(Sweep::values(
                 vec![

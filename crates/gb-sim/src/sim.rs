@@ -59,6 +59,8 @@ pub(crate) enum Ev {
     ScriptEnd { h: u32 },
     /// A newcomer without an ID runs out of patience (A6).
     Patience { m: u32 },
+    /// A partition starts (`start`) or heals: its witnesses are cut off or return.
+    Partition { index: u32, start: bool },
     /// End of the run.
     End,
 }
@@ -89,6 +91,7 @@ impl Ev {
             Ev::ScriptedCrash { index } => ("scripted_crash", Some(index), None),
             Ev::ScriptEnd { h } => ("scripted_crash_end", Some(h), None),
             Ev::Patience { m } => ("patience_end", Some(m), None),
+            Ev::Partition { index, start } => ("partition", Some(index), Some(u32::from(start))),
             Ev::End => ("end", None, None),
         }
     }
@@ -249,6 +252,7 @@ impl<'a> Sim<'a> {
                 self.set_cause(now, h, crate::household::bit::SCRIPT, false, false, now)
             }
             Ev::Patience { m } => self.on_patience(now, m),
+            Ev::Partition { index, start } => self.on_partition(now, index, start),
             Ev::End => self.stopped = true,
         }
     }

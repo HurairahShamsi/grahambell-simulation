@@ -212,9 +212,11 @@ fn main() -> anyhow::Result<ExitCode> {
             })?;
             println!("Wrote {}", outcome.run_dir.display());
             println!(
-                "Validation checks passed: {} of {} (V0 gate {})",
-                outcome.checks - outcome.failed.len(),
+                "Validation checks: {} of {} pass, {} fail, {} reference-limited (V0 gate {})",
+                outcome.checks - outcome.failed.len() - outcome.reference_limited,
                 outcome.checks,
+                outcome.failed.len(),
+                outcome.reference_limited,
                 if outcome.gate_passed {
                     "passed"
                 } else {

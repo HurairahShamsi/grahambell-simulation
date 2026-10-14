@@ -119,6 +119,8 @@ pub struct JobSpec {
     pub partition_rate_per_region_per_day: f64,
     /// Length of random partitions, seconds.
     pub partition_length_s: f64,
+    /// A witness cut off by a partition counts as unreachable (One Chance applies).
+    pub partition_cuts_witnesses: bool,
     /// Clock-skew standard deviation, seconds.
     pub skew_sd: f64,
     /// Share of nodes in the badly synchronised tail.
@@ -405,6 +407,14 @@ pub struct JobResult {
     /// were unsettled at once (a fork storm), in simulated seconds; `None` when it ran to its
     /// end. Daily series then keep only the complete days before.
     pub fork_storm_s: Option<f64>,
+    /// Witnesses cut off by a partition while recorded online (each then went through One
+    /// Chance).
+    pub partition_cuts: u64,
+    /// IDs voided because their PoW-ID block was replaced below confirmation depth.
+    pub voided_ids: u64,
+    /// Miners whose household announced a shutdown and came back within the grace epoch,
+    /// and re-admitted at once.
+    pub quick_readmits: u64,
     /// Sampled events (only when `trace_every > 0`; not part of the tables).
     #[serde(skip)]
     pub trace: Vec<TraceRow>,
@@ -487,6 +497,7 @@ impl JobSpec {
             record_rounds: false,
             scripted_crashes: Vec::new(),
             switches_per_day: 0.0,
+            partition_cuts_witnesses: sim.network.partition_cuts_witnesses,
             warmup_days: 1.0,
             trace_every: if sim.trace_sample > 0.0 {
                 (1.0 / sim.trace_sample).round().max(1.0) as u64

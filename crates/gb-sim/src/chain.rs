@@ -92,6 +92,9 @@ pub(crate) struct Block {
     pub confirmed: bool,
     pub hop_active: bool,
     pub beyond_horizon: bool,
+    /// The witness registered from this block once it passed confirmation depth (`NONE`
+    /// before, or after its ID was voided by a reorganisation).
+    pub registered: u32,
 }
 
 /// A view: the node whose acceptance is computed.
@@ -183,6 +186,7 @@ impl Sim<'_> {
             confirmed: true,
             hop_active: false,
             beyond_horizon: false,
+            registered: NONE,
         });
         self.settled_ids.push(0);
         self.network_tip = 0;
@@ -389,6 +393,7 @@ impl Sim<'_> {
             confirmed: false,
             hop_active,
             beyond_horizon: cand.beyond_horizon,
+            registered: NONE,
         });
         self.unsettled.push(id);
         self.watch_fork_storm(now, height);
@@ -691,6 +696,23 @@ impl Sim<'_> {
             if fork < self.confirmed_height {
                 self.res.deep_reorgs += 1;
                 self.confirmed_height = fork;
+                // IDs in the replaced blocks are void (architect, 2026-10-14): their blocks
+                // can be confirmed again if the chain comes back to them.
+                let mut x = old;
+                let mut replaced = Vec::new();
+                while self.blocks[x as usize].height > fork {
+                    if self.blocks[x as usize].registered != NONE {
+                        replaced.push(x);
+                    }
+                    x = self.parent_or_settled(x);
+                }
+                for x in replaced {
+                    let w = self.blocks[x as usize].registered;
+                    let miner = self.blocks[x as usize].miner;
+                    self.blocks[x as usize].registered = NONE;
+                    self.blocks[x as usize].confirmed = false;
+                    self.void_id(w, miner);
+                }
             }
         }
         self.network_tip = new_tip;
@@ -1067,6 +1089,7 @@ mod tests {
             confirmed: false,
             hop_active: false,
             beyond_horizon: false,
+            registered: NONE,
         });
         let id = (sim.blocks.len() - 1) as u32;
         sim.unsettled.push(id);
@@ -1139,6 +1162,8 @@ mod tests {
         let cfg = gb_config::Config::default();
         let mut spec = spec(&cfg);
         spec.equivocation = scope;
+        // No PoWit deadline: the later block would be late under D = 10 s.
+        spec.deadline = None;
         let mut sim = Sim::build(&spec, &cfg).unwrap();
         sim.start();
         let p = block(&mut sim, 0, 8, 1);
@@ -1162,6 +1187,51 @@ mod tests {
             round_on_the_later_better_block(EquivocationScope::SameParent),
             0
         );
+    }
+
+    #[test]
+    fn a_reorg_below_confirmation_voids_the_replaced_id_without_a_ban_or_penalty() {
+        let cfg = gb_config::Config::default();
+        let spec = spec(&cfg);
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let a1 = block(&mut sim, 0, 31, 1);
+        let a2 = block(&mut sim, a1, 62, 2);
+        let b1 = block(&mut sim, 0, 40, 3);
+        let b2 = block(&mut sim, b1, 80, 4);
+        let b3 = block(&mut sim, b2, 120, 5);
+        sim.blocks[a1 as usize].miner = 0;
+        sim.blocks[a1 as usize].confirmed = true;
+        sim.network_tip = a2;
+        sim.confirmed_height = 2;
+        sim.register_winner(SECOND, a1);
+        let w = sim.blocks[a1 as usize].registered;
+        assert_ne!(w, NONE);
+        assert!(sim.miners[0].first_id);
+        let reg = sim.witnesses[w as usize].reg as usize;
+        sim.insert_seat(w, &[7; 32]);
+        assert_ne!(sim.witnesses[w as usize].seat, NONE);
+        assert!(sim.active.iter().any(|r| r == reg));
+        // The network chain moves to branch B, below the confirmed block A1.
+        sim.update_network_tip(2 * SECOND, &tips(&[(b3, 101)]));
+        assert_eq!(sim.network_tip, b3);
+        assert_eq!(sim.res.deep_reorgs, 1);
+        assert_eq!(sim.res.voided_ids, 1);
+        let wit = &sim.witnesses[w as usize];
+        assert!(wit.void && !wit.banned && wit.offences.is_empty());
+        assert_eq!(wit.seat, NONE);
+        assert!(!sim.active.iter().any(|r| r == reg));
+        assert!(!sim.registry.canonical_active_list().contains(&reg));
+        assert!(sim.placements.iter().all(|(_, x)| *x != w));
+        // Not a ban and not a penalty: no ban record, no penalty, no offence.
+        assert_eq!(sim.res.bans.iter().flatten().sum::<u64>(), 0);
+        assert_eq!(sim.res.penalties.iter().flatten().sum::<u64>(), 0);
+        // The miner slot is a candidate again, and the block can be confirmed again.
+        assert!(!sim.miners[0].first_id);
+        assert!(!sim.blocks[a1 as usize].confirmed);
+        assert_eq!(sim.blocks[a1 as usize].registered, NONE);
+        sim.check_invariants();
+        assert_eq!(sim.res.invariant_failures, 0);
     }
 
     #[test]

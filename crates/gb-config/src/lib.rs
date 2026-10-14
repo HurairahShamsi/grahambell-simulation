@@ -4,7 +4,9 @@
 //! (`D` decided, `P` proposed, `O` open) and its sweep range. Configuration files are TOML. A
 //! file only needs the values it overrides, because it is deep-merged over
 //! [`Config::default`] before being deserialized. Unknown keys are rejected, and a file may
-//! not change a status tag, because status tags belong to the SPEC.
+//! not change a status tag, because status tags belong to the SPEC. Because TOML has no null,
+//! an optional parameter is unset with `value = "none"`; a resolved configuration writes it
+//! that way wherever the default has a value.
 //!
 //! `configs/default.toml` is a readable mirror of [`Config::default`]; a test checks that the
 //! two are identical, and another test checks that every row of the SPEC §2 table maps to
@@ -20,7 +22,7 @@ pub mod registry;
 pub mod sim;
 
 pub use analytic::{AnalyticConfig, ModelConstants, MonteCarloConfig, RunConfig};
-pub use config::Config;
+pub use config::{Config, NO_VALUE};
 pub use crypto_tests::CryptoTestsConfig;
 pub use error::ConfigError;
 pub use param::{Param, Status, Sweep};

@@ -128,7 +128,7 @@ pub(crate) fn entropy_for(
         .enumerate()
         .filter(|(_, w)| {
             let wit = &sim.witnesses[**w as usize];
-            wit.recorded && !wit.banned
+            wit.recorded && !wit.removed()
         })
         .map(|(i, _)| i)
         .collect();
