@@ -57,7 +57,7 @@ pub(crate) struct Prep {
     e_ready: Micros,
     t0: u64,
     found: Micros,
-    entropy_flags: Option<Vec<bool>>,
+    entropy_flags: Vec<bool>,
     entropy_quorum: u32,
 }
 
@@ -72,8 +72,8 @@ struct EntropyTiming {
     /// required signature (or, under a threshold, the t-th) was made, or a record offline
     /// completed the required set.
     issued_s: f64,
-    /// Under a threshold: which of the round's members' signatures it used.
-    signers: Option<Vec<bool>>,
+    /// Which of the round's members' signatures it used.
+    signers: Vec<bool>,
     /// Signatures it needed.
     quorum: u32,
 }
@@ -760,16 +760,6 @@ impl Sim<'_> {
             }
         }
         let entropy_members = self.round_members(g, k);
-        let entropy_flags: Vec<bool> = match entropy_flags {
-            Some(flags) => flags,
-            None => entropy_members
-                .iter()
-                .map(|w| {
-                    let wit = &self.witnesses[*w as usize];
-                    wit.recorded && !wit.removed()
-                })
-                .collect(),
-        };
         let Some((broadcast, signers)) = self.powit_time(&node, m, k, t0, step, e_ready, g) else {
             self.res.quorum_failures += 1;
             self.drop(7);
@@ -912,7 +902,7 @@ impl Sim<'_> {
                 ready,
                 stalled: false,
                 issued_s: clocks[t - 1],
-                signers: Some(flags),
+                signers: flags,
                 quorum: t as u32,
             });
         }
@@ -930,41 +920,55 @@ impl Sim<'_> {
         let mut ready = start;
         let mut stalled = false;
         let mut issued_s = seconds(start);
+        let mut flags = vec![false; members.len()];
+        let mut signers = 0;
         for (i, w) in recorded.iter().enumerate() {
             let h = self.witnesses[*w as usize].household;
             let member = self.node_of(h);
             let out = self.direct(node, &member, g, m, 2 * i as u64);
             let back = self.direct(&member, node, g, m, 2 * i as u64 + 1);
-            let (signed, clock) = if self.witness_reachable(*w) {
+            let (signed, clock, signs) = if self.witness_reachable(*w) {
                 let (a_p, _) = self.accept(&member, parent);
                 if a_p == INF {
                     continue;
                 }
                 let at = (start + micros(out)).max(a_p);
-                (at, seconds(at) + member.skew)
+                (at, seconds(at) + member.skew, true)
             } else {
                 stalled = true;
                 let wit = &self.witnesses[*w as usize];
                 let back_at = self.witness_back_at(*w, start);
                 let record = if wit.ghost { wit.check_at } else { INF };
                 if record < back_at {
-                    // Recorded offline: a KWC decision completes the required set.
-                    (record, seconds(record))
+                    // Recorded offline: a KWC decision completes the required set, without
+                    // this member's signature.
+                    (record, seconds(record), false)
                 } else {
-                    (back_at, seconds(back_at) + member.skew)
+                    (back_at, seconds(back_at) + member.skew, true)
                 }
             };
             if signed == INF {
                 return None;
             }
+            if signs {
+                signers += 1;
+                if let Some(at) = members.iter().position(|x| x == w) {
+                    flags[at] = true;
+                }
+            }
             ready = ready.max(signed + micros(back));
             issued_s = issued_s.max(clock);
+        }
+        // Members recorded offline while the miner waited leave the online set; if fewer than
+        // the quorum remain to sign, the KWC cannot issue entropy this round (SPEC §3.4).
+        if signers < self.p.quorum_unregistered {
+            return None;
         }
         Some(EntropyTiming {
             ready,
             stalled,
             issued_s,
-            signers: None,
+            signers: flags,
             quorum: self.p.quorum_unregistered as u32,
         })
     }
@@ -1405,7 +1409,7 @@ mod tests {
         let t = timing.unwrap();
         assert!(!t.stalled);
         assert_eq!((t.quorum, t.ready), (27, 0));
-        let flags = t.signers.unwrap();
+        let flags = t.signers;
         assert_eq!(flags.iter().filter(|f| **f).count(), 27);
         assert!(flags.iter().zip(&away).all(|(f, a)| !(*f && *a)));
         // The same absences stall the entropy under the all-online-members rule.
@@ -1413,6 +1417,21 @@ mod tests {
         assert!(all.unwrap().stalled);
         // One more away: 26 reachable, below t.
         let (none, _, _) = entropy_with_absences(EntropySigners::ThresholdTwoThirds, 14);
+        assert!(none.is_none());
+    }
+
+    #[test]
+    fn all_online_entropy_needs_the_quorum_left_after_absent_members_are_recorded_offline() {
+        // 13 of 40 crashed for good: once they are recorded offline, 27 online members sign,
+        // and the entropy records exactly those signatures.
+        let (timing, _, away) = entropy_with_absences(EntropySigners::AllOnlineMembers, 13);
+        let t = timing.unwrap();
+        assert!(t.stalled);
+        assert_eq!(t.signers.iter().filter(|f| **f).count(), 27);
+        assert!(t.signers.iter().zip(&away).all(|(f, a)| !(*f && *a)));
+        // 14 crashed: recording them offline leaves 26 online members, below the quorum, so
+        // the KWC cannot issue entropy (until 2026-10-16 the entropy completed with 26).
+        let (none, _, _) = entropy_with_absences(EntropySigners::AllOnlineMembers, 14);
         assert!(none.is_none());
     }
 

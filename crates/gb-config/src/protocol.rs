@@ -120,6 +120,11 @@ pub enum DifficultyCountRule {
     /// for the round, so miners that sat out, were offline, or whose KWC could not issue are
     /// not counted. Each KWC would commit its issued count in its entropy attestations.
     IssuedEntropy,
+    /// The M3a.1 experiment E2 (architect, 2026-10-16): the issued-entropy count, lagged. A
+    /// round's difficulty uses the count committed at the block k blocks before its parent
+    /// (k = the confirmation depth), so the branches of a recent fork share one count and a
+    /// minority branch cannot adapt to its own miners.
+    IssuedEntropyLagged,
 }
 
 /// What counts as miner equivocation (SPEC §3.4, Appendix A; architect, 2026-10-12).
@@ -416,9 +421,10 @@ impl Default for Issuance {
                         DifficultyCountRule::AfterPostAdmissionWait,
                         DifficultyCountRule::AllGloballyActive,
                         DifficultyCountRule::IssuedEntropy,
+                        DifficultyCountRule::IssuedEntropyLagged,
                     ])
                     .with_note(
-                        "all Globally Active miners is the comparison (architect, 2026-10-12); issued entropy is the M3a.1 experiment (2026-10-14)",
+                        "all Globally Active miners is the comparison (architect, 2026-10-12); issued entropy, unlagged and lagged, is the M3a.1 experiment (2026-10-14 and 2026-10-16)",
                     ),
                 ),
             min_attack_time_floor_years: Param::with_status(2.0, Status::P)

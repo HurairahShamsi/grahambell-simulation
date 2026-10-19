@@ -230,9 +230,9 @@ pub fn counts_for_difficulty(
 ) -> bool {
     recorded_online
         && match rule {
-            DifficultyCountRule::AfterPostAdmissionWait | DifficultyCountRule::IssuedEntropy => {
-                wait_ended
-            }
+            DifficultyCountRule::AfterPostAdmissionWait
+            | DifficultyCountRule::IssuedEntropy
+            | DifficultyCountRule::IssuedEntropyLagged => wait_ended,
             DifficultyCountRule::AllGloballyActive => true,
         }
 }

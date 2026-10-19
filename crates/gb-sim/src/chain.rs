@@ -27,6 +27,62 @@ use gb_protocol::validate::{
 };
 use std::cmp::Ordering;
 
+/// The E3 diagnosis of one gap between final-chain blocks (broadcast at `from` and `to`) from
+/// the samples taken in it: each sample's cause (see [`crate::job::GAP_CAUSES`]), their
+/// shares, the most common one (the first of the order on a tie), and the mean expected time
+/// to a block with the miners holding entropy alone.
+pub(crate) fn diagnose_gap(
+    from: Micros,
+    to: Micros,
+    samples: &[(Micros, u32, u32, f64)],
+    interval_s: f64,
+) -> crate::job::GapDiagnosis {
+    let mut counts = [0u64; 4];
+    let (mut expected_sum, mut expected_n) = (0.0, 0u64);
+    for (_, mining, with_entropy, p) in samples.iter().filter(|s| s.0 >= from && s.0 <= to) {
+        let cause = if *mining == 0 {
+            0
+        } else if *with_entropy == 0 {
+            1
+        } else {
+            // 1 − (1 − p)^n, accurately for small p.
+            let win = -((-p).ln_1p() * f64::from(*with_entropy)).exp_m1();
+            let expected = if win > 0.0 { 1.0 / win } else { f64::INFINITY };
+            expected_sum += expected;
+            expected_n += 1;
+            if expected > 4.0 * interval_s { 2 } else { 3 }
+        };
+        counts[cause] += 1;
+    }
+    let total: u64 = counts.iter().sum();
+    let mut cause = 3u8;
+    let mut most = 0u64;
+    for (i, c) in counts.iter().enumerate() {
+        if *c > most {
+            most = *c;
+            cause = i as u8;
+        }
+    }
+    crate::job::GapDiagnosis {
+        start_s: from as f64 / SECOND as f64,
+        length_s: to.saturating_sub(from) as f64 / SECOND as f64,
+        cause,
+        shares: counts.map(|c| {
+            if total > 0 {
+                c as f64 / total as f64
+            } else {
+                0.0
+            }
+        }),
+        expected_interval_s: if expected_n > 0 {
+            expected_sum / expected_n as f64
+        } else {
+            f64::NAN
+        },
+        samples: total,
+    }
+}
+
 /// Not accepted (never received, or invalid at that node).
 pub(crate) const INF: Micros = u64::MAX;
 
@@ -97,6 +153,9 @@ pub(crate) struct Block {
     pub registered: u32,
     /// The round this block was mined in (`NONE` for genesis).
     pub round: u32,
+    /// Under the lagged issued-entropy count: the count of its own round that the block
+    /// commits (0 before it is set, and for genesis).
+    pub committed: u64,
 }
 
 /// A view: the node whose acceptance is computed.
@@ -200,6 +259,7 @@ impl Sim<'_> {
             beyond_horizon: false,
             registered: NONE,
             round: NONE,
+            committed: 0,
         });
         self.settled_ids.push(0);
         self.network_tip = 0;
@@ -213,9 +273,9 @@ impl Sim<'_> {
     /// ([`Sim::issued_count`]).
     pub(crate) fn count_for_difficulty(&self) -> u64 {
         match self.spec.count_rule {
-            DifficultyCountRule::AfterPostAdmissionWait | DifficultyCountRule::IssuedEntropy => {
-                self.counts.after_wait
-            }
+            DifficultyCountRule::AfterPostAdmissionWait
+            | DifficultyCountRule::IssuedEntropy
+            | DifficultyCountRule::IssuedEntropyLagged => self.counts.after_wait,
             DifficultyCountRule::AllGloballyActive => self.counts.all,
         }
         .max(1)
@@ -497,6 +557,7 @@ impl Sim<'_> {
             beyond_horizon: cand.beyond_horizon,
             registered: NONE,
             round: cand.group,
+            committed: 0,
         });
         self.unsettled.push(id);
         self.watch_fork_storm(now, height);
@@ -579,13 +640,30 @@ impl Sim<'_> {
             match self.spec.difficulty {
                 DifficultyVariant::CountBased => {
                     let round = self.blocks[b as usize].round;
-                    let n = if self.spec.count_rule == DifficultyCountRule::IssuedEntropy
-                        && round != NONE
-                    {
-                        let now = self.blocks[b as usize].broadcast;
-                        self.issued_count(round, now).max(1)
-                    } else {
-                        self.count_for_difficulty()
+                    let now = self.blocks[b as usize].broadcast;
+                    let n = match self.spec.count_rule {
+                        DifficultyCountRule::IssuedEntropy if round != NONE => {
+                            self.issued_count(round, now).max(1)
+                        }
+                        DifficultyCountRule::IssuedEntropyLagged if round != NONE => {
+                            // The block commits its own round's count; the next round uses
+                            // the count committed a confirmation depth before it, shared by
+                            // every branch that forked since.
+                            let own = self.issued_count(round, now).max(1);
+                            self.blocks[b as usize].committed = own;
+                            let lag = self.p.confirmation_depth;
+                            let earlier = if height >= lag {
+                                self.blocks[self.ancestor(b, height - lag) as usize].committed
+                            } else {
+                                0
+                            };
+                            if earlier > 0 {
+                                earlier
+                            } else {
+                                self.count_for_difficulty()
+                            }
+                        }
+                        _ => self.count_for_difficulty(),
                     };
                     let factor = match &self.spec.correction {
                         Some(c) => update_correction_ppm(
@@ -1132,8 +1210,10 @@ impl Sim<'_> {
             }
             last_broadcast = Some(b);
         }
-        // The longest gap that overlaps each tracked outage (E3).
-        for record in &mut self.res.outages {
+        // The longest gap that overlaps each tracked outage (E3), and for scripted blackouts
+        // the cause of every gap over 10 minutes that overlaps it.
+        let interval = self.p.interval_s as f64;
+        for (i, record) in self.res.outages.iter_mut().enumerate() {
             let from = micros(record.start_s);
             let to = micros(record.start_s + record.duration_s);
             record.max_gap_s = gaps
@@ -1141,6 +1221,20 @@ impl Sim<'_> {
                 .filter(|(p, b)| *b > from && *p < to)
                 .map(|(p, b)| b.saturating_sub(*p) as f64 / SECOND as f64)
                 .fold(0.0, f64::max);
+            if record.kind != 2 {
+                continue;
+            }
+            let samples = self
+                .outage_diag
+                .get(i)
+                .map(|d| d.samples.as_slice())
+                .unwrap_or(&[]);
+            for (p, b) in gaps.iter().filter(|(p, b)| *b > from && *p < to) {
+                if b.saturating_sub(*p) <= 600 * SECOND {
+                    continue;
+                }
+                record.gaps.push(diagnose_gap(*p, *b, samples, interval));
+            }
         }
         self.res.permanent_split_panel_nodes =
             self.panel_split.iter().filter(|x| **x).count() as u64;
@@ -1238,6 +1332,7 @@ mod tests {
             beyond_horizon: false,
             registered: NONE,
             round: NONE,
+            committed: 0,
         });
         let id = (sim.blocks.len() - 1) as u32;
         sim.unsettled.push(id);
@@ -1520,6 +1615,62 @@ mod tests {
             sim.issued_count(gp, 200 * SECOND),
             sim.issued_count(gs, 200 * SECOND),
         )
+    }
+
+    #[test]
+    fn a_gap_is_put_down_to_the_cause_that_covers_most_of_its_samples() {
+        let s = SECOND;
+        // At p = 1/3000, 100 miners expect a block in about 30.5 s and 10 in about 300 s.
+        let p = 1.0 / 3_000.0;
+        let samples = vec![
+            (10 * s, 0, 0, p),
+            (40 * s, 50, 0, p),
+            (70 * s, 50, 0, p),
+            (100 * s, 50, 10, p),
+            (130 * s, 100, 100, p),
+            (2_000 * s, 100, 100, p),
+        ];
+        let d = diagnose_gap(0, 1_000 * s, &samples, 30.0);
+        assert_eq!(d.samples, 5);
+        assert_eq!(crate::job::GAP_CAUSES[d.cause as usize], "no entropy");
+        assert_eq!(d.shares, [0.2, 0.4, 0.2, 0.2]);
+        assert!((d.expected_interval_s - (300.45 + 30.50) / 2.0).abs() < 0.1);
+        assert_eq!((d.start_s, d.length_s), (0.0, 1_000.0));
+    }
+
+    #[test]
+    fn the_lagged_count_is_the_one_committed_a_confirmation_depth_before_the_parent() {
+        let cfg = gb_config::Config::default();
+        let mut spec = spec(&cfg);
+        spec.count_rule = DifficultyCountRule::IssuedEntropyLagged;
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        // A chain of 8 blocks, the block at height h committing the count 100 + h.
+        let mut chain = vec![0u32];
+        for h in 1..=8u64 {
+            let b = block(&mut sim, chain[chain.len() - 1], h, h as u8);
+            sim.blocks[b as usize].committed = 100 + h;
+            chain.push(b);
+        }
+        // A branch forked at height 6, also 8 blocks long.
+        let mut branch = vec![chain[5]];
+        for h in 6..=8u64 {
+            let b = block(&mut sim, branch[branch.len() - 1], h + 10, 50 + h as u8);
+            branch.push(b);
+        }
+        let expected = count_based_target(102, sim.p.interval_s, None, PPM);
+        for tip in [chain[8], branch[3]] {
+            let parent = sim.blocks[tip as usize].parent;
+            sim.open_group(parent, 0);
+            let g = (sim.groups.len() - 1) as u32;
+            sim.blocks[tip as usize].round = g;
+            sim.set_difficulty(tip);
+            // Both tips use the count committed at height 8 − 6 = 2, which they share, and
+            // each commits its own round's count for the blocks 6 above it.
+            assert_eq!(sim.blocks[tip as usize].child_target, expected);
+            let own = sim.issued_count(g, 0).max(1);
+            assert_eq!(sim.blocks[tip as usize].committed, own);
+        }
     }
 
     #[test]

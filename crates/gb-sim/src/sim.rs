@@ -232,6 +232,8 @@ pub(crate) struct Sim<'a> {
     pub outage_of_process: Vec<u32>,
     /// The outage record of each scripted blackout.
     pub outage_of_script: Vec<u32>,
+    /// E3 diagnosis samples of each outage record (scripted blackouts only).
+    pub outage_diag: Vec<crate::world::OutageDiag>,
 }
 
 impl<'a> Sim<'a> {

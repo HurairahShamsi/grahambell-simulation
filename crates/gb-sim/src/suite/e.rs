@@ -80,6 +80,7 @@ fn rule_name(rule: DifficultyCountRule) -> &'static str {
         DifficultyCountRule::AfterPostAdmissionWait => "after_wait",
         DifficultyCountRule::AllGloballyActive => "all_globally_active",
         DifficultyCountRule::IssuedEntropy => "issued_entropy",
+        DifficultyCountRule::IssuedEntropyLagged => "issued_entropy_lagged",
     }
 }
 
@@ -95,7 +96,9 @@ fn correction_name(c: Option<CountBasedCorrection>) -> String {
 }
 
 /// E2's Variant B variants: count rule {after the wait, all Globally Active, issued entropy}
-/// × correction {none, P1 and P2 at clamps 1.1, 1.25 and 1.5, B-exact}.
+/// × correction {none, P1 and P2 at clamps 1.1, 1.25 and 1.5, B-exact}, then the lagged
+/// issued-entropy count without a correction (architect, 2026-10-16), last so that the other
+/// variants keep their jobs.
 pub(crate) fn e2_variants(ctx: &Ctx<'_>) -> Vec<(String, DiffVariant)> {
     let mut corrections: Vec<Option<CountBasedCorrection>> = vec![None];
     for bound in [0.10, 0.25, 0.50] {
@@ -128,12 +131,28 @@ pub(crate) fn e2_variants(ctx: &Ctx<'_>) -> Vec<(String, DiffVariant)> {
             ));
         }
     }
-    if ctx.quick {
+    let mut out: Vec<(String, DiffVariant)> = if ctx.quick {
         // Tests: one variant per count rule.
         out.into_iter().step_by(8).collect()
     } else {
         out
-    }
+    };
+    out.push((lagged_name(), LAGGED));
+    out
+}
+
+/// The lagged issued-entropy count, without a correction (architect, 2026-10-16).
+const LAGGED: DiffVariant = DiffVariant {
+    count_rule: DifficultyCountRule::IssuedEntropyLagged,
+    correction: None,
+};
+
+fn lagged_name() -> String {
+    format!(
+        "{} / {}",
+        rule_name(LAGGED.count_rule),
+        correction_name(LAGGED.correction)
+    )
 }
 
 fn start_name(s: StartRule) -> &'static str {
@@ -577,6 +596,12 @@ fn e1_runs<'r>(
         .collect()
 }
 
+/// Whether a run shows zero reorgs below confirmation (criterion 1). A run stopped by a fork
+/// storm (SIM-29) never reached its end, so it cannot show zero and does not meet it.
+fn no_deep_reorg(r: &JobResult) -> bool {
+    r.deep_reorgs == 0 && r.fork_storm_s.is_none()
+}
+
 /// Criteria 1–3 of E1, from stage 1: (zero reorgs below confirmation, withholder
 /// amplification ≤ 1, no validator split for good) for each configuration. A validator merely
 /// on another branch at the top when a run ends is not split for good.
@@ -585,7 +610,7 @@ fn e1_criteria(ctx: &Ctx<'_>, results: &[JobResult]) -> Vec<(bool, bool, bool)> 
         .iter()
         .map(|(honest, with)| {
             let all = honest.iter().chain(with.iter());
-            let c1 = all.clone().all(|r| r.deep_reorgs == 0);
+            let c1 = all.clone().all(|r| no_deep_reorg(r));
             let (amp, _, _) = amplification(with, 1);
             let c2 = amp <= 1.0;
             let c3 = all.clone().all(|r| r.permanent_split_panel_nodes == 0);
@@ -603,7 +628,7 @@ pub(crate) fn e1_stage2_jobs(ctx: &Ctx<'_>, stage1: &[JobResult], h5: &H5Outcome
         if !(ok.0 && ok.1 && ok.2) {
             continue;
         }
-        for (label, v, _) in &h5.variants {
+        for (label, v, _) in e1_rerun_variants(h5) {
             for s in 0..e1_seeds(ctx) {
                 let mut j = e1_job(ctx, c, false, s, &format!("-{label}"));
                 j.difficulty = DifficultyVariant::CountBased;
@@ -616,15 +641,71 @@ pub(crate) fn e1_stage2_jobs(ctx: &Ctx<'_>, stage1: &[JobResult], h5: &H5Outcome
     jobs
 }
 
-/// A configuration's criterion-4 result: its best H5-passing variant, the per-seed
-/// |mean interval − 30 s| with it, their mean, and whether no rerun reorganised below
-/// confirmation.
+/// The variants E1 reruns each surviving configuration with: those of the H5 outcome, which
+/// criterion 4 may use, then the lagged issued-entropy count (architect, 2026-10-16), which is
+/// reported next to them and counts for criteria 1 and 4 only if it passed H5. The flag says
+/// whether a variant counts.
+fn e1_rerun_variants(h5: &H5Outcome) -> Vec<(String, DiffVariant, bool)> {
+    let mut out: Vec<(String, DiffVariant, bool)> = h5
+        .variants
+        .iter()
+        .map(|(label, v, _)| (label.clone(), *v, true))
+        .collect();
+    if !out.iter().any(|x| x.1 == LAGGED) {
+        out.push((lagged_name(), LAGGED, false));
+    }
+    out
+}
+
+/// A configuration's criterion-4 result: its best H5-passing variant (none if every variant
+/// had a rerun stopped by a fork storm), the per-seed |mean interval − 30 s| with it, their
+/// mean, and how many of its reruns, over every variant, reorganised below confirmation or
+/// were stopped by a fork storm.
 #[derive(Debug, Clone)]
 struct Crit4 {
-    variant: String,
+    variant: Option<String>,
     per_seed: Vec<f64>,
     dev: f64,
-    clean: bool,
+    deep_reruns: usize,
+    storm_reruns: usize,
+}
+
+impl Crit4 {
+    /// Criterion 4 for one configuration from its reruns, given variant by variant (one run
+    /// per seed, and whether the variant counts for the criteria): the counting variant with
+    /// the smallest |mean interval − 30 s|. A variant with a rerun stopped by a fork storm has
+    /// no whole-run interval, so it is not ranked.
+    fn of(variants: &[(&str, Vec<&JobResult>, bool)]) -> Crit4 {
+        let mut c4 = Crit4 {
+            variant: None,
+            per_seed: Vec::new(),
+            dev: f64::INFINITY,
+            deep_reruns: 0,
+            storm_reruns: 0,
+        };
+        for (label, reruns, counts) in variants {
+            if !*counts {
+                continue;
+            }
+            let means: Vec<f64> = reruns.iter().map(|r| mean_interval(r)).collect();
+            let dev = (mean_ci(&means).0 - 30.0).abs();
+            let storms = reruns.iter().filter(|r| r.fork_storm_s.is_some()).count();
+            c4.deep_reruns += reruns.iter().filter(|r| r.deep_reorgs > 0).count();
+            c4.storm_reruns += storms;
+            if storms == 0 && dev < c4.dev {
+                c4.variant = Some((*label).to_string());
+                c4.per_seed = means.iter().map(|m| (m - 30.0).abs()).collect();
+                c4.dev = dev;
+            }
+        }
+        c4
+    }
+
+    /// Criterion 1 on the reruns: none reorganised below confirmation or was stopped by a
+    /// fork storm, and a variant could be ranked.
+    fn clean(&self) -> bool {
+        self.variant.is_some() && self.deep_reruns == 0 && self.storm_reruns == 0
+    }
 }
 
 pub(crate) fn e1_analyse(
@@ -651,50 +732,48 @@ pub(crate) fn e1_analyse(
             "ci95",
             "abs_deviation_s",
             "reorgs_below_confirmation",
+            "reruns_stopped_by_fork_storm",
+            "counts_for_criteria",
         ],
     );
+    let rerun_variants = e1_rerun_variants(h5);
     let mut k = 0;
     for (ci, ok) in criteria.iter().enumerate() {
         if !(ok.0 && ok.1 && ok.2) {
             continue;
         }
-        let mut best: Option<Crit4> = None;
-        let mut deep = false;
-        for (label, _, _) in &h5.variants {
-            let reruns: Vec<&JobResult> = (0..seeds).filter_map(|s| stage2.get(k + s)).collect();
+        let mut variants: Vec<(&str, Vec<&JobResult>, bool)> = Vec::new();
+        for (label, _, counts) in &rerun_variants {
+            variants.push((
+                label.as_str(),
+                (0..seeds).filter_map(|s| stage2.get(k + s)).collect(),
+                *counts,
+            ));
             k += seeds;
+        }
+        for (label, reruns, counts) in &variants {
             let means: Vec<f64> = reruns.iter().map(|r| mean_interval(r)).collect();
             let (mean, half) = mean_ci(&means);
             let reorgs: u64 = reruns.iter().map(|r| r.deep_reorgs).sum();
-            deep |= reorgs > 0;
-            let dev = (mean - 30.0).abs();
+            let storms = reruns.iter().filter(|r| r.fork_storm_s.is_some()).count();
             c4_table.push(vec![
                 configs[ci].name(),
-                label.clone(),
+                (*label).to_string(),
                 f(mean),
                 f(half),
-                f(dev),
+                f((mean - 30.0).abs()),
                 n(reorgs),
+                n(storms as u64),
+                counts.to_string(),
             ]);
-            if best.as_ref().is_none_or(|b| dev < b.dev) {
-                best = Some(Crit4 {
-                    variant: label.clone(),
-                    per_seed: means.iter().map(|m| (m - 30.0).abs()).collect(),
-                    dev,
-                    clean: true,
-                });
-            }
         }
-        if let Some(mut c) = best {
-            c.clean = !deep;
-            crit4[ci] = Some(c);
-        }
+        crit4[ci] = Some(Crit4::of(&variants));
     }
     // The mechanical selection: criterion 4, then 5, then the simplest of the tied.
     let survivors: Vec<(usize, &Crit4)> = crit4
         .iter()
         .enumerate()
-        .filter_map(|(i, c)| c.as_ref().filter(|c| c.clean).map(|c| (i, c)))
+        .filter_map(|(i, c)| c.as_ref().filter(|c| c.clean()).map(|c| (i, c)))
         .collect();
     let orphans: Vec<Vec<f64>> = runs
         .iter()
@@ -747,7 +826,9 @@ pub(crate) fn e1_analyse(
             "c3_no_split",
             "c4_best_variant",
             "c4_abs_deviation_s",
-            "c4_reruns_no_deep_reorg",
+            "c4_reruns_reorganised_below_confirmation",
+            "c4_reruns_stopped_by_fork_storm",
+            "c1_on_reruns",
             "tied_on_c4",
             "tied_on_c5",
             "winner",
@@ -803,9 +884,14 @@ pub(crate) fn e1_analyse(
             criteria[i].0.to_string(),
             criteria[i].1.to_string(),
             criteria[i].2.to_string(),
-            c4.map_or(String::new(), |x| x.variant.clone()),
-            c4.map_or(String::new(), |x| f(x.dev)),
-            c4.map_or(String::new(), |x| x.clean.to_string()),
+            c4.and_then(|x| x.variant.clone()).unwrap_or_default(),
+            c4.filter(|x| x.variant.is_some())
+                .map_or(String::new(), |x| f(x.dev)),
+            c4.map_or(String::new(), |x| n(x.deep_reruns as u64)),
+            c4.map_or(String::new(), |x| n(x.storm_reruns as u64)),
+            c4.map_or(String::new(), |x| {
+                (x.deep_reruns == 0 && x.storm_reruns == 0).to_string()
+            }),
             tied4.contains(&i).to_string(),
             tied5.contains(&i).to_string(),
             (winner == Some(i)).to_string(),
@@ -832,8 +918,14 @@ pub(crate) fn e1_analyse(
                 f(div(slots, slot_all)),
             ]);
         }
+        let reruns = c4.map_or(String::new(), |x| {
+            format!(
+                "; criterion-4 reruns: {} reorganised below confirmation, {} stopped by a fork storm",
+                x.deep_reruns, x.storm_reruns
+            )
+        });
         lines.push(format!(
-            "{}: orphans {} % (±{}), interval {} s (±{}), {} reorgs below confirmation (deepest {}), withholder amplification {} (SE {}), at most {} validators split for good ({} off the final chain at the end){}",
+            "{}: orphans {} % (±{}), interval {} s (±{}), {} reorgs below confirmation (deepest {}), withholder amplification {} (SE {}), at most {} validators split for good ({} off the final chain at the end){}{reruns}",
             c.name(),
             r(100.0 * om, 2),
             r(100.0 * oh, 2),
@@ -887,13 +979,13 @@ pub(crate) fn e1_analyse(
             "**No configuration meets criteria 1–3.** Nothing is selected; the criteria were not loosened.".to_string()
         }
         None => format!(
-            "**No configuration survives:** {} met criteria 1–3 in the matrix ({}), but each had a reorg below confirmation in a criterion-4 rerun. Nothing is selected; the criteria were not loosened.",
+            "**No configuration survives:** {} met criteria 1–3 in the matrix ({}), but each had a criterion-4 rerun that reorganised below confirmation or was stopped by a fork storm. Nothing is selected; the criteria were not loosened.",
             meets.len(),
             meets.join(", ")
         ),
     };
     out.summary = format!(
-        "## E1 — fork choice\n\nC3 setup (RIPE latency, 0.5 % loss, one 5-minute partition per region per day, realistic churn), {} seeds per configuration, honest and with a 10 % withholder (`E1_fork_choice.csv`, `E1_region_win_share.csv`, `E1_criterion4.csv`). Criteria, fixed in advance and applied mechanically: 1. zero reorgs below confirmation in every run (and in every criterion-4 rerun); 2. withholder amplification ≤ 1; 3. no validator split for good (one that can never accept a settled block) in any run; 4. the smallest |mean interval − 30 s| with the configuration's best H5-passing E2 variant; 5. the lowest orphan rate. A tie is a 95 % CI of the paired difference over seeds that includes zero; ties go to the simplest rule ((a) before (r), v0.6 before first seen, literal before [P], D = 10 s soft before no deadline).\n\n{verdict}\n\n{}\n",
+        "## E1 — fork choice\n\nC3 setup (RIPE latency, 0.5 % loss, one 5-minute partition per region per day, realistic churn), {} seeds per configuration, honest and with a 10 % withholder (`E1_fork_choice.csv`, `E1_region_win_share.csv`, `E1_criterion4.csv`). Criteria, fixed in advance and applied mechanically: 1. zero reorgs below confirmation in every run (and in every criterion-4 rerun; a run stopped by a fork storm, SIM-29, never reached its end, so it does not show zero and fails); 2. withholder amplification ≤ 1; 3. no validator split for good (one that can never accept a settled block) in any run; 4. the smallest |mean interval − 30 s| with the configuration's best H5-passing E2 variant; 5. the lowest orphan rate. A tie is a 95 % CI of the paired difference over seeds that includes zero; ties go to the simplest rule ((a) before (r), v0.6 before first seen, literal before [P], D = 10 s soft before no deadline).\n\n{verdict}\n\n{}\n",
         seeds,
         lines
             .iter()
@@ -1110,12 +1202,52 @@ pub(crate) fn e3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, E
             "no_gap_over_10_min",
         ],
     );
+    // The diagnosis (architect, 2026-10-16), next to the pre-set test.
+    let mut diagnosis = Table::new(
+        "E3_blackout_diagnosis.csv",
+        &[
+            "config",
+            "run",
+            "region",
+            "region_witness_share",
+            "region_miner_share",
+            "kwcs",
+            "kwcs_below_t_max",
+            "kwcs_with_miners_unable_max",
+            "miners_lost_power",
+            "miners_lost_witnessing_max",
+            "failover_moves",
+            "spare_capacity_start",
+            "spare_capacity_min",
+            "moves_share_of_spare",
+            "gaps_over_10_min",
+            "max_gap_s",
+        ],
+    );
+    let mut gap_table = Table::new(
+        "E3_blackout_gaps.csv",
+        &[
+            "config",
+            "run",
+            "region",
+            "gap_start_day",
+            "gap_s",
+            "cause",
+            "share_no_miners",
+            "share_no_entropy",
+            "share_difficulty_too_high",
+            "share_other",
+            "expected_interval_with_entropy_s",
+            "samples",
+        ],
+    );
     let mut lines = Vec::new();
     let mut passes: Vec<bool> = Vec::new();
     for (ci, c) in configs.iter().enumerate() {
         let runs = &results
             [(ci * per_config).min(results.len())..((ci + 1) * per_config).min(results.len())];
         let mut gaps: Vec<f64> = Vec::new();
+        let mut causes = [0usize; 4];
         let mut event = f64::NAN;
         for (k, res) in runs.iter().enumerate() {
             let setup = if k < E3_DEPARTURES.len() {
@@ -1185,6 +1317,42 @@ pub(crate) fn e3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, E
                         event = o.max_gap_s;
                     }
                     gaps.push(o.max_gap_s);
+                    let region = regions.get(o.region as usize).cloned().unwrap_or_default();
+                    diagnosis.push(vec![
+                        e3_name(c),
+                        setup.clone(),
+                        region.clone(),
+                        f(o.region_witness_share),
+                        f(o.region_miner_share),
+                        n(o.kwcs),
+                        n(o.kwcs_below_t_max),
+                        n(o.kwcs_unable_max),
+                        n(o.miners_lost_power),
+                        n(o.witnessing_lost_max),
+                        n(o.failover_moves),
+                        n(o.spare_capacity_start),
+                        n(o.spare_capacity_min),
+                        f(div(o.failover_moves as f64, o.spare_capacity_start as f64)),
+                        n(o.gaps.len() as u64),
+                        f(o.max_gap_s),
+                    ]);
+                    for gd in &o.gaps {
+                        causes[gd.cause as usize % 4] += 1;
+                        gap_table.push(vec![
+                            e3_name(c),
+                            setup.clone(),
+                            region.clone(),
+                            f(gd.start_s / 86_400.0),
+                            f(gd.length_s),
+                            crate::job::GAP_CAUSES[gd.cause as usize % 4].to_string(),
+                            f(gd.shares[0]),
+                            f(gd.shares[1]),
+                            f(gd.shares[2]),
+                            f(gd.shares[3]),
+                            f(gd.expected_interval_s),
+                            n(gd.samples),
+                        ]);
+                    }
                 }
             }
         }
@@ -1200,14 +1368,22 @@ pub(crate) fn e3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, E
             f(event),
             pass.to_string(),
         ]);
+        let cause_note = crate::job::GAP_CAUSES
+            .iter()
+            .zip(causes)
+            .filter(|(_, k)| *k > 0)
+            .map(|(name, k)| format!("{name} {k}"))
+            .collect::<Vec<_>>()
+            .join(", ");
         lines.push(format!(
-            "{}: {} of {} scripted blackouts (the day-9.19 event and one per region over the seeds) had a gap over 10 minutes; the longest {} min (day-9.19 event: {} min){}",
+            "{}: {} of {} scripted blackouts (the day-9.19 event and one per region over the seeds) had a gap over 10 minutes; the longest {} min (day-9.19 event: {} min){}; causes of the gaps over 10 minutes: {}",
             e3_name(c),
             over,
             gaps.len(),
             r(worst / 60.0, 1),
             r(event / 60.0, 1),
-            if pass { " — **no gap over 10 minutes**" } else { "" }
+            if pass { " — **no gap over 10 minutes**" } else { "" },
+            if cause_note.is_empty() { "none".to_string() } else { cause_note }
         ));
     }
     let mut security = Table::new(
@@ -1226,6 +1402,8 @@ pub(crate) fn e3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, E
     out.tables.push(liveness);
     out.tables.push(outages);
     out.tables.push(test);
+    out.tables.push(diagnosis);
+    out.tables.push(gap_table);
     out.tables.push(security);
     // E4's setting: the two-thirds threshold if it passes the blackout test (without failover
     // first), otherwise the protocol rule.
@@ -1263,7 +1441,7 @@ pub(crate) fn e3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, E
         .map(|(_, c)| e3_name(c))
         .collect();
     out.summary = format!(
-        "## E3 — liveness: threshold entropy and failover\n\nEvery configuration (entropy rule × failover after 2 rounds below quorum) on C7's three departure profiles, on the day-9.19 event replayed as a regional blackout of as_east (10.88 h, seed 0), and on a scripted regional blackout of the same length in every region over {} seeds (`E3_liveness.csv`, `E3_outages.csv` with each outage's miners that lost power and miners that lost witnessing while powered, `E3_blackout_test.csv`). The test fixed in advance: no gap between final-chain blocks longer than 10 minutes during any blackout. The security cost of the 21-of-40 threshold is in `E3_security.csv`.\n\n{}\n\n{}\n\nE4 then runs with: {}.\n",
+        "## E3 — liveness: threshold entropy and failover\n\nEvery configuration (entropy rule × failover after 2 rounds below quorum) on C7's three departure profiles, on the day-9.19 event replayed as a regional blackout of as_east (10.88 h, seed 0), and on a scripted regional blackout of the same length in every region over {} seeds (`E3_liveness.csv`, `E3_outages.csv` with each outage's miners that lost power and miners that lost witnessing while powered, `E3_blackout_test.csv`). Next to the test, a diagnosis of every scripted blackout (`E3_blackout_diagnosis.csv`: the region's share of witness nodes and miners, KWCs that could not issue entropy, failover moves and spare capacity) and of every gap over 10 minutes that overlaps one (`E3_blackout_gaps.csv`: its cause, sampled each round — no miners with power, no entropy, a difficulty that implies over four target intervals with the miners holding entropy, or other). The test fixed in advance: no gap between final-chain blocks longer than 10 minutes during any blackout. The security cost of the 21-of-40 threshold is in `E3_security.csv`.\n\n{}\n\n{}\n\nE4 then runs with: {}.\n",
         e3_seeds(ctx),
         lines
             .iter()
@@ -1498,4 +1676,72 @@ pub(crate) fn e4_analyse(ctx: &Ctx<'_>, results: &[JobResult], setting: &E4Setti
             .join("\n")
     );
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn run(interval_s: f64, deep_reorgs: u64, storm: bool) -> JobResult {
+        JobResult {
+            interval_sum_s: interval_s * 100.0,
+            interval_count: 100,
+            deep_reorgs,
+            fork_storm_s: storm.then_some(3_600.0),
+            ..JobResult::default()
+        }
+    }
+
+    #[test]
+    fn a_run_stopped_by_a_fork_storm_does_not_show_zero_reorgs() {
+        assert!(no_deep_reorg(&run(30.0, 0, false)));
+        assert!(!no_deep_reorg(&run(30.0, 0, true)));
+        assert!(!no_deep_reorg(&run(30.0, 1, false)));
+    }
+
+    #[test]
+    fn a_variant_with_a_stormed_rerun_is_not_ranked_and_fails_criterion_1() {
+        // "far" averages 31.5 s; "near" 30 s; the stormed run's partial interval is 30.1 s.
+        let (a, b) = (run(32.0, 0, false), run(31.0, 0, false));
+        let (closer, stormed) = (run(30.0, 0, false), run(30.1, 0, true));
+        let clean = Crit4::of(&[
+            ("far", vec![&a, &b], true),
+            ("near", vec![&closer, &closer], true),
+        ]);
+        assert_eq!(clean.variant.as_deref(), Some("near"));
+        assert!(clean.clean());
+        // The stormed variant's partial interval is the closest to 30 s, but it is not ranked,
+        // and its storm counts against the configuration under criterion 1.
+        let with_storm = Crit4::of(&[
+            ("far", vec![&a, &b], true),
+            ("storm", vec![&closer, &stormed], true),
+        ]);
+        assert_eq!(with_storm.variant.as_deref(), Some("far"));
+        assert_eq!(with_storm.storm_reruns, 1);
+        assert!(!with_storm.clean());
+        let all_stormed = Crit4::of(&[("storm", vec![&stormed, &stormed], true)]);
+        assert_eq!(all_stormed.variant, None);
+        assert!(!all_stormed.clean());
+        // A variant that does not count (the lagged count when it failed H5) is neither
+        // ranked nor held against the configuration.
+        let extra = Crit4::of(&[
+            ("far", vec![&a, &b], true),
+            ("extra", vec![&closer, &stormed], false),
+        ]);
+        assert_eq!(extra.variant.as_deref(), Some("far"));
+        assert_eq!(extra.storm_reruns, 0);
+        assert!(extra.clean());
+    }
+
+    #[test]
+    fn a_deep_reorg_in_any_variant_fails_criterion_1() {
+        let (ok, deep) = (run(30.0, 0, false), run(35.0, 2, false));
+        let c = Crit4::of(&[
+            ("best", vec![&ok, &ok], true),
+            ("other", vec![&deep, &ok], true),
+        ]);
+        assert_eq!(c.variant.as_deref(), Some("best"));
+        assert_eq!(c.deep_reruns, 1);
+        assert!(!c.clean());
+    }
 }

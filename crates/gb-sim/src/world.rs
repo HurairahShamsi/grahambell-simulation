@@ -14,6 +14,7 @@ use crate::sim::{Ev, Params, Sim, lane};
 use gb_config::protocol::OfflinePointsOutcome;
 use gb_config::sim::{GridProfile, LatencySource};
 use gb_protocol::allocation::{IdStatus, kwc_wcs};
+use gb_protocol::chain::step_win_probability;
 use gb_protocol::hash::{Hash, tagged};
 use gb_protocol::offline::{OfflinePoints, Penalty, one_chance_outcome, penalty_for};
 use gb_protocol::validate::{MinerKind, QuorumRule, witness_signing_tolerance};
@@ -142,6 +143,21 @@ pub(crate) struct Counts {
     pub mining_group_region: Vec<Vec<u64>>,
     pub last: Micros,
     pub hop_mining: u64,
+}
+
+/// Seconds a scripted blackout's diagnosis keeps sampling after it ends, so that gaps that
+/// run on past its end are covered (E3).
+pub(crate) const DIAGNOSIS_TAIL_S: f64 = 6.0 * 3_600.0;
+
+/// The E3 diagnosis of one outage record: a sample a round from the start of a scripted
+/// blackout to [`DIAGNOSIS_TAIL_S`] after its end, kept outside the result.
+#[derive(Debug, Clone, Default)]
+pub(crate) struct OutageDiag {
+    /// (time, miners mining with their household online, those of them whose KWC can issue
+    /// entropy, the network tip's per-step success probability).
+    pub samples: Vec<(Micros, u32, u32, f64)>,
+    /// Failover moves before it started.
+    pub moves_before: u64,
 }
 
 /// An ideal validator: always online, at a fixed place.
@@ -421,6 +437,7 @@ impl<'a> Sim<'a> {
             failover_below: Vec::new(),
             outage_of_process: Vec::new(),
             outage_of_script: Vec::new(),
+            outage_diag: Vec::new(),
         };
         if spec.start_rule == gb_config::protocol::StartRule::B
             || (spec.start_rule == gb_config::protocol::StartRule::R
@@ -2412,7 +2429,7 @@ impl<'a> Sim<'a> {
         miners_lost_power: u64,
     ) -> u32 {
         let index = self.res.outages.len() as u32;
-        self.res.outages.push(crate::job::OutageRecord {
+        let mut record = crate::job::OutageRecord {
             kind,
             region: region as u8,
             start_s: seconds(now),
@@ -2420,6 +2437,40 @@ impl<'a> Sim<'a> {
             households: households as u64,
             miners_lost_power,
             ..crate::job::OutageRecord::default()
+        };
+        if kind == 2 {
+            // The region's shares, the KWCs and the spare capacity at the start (E3 diagnosis).
+            let seated: Vec<u32> = (0..self.witnesses.len() as u32)
+                .filter(|w| !self.witnesses[*w as usize].removed())
+                .collect();
+            let in_region = |hh: &Household| usize::from(hh.region) == region;
+            let witnesses_here = seated
+                .iter()
+                .filter(|w| in_region(&self.hh[self.witnesses[**w as usize].household as usize]))
+                .count();
+            let admitted: Vec<u32> = (0..self.miners.len() as u32)
+                .filter(|m| {
+                    matches!(
+                        self.miners[*m as usize].phase,
+                        Phase::Mining | Phase::Waiting
+                    )
+                })
+                .collect();
+            let miners_here = admitted
+                .iter()
+                .filter(|m| in_region(&self.hh[self.miners[**m as usize].household as usize]))
+                .count();
+            record.region_witness_share = witnesses_here as f64 / seated.len().max(1) as f64;
+            record.region_miner_share = miners_here as f64 / admitted.len().max(1) as f64;
+            record.kwcs = self.alloc.active_wcs();
+            let (_, spare) = self.kwcs_unable_and_spare();
+            record.spare_capacity_start = spare;
+            record.spare_capacity_min = spare;
+        }
+        self.res.outages.push(record);
+        self.outage_diag.push(OutageDiag {
+            samples: Vec::new(),
+            moves_before: self.res.failover_moves,
         });
         self.q.push(
             now + micros(self.p.interval_s as f64),
@@ -2431,13 +2482,16 @@ impl<'a> Sim<'a> {
     /// Samples a tracked outage's effect on mining: miners mining with their household online
     /// whose KWC cannot issue entropy. Every round while the outage lasts.
     pub(crate) fn on_outage_sample(&mut self, now: Micros, index: u32) {
-        let (start, duration) = {
+        let (start, duration, kind) = {
             let r = &self.res.outages[index as usize];
-            (r.start_s, r.duration_s)
+            (r.start_s, r.duration_s, r.kind)
         };
-        if seconds(now) > start + duration {
+        // A scripted blackout's diagnosis samples on past its end.
+        let tail = if kind == 2 { DIAGNOSIS_TAIL_S } else { 0.0 };
+        if seconds(now) > start + duration + tail {
             return;
         }
+        let within = seconds(now) <= start + duration;
         let kwcs = self.alloc.active_wcs() as usize;
         let mut able: Vec<Option<bool>> = vec![None; kwcs];
         let mut unable_kwcs = 0u64;
@@ -2468,15 +2522,60 @@ impl<'a> Sim<'a> {
                 lost += 1;
             }
         }
-        let r = &mut self.res.outages[index as usize];
-        r.samples += 1;
-        r.witnessing_lost_max = r.witnessing_lost_max.max(lost);
-        r.witnessing_lost_miner_rounds += lost;
-        r.kwcs_unable_max = r.kwcs_unable_max.max(unable_kwcs);
+        if within {
+            let r = &mut self.res.outages[index as usize];
+            r.samples += 1;
+            r.witnessing_lost_max = r.witnessing_lost_max.max(lost);
+            r.witnessing_lost_miner_rounds += lost;
+            r.kwcs_unable_max = r.kwcs_unable_max.max(unable_kwcs);
+        }
+        if kind == 2 {
+            let mining = (0..self.miners.len())
+                .filter(|m| {
+                    let miner = &self.miners[*m];
+                    miner.phase == Phase::Mining
+                        && !miner.idle
+                        && miner.kwc != NONE
+                        && (miner.kwc as usize) < kwcs
+                        && self.hh[miner.household as usize].online()
+                })
+                .count() as u64;
+            let p = step_win_probability(&self.blocks[self.network_tip as usize].child_target);
+            let (below, spare) = self.kwcs_unable_and_spare();
+            let moves = self.res.failover_moves;
+            if let Some(d) = self.outage_diag.get_mut(index as usize) {
+                d.samples
+                    .push((now, mining as u32, mining.saturating_sub(lost) as u32, p));
+                let before = d.moves_before;
+                let r = &mut self.res.outages[index as usize];
+                r.failover_moves = moves.saturating_sub(before);
+                if within {
+                    r.kwcs_below_t_max = r.kwcs_below_t_max.max(below);
+                    r.spare_capacity_min = r.spare_capacity_min.min(spare);
+                }
+            }
+        }
         let next = now + micros(self.p.interval_s as f64);
-        if seconds(next) <= start + duration {
+        if seconds(next) <= start + duration + tail {
             self.q.push(next, Ev::OutageSample { index });
         }
+    }
+
+    /// KWCs that cannot issue entropy, and the free miner places in those that can (the E3
+    /// diagnosis).
+    pub(crate) fn kwcs_unable_and_spare(&self) -> (u64, u64) {
+        let kwcs = self.alloc.active_wcs() as u32;
+        let mut unable = 0u64;
+        let mut spare = 0u64;
+        for k in 0..kwcs {
+            if self.kwc_can_issue(k) {
+                let load = self.kwc_load.get(k as usize).copied().unwrap_or(0);
+                spare += u64::from(self.p.capacity.saturating_sub(load));
+            } else {
+                unable += 1;
+            }
+        }
+        (unable, spare)
     }
 
     /// Removes a witness's ID for good without a One Chance ban record (points blacklist).

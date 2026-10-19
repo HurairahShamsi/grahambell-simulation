@@ -85,7 +85,7 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "issuance.difficulty_count_rule",
         "§3.8",
         "",
-        "Which admitted miners Variant B counts: those past the post-admission wait, all Globally Active, or (the M3a.1 experiment) those whose KWC issued entropy for the round.",
+        "Which admitted miners Variant B counts: those past the post-admission wait, all Globally Active, or (the M3a.1 experiment) those whose KWC issued entropy for the round, either for the parent's round or, lagged, as committed at the block a confirmation depth before the parent.",
     ),
     doc(
         "issuance.min_attack_time_floor_years",

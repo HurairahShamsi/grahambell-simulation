@@ -248,6 +248,31 @@ pub struct TraceRow {
 /// Rows a run's trace holds at most.
 pub const TRACE_ROWS_MAX: usize = 1_000_000;
 
+/// A gap of over 10 minutes between final-chain blocks that overlaps a scripted blackout, and
+/// what held issuance up while it lasted (the E3 diagnosis; architect, 2026-10-16).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct GapDiagnosis {
+    /// Start (the earlier block's broadcast), simulated seconds.
+    pub start_s: f64,
+    /// Length, seconds.
+    pub length_s: f64,
+    /// The cause that covers most of the gap's samples (index into [`GAP_CAUSES`]).
+    pub cause: u8,
+    /// Shares of the gap's samples by cause, in the order of [`GAP_CAUSES`].
+    pub shares: [f64; 4],
+    /// The mean, over samples with miners holding entropy, of the expected time to a block
+    /// at the round's difficulty with those miners alone, seconds (NaN if none).
+    pub expected_interval_s: f64,
+    /// Samples (one a round) in the gap.
+    pub samples: u64,
+}
+
+/// Causes of a gap, sampled once a round: no miner mining with its household online; such
+/// miners, but none whose KWC can issue entropy; miners with entropy, but a difficulty set
+/// for more miners, so that the expected time to a block with them alone exceeds four target
+/// intervals; anything else (a block found but not yet valid, PoWit quorum, chance).
+pub const GAP_CAUSES: [&str; 4] = ["no miners", "no entropy", "difficulty too high", "other"];
+
 /// One regional blackout or provider outage, with what it did to mining (E3).
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct OutageRecord {
@@ -277,6 +302,24 @@ pub struct OutageRecord {
     /// The longest gap between consecutive final-chain blocks that overlaps the outage,
     /// seconds.
     pub max_gap_s: f64,
+    /// Scripted blackouts (the E3 diagnosis): the region's share of seated witness nodes at
+    /// the start.
+    pub region_witness_share: f64,
+    /// The region's share of admitted miners (mining or waiting) at the start.
+    pub region_miner_share: f64,
+    /// Active KWCs at the start.
+    pub kwcs: u64,
+    /// The most KWCs, with miners or not, that could not issue entropy (below t, or below
+    /// the quorum of online members), over the samples while it lasted.
+    pub kwcs_below_t_max: u64,
+    /// Failover moves from its start to six hours after its end.
+    pub failover_moves: u64,
+    /// Free miner places in KWCs that could issue entropy, at the start.
+    pub spare_capacity_start: u64,
+    /// The same, at its lowest over the samples while it lasted.
+    pub spare_capacity_min: u64,
+    /// Every gap of over 10 minutes between final-chain blocks that overlaps it.
+    pub gaps: Vec<GapDiagnosis>,
 }
 
 /// Counts and sums a run produces. Everything a table needs is here, so tables never rerun a

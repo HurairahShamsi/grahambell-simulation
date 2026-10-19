@@ -24,7 +24,7 @@ retarget_window_blocks = { value = 144, status = "D" }
 retarget_clamp_factor = { value = 4.0, status = "D" }
 # Variant B correction [P]: none by default; M3 compares P1, P2 and B-exact.
 count_based_correction = { status = "P", sweep = { values = [{ form = "recent_interval_ratio", window_blocks = 144, bound = 0.1 }, { form = "accumulated", window_blocks = 144, bound = 0.1 }, { form = "discrete_exact" }], note = "P1, P2 and B-exact, proposed and compared in M3" } }
-difficulty_count_rule = { value = "after_post_admission_wait", status = "D", sweep = { values = ["after_post_admission_wait", "all_globally_active", "issued_entropy"], note = "all Globally Active miners is the comparison (architect, 2026-10-12); issued entropy is the M3a.1 experiment (2026-10-14)" } }
+difficulty_count_rule = { value = "after_post_admission_wait", status = "D", sweep = { values = ["after_post_admission_wait", "all_globally_active", "issued_entropy", "issued_entropy_lagged"], note = "all Globally Active miners is the comparison (architect, 2026-10-12); issued entropy, unlagged and lagged, is the M3a.1 experiment (2026-10-14 and 2026-10-16)" } }
 min_attack_time_floor_years = { value = 2.0, status = "P", sweep = { range = [1.0, 10.0] } }
 cap_checkpoint_interval_fraction_of_t_min = { value = 1.0, status = "D", sweep = { values = [0.25, 0.5, 1.0] } }
 cap_safety_factor = { value = { numerator = 7, denominator = 6 }, status = "D" }
