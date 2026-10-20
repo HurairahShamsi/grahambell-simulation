@@ -565,11 +565,16 @@ impl CheckStatus {
 /// Checks whose references are limited (architect, 2026-10-14): M1 section D's old-design
 /// restart advantage, which models neither one-header sit-outs nor start-rule catch-up (V2),
 /// and M1 E1's first-order hopping gain, which does not hold for hops of four times the
-/// network (V3 Variant A at m = 4). No new references are used.
+/// network (V3 Variant A at m = 4). Since 2026-10-20 every result that overlaps a published
+/// one is checked against it (architect's standing rule); M1 H1's KWC failure probability
+/// assumes independent absences, so it is a limited reference for runs with correlated
+/// household outages (C7's household profiles and E3's C7 setups).
 pub fn reference_limited(check: &str) -> bool {
     check.starts_with("V2-old-")
         || (check.starts_with("V3-A-")
             && (check.ends_with("-m4") || check.ends_with("-m4-recovery")))
+        || check.starts_with("C7-households-")
+        || check.starts_with("E3-C7-")
 }
 
 /// The status of a check.
@@ -1058,6 +1063,8 @@ mod tests {
             "V2-old-w20785",
             "V3-A-K144-clamp4-m4",
             "V3-A-K2016-clampnone-m4-recovery",
+            "C7-households-d0-unregistered",
+            "E3-C7-d0.1-all-online-no-failover-unregistered",
         ] {
             assert!(reference_limited(id), "{id}");
         }
@@ -1068,6 +1075,9 @@ mod tests {
             "V3-A-K144-clamp4-m0.5-recovery",
             "V3-B-m4",
             "C2-idealised-orphans",
+            "C7-independent-f0.7-unregistered",
+            "E3-security-s25-21of40",
+            "E2-hop-after_wait / none-m1",
         ] {
             assert!(!reference_limited(id), "{id}");
         }

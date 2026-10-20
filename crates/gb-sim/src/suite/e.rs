@@ -5,10 +5,13 @@
 //! these run in two stages ([`super::run_suite`]): E1's matrix, E2 and E3 first, then E1's
 //! criterion-4 reruns and E4. Every selection rule is fixed in advance and applied as written.
 
-use super::c::{realistic, region_names};
+use super::c::{m1_fail, realistic, region_names};
 use super::v::hop_gain;
-use super::{Chart, ChartPanel, ChartSeries, Ctx, SectionOut, Table, amplification, div, f, n, r};
+use super::{
+    Chart, ChartPanel, ChartSeries, Ctx, SectionOut, Table, amplification, div, f, mc_check, n, r,
+};
 use crate::job::{ForkRule, GroupSpec, JobResult, JobSpec, OfflinePointsSpec, Strategy};
+use gb_analytic::validation::Check;
 use gb_config::protocol::{
     CountBasedCorrection, DeadlineScope, DifficultyCountRule, DifficultyVariant, EntropySigners,
     EquivocationScope, OfflinePointsOutcome, StartRule,
@@ -357,6 +360,21 @@ pub(crate) fn e2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, H
             i += 1;
             let (gain, se) = hop_gain(res, honest * (1.0 + ratio));
             gains.push(gain);
+            // M1 E1 (published): Variant B gives no first-order hopping gain. That covers the
+            // count alone, so only the variants without a correction are checked against it.
+            if v.correction.is_none() {
+                out.checks.push(mc_check(
+                    E2,
+                    &format!("E2-hop-{label}-m{ratio}"),
+                    "Variant B count without a correction: hopping gain vs 1 (M1 E1: no first-order gain)",
+                    1.0,
+                    gain,
+                    se,
+                    res.hop_ids,
+                    ctx.k,
+                    0.0,
+                ));
+            }
             hopping.push(vec![
                 label.clone(),
                 f(*ratio),
@@ -1112,6 +1130,23 @@ pub(crate) fn e3_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
     jobs
 }
 
+/// A short identifier of an E3 configuration, for check names.
+fn e3_slug(c: &(EntropySigners, Option<u32>)) -> String {
+    format!(
+        "{}-{}",
+        match c.0 {
+            EntropySigners::AllOnlineMembers => "all-online",
+            EntropySigners::ThresholdTwoThirds => "t2n3",
+            EntropySigners::ThresholdMajority => "t21of40",
+        },
+        if c.1.is_some() {
+            "failover"
+        } else {
+            "no-failover"
+        }
+    )
+}
+
 /// E4's entropy rule and failover, as E3 decides them.
 #[derive(Debug, Clone)]
 pub(crate) struct E4Setting {
@@ -1133,6 +1168,18 @@ fn backup_power(ctx: &Ctx<'_>, region: usize) -> (f64, f64) {
         &ctx.cfg.sim.households.reliable_grid
     };
     (grid.ups_share, grid.ups_runtime_h)
+}
+
+/// M1 section G's exact binomial probability that an attacker with seat share `s` holds at
+/// least `k` of `seats` seats (G1's `p_sign_binomial`).
+fn m1_sign_binomial(seats: u64, k: u64, s: f64) -> f64 {
+    use gb_analytic::quorum_tradeoff::{Harm, QuorumLayout, Seats};
+    let layout = QuorumLayout::Pool { seats, quorum: k };
+    gb_analytic::exact::decimal(s)
+        .ok()
+        .and_then(|p| Seats::new(&layout, &gb_analytic::dist::SeatModel::Binomial(p)).ok())
+        .map(|d| gb_analytic::exact::to_f64(&d.probability(&layout, Harm::Sign)))
+        .unwrap_or(f64::NAN)
 }
 
 /// P(X ≥ k) for X binomial with `seats` trials and success probability `s`.
@@ -1266,6 +1313,44 @@ pub(crate) fn e3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, E
                     b % seeds
                 )
             };
+            // C7's setups against M1 H1 (published), at the realised online fraction, for the
+            // rules that need 27 of 40 (reference-limited: M1 assumes independent absences).
+            if k < E3_DEPARTURES.len() && c.0 != EntropySigners::ThresholdMajority {
+                let layout = gb_analytic::quorum_tradeoff::QuorumLayout::Pool {
+                    seats: 40,
+                    quorum: u64::from(ctx.cfg.quorum.unregistered_total_min.value),
+                };
+                let online = div(
+                    res.online_fraction_sum,
+                    (res.kwc_samples as f64 / 300.0).max(1.0),
+                );
+                let reference = m1_fail(&layout, online);
+                let value = div(res.kwc_fail_unregistered as f64, res.kwc_samples as f64);
+                let daily: Vec<f64> = res
+                    .daily_kwc
+                    .iter()
+                    .filter(|d| d[2] > 0)
+                    .map(|d| d[0] as f64 / d[2] as f64)
+                    .collect();
+                let se = super::mean_se(&daily)
+                    .1
+                    .max((reference * (1.0 - reference) / res.kwc_samples.max(1) as f64).sqrt());
+                out.checks.push(mc_check(
+                    E3,
+                    &format!("E3-C7-d{}-{}-unregistered", E3_DEPARTURES[k], e3_slug(c)),
+                    &format!(
+                        "{}, C7 departures {}/yr: share of KWCs below 27 of 40 vs M1 H1 fail_probability at the realised online fraction (M1 assumes independent absences)",
+                        e3_name(c),
+                        E3_DEPARTURES[k]
+                    ),
+                    reference,
+                    value,
+                    se,
+                    res.kwc_samples,
+                    ctx.k,
+                    0.0,
+                ));
+            }
             let mut sw = res.failover_s.clone();
             sw.sort_by(f64::total_cmp);
             liveness.push(vec![
@@ -1398,6 +1483,20 @@ pub(crate) fn e3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, E
     for s in [0.10, 0.25, 0.33] {
         let (p21, p27) = (binomial_tail(40, 21, s), binomial_tail(40, 27, s));
         security.push(vec![f(s), f(p21), f(p27), f(div(p21, p27))]);
+        // The same probabilities as M1 G1's published binomial p_sign (the PoWit pool at quorum
+        // fractions 0.51 and 2/3).
+        for (k, value) in [(21u64, p21), (27, p27)] {
+            out.checks.push(Check::relative(
+                E3,
+                &format!("E3-security-s{}-{k}of40", (s * 100.0).round()),
+                &format!(
+                    "P(an attacker with share {s} holds at least {k} of 40 seats), binomial, vs M1 G1 p_sign_binomial"
+                ),
+                m1_sign_binomial(40, k, s),
+                value,
+                1e-9,
+            ));
+        }
     }
     out.tables.push(liveness);
     out.tables.push(outages);
@@ -1689,6 +1788,26 @@ mod tests {
             deep_reorgs,
             fork_storm_s: storm.then_some(3_600.0),
             ..JobResult::default()
+        }
+    }
+
+    #[test]
+    fn the_security_table_matches_m1_g1s_published_binomial_values() {
+        // M1 G1 (results/analytic/reference/G1_quorum_kwc.csv), p_sign_binomial, 6 digits.
+        for (k, s, published) in [
+            (21, 0.10, 1.95966e-11),
+            (27, 0.10, 3.22403e-18),
+            (21, 0.25, 1.74854e-4),
+            (27, 0.25, 1.87104e-8),
+            (21, 0.33, 8.42357e-3),
+            (27, 0.33, 8.47653e-6),
+        ] {
+            let m1 = m1_sign_binomial(40, k, s);
+            assert!(
+                (m1 / published - 1.0).abs() < 5e-6,
+                "{k} {s}: {m1} vs {published}"
+            );
+            assert!((binomial_tail(40, k, s) / m1 - 1.0).abs() < 1e-9, "{k} {s}");
         }
     }
 

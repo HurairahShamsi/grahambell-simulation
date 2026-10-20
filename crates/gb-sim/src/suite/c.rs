@@ -1412,7 +1412,7 @@ pub(crate) fn c7_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
 }
 
 /// M1 section H's failure probability for a layout at signing probability `s`.
-fn m1_fail(layout: &QuorumLayout, s: f64) -> f64 {
+pub(crate) fn m1_fail(layout: &QuorumLayout, s: f64) -> f64 {
     let rounded = (s * 1e6).round() / 1e6;
     decimal(rounded)
         .ok()
@@ -1508,6 +1508,12 @@ pub(crate) fn c7_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             f(se_g),
             f(mg),
         ]);
+        // Against M1 H1 (published) at the realised online fraction; reference-limited, since
+        // M1 assumes independent absences and household outages are correlated.
+        let se_u2 = se_u.max((mu * (1.0 - mu) / samples_count.max(1) as f64).sqrt());
+        let se_g2 = se_g.max((mg * (1.0 - mg) / samples_count.max(1) as f64).sqrt());
+        out.checks.push(mc_check(C7, &format!("C7-households-d{d}-unregistered"), &format!("household profiles, departures {d}/yr: share of KWCs below 27 of 40 vs M1 H1 fail_probability at the realised online fraction (M1 assumes independent absences)"), mu, u, se_u2, samples_count, ctx.k, 0.0));
+        out.checks.push(mc_check(C7, &format!("C7-households-d{d}-registered"), &format!("household profiles, departures {d}/yr: share of KWCs below 7 + 21 vs M1 H1 fail_probability at the realised online fraction (M1 assumes independent absences)"), mg, g, se_g2, samples_count, ctx.k, 0.0));
         summary.push(format!(
             "household profiles, departures {d}/yr: witnesses online {} %; KWCs below the unregistered quorum {} % (M1 at that online fraction: {} %), below 7 + 21 {} % (M1: {} %){}",
             r(100.0 * online, 1),
