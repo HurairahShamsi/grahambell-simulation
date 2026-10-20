@@ -66,6 +66,12 @@ Dependencies point one way: `gb-cli` → analysis crates (`gb-analytic`, `gb-cry
 
 Each M1 table becomes a check that a later simulator must pass.
 
+**Standing rule for every milestone (architect, 2026-10-20):**
+
+- Every new result that overlaps an earlier published one (M1 tables, M2 crypto results, the M1 public brief) gets a validation check against it, with the earlier value, the new value and the tolerance in `validation.csv`.
+- A mismatch is never tuned away. It is reported as fail or reference-limited, with the explanation, and the public summary states it.
+- Before any push to public, every published number that the new results confirm, refine or contradict is listed, so the public docs can be updated consistently (§9).
+
 | M1 output | Later check |
 |---|---|
 | A1–A3, A7 time to threshold, long-run share | M3 issuance simulator (S2, S3) within its confidence interval; H2 within ±5% |
@@ -98,6 +104,9 @@ Each M1 table becomes a check that a later simulator must pass.
 | M3a C5 One Chance costs, honest penalties and IDs lost per year by region and device | H7/H8 (M3b, M4) |
 | M3a C7 KWC quorum liveness under household profiles | M4 witness layer |
 | M3a Tier 1 at 10³–10⁵ miners | Tier 2 `gb-scale` validation (M3b), then full scale (M6) |
+| M1 G1 binomial seat tails (at least 21 or 27 of 40) | M3a.1 E3 security table, exact (`E3-security-*`) |
+| M1 E1 Variant B (no first-order hopping gain) | M3a.1 E2, each count rule without a correction (`E2-hop-*`) |
+| M1 H1 KWC failure at an online fraction (independent absences) | M3a.1 C7 household profiles and E3's C7 setups, reference-limited (`C7-households-*`, `E3-C7-*`) |
 
 ### Planned for M4–M6 (decided 2026-10-09)
 
@@ -121,6 +130,18 @@ Each M1 table becomes a check that a later simulator must pass.
 
 - a [P] threshold-BLS randomness beacon to replace the block-hash beacons for seat placement and the committee lottery; M4 compares it with the current beacons;
 - in the meantime strict One Chance stays the default, and "unreachable is not refusal" is a [P] comparison only.
+
+### Backlog (planned, not M3a.1; architect, 2026-10-20)
+
+- **M3b, adversarial: a sleeper attacker** that accumulates IDs quietly for years and keeps them active, then switches behaviour all at once.
+- **Admission variants:** caps per /48 and per provider or ASN, against /64-only admission; measure what they cost honest households behind shared ISPs.
+- **M5, cost model:**
+  - *Per-slot load:* connections per slot (one per KWC member, 40), bytes per round (about 12 KB per slot per 30 s, estimated) and CPU per round, split into protocol-forced work (header signing 0.379 ms, sequential SHA-256 steps 0.969 µs each, and transport security on 40 witness connections: TLS/QUIC handshakes, keepalives and encryption of every message, to be benchmarked) and optional work (verifying the entropy aggregate, 4.397 ms at 40 members); timings from `results/crypto/reference/bench/K4_timings.csv`. The attacker is priced at the forced minimum, the optional work reported separately. Derive the cores, the memory for 4M+ connections, the servers and the monthly cost alongside bandwidth for 10k, 100k, 1M and 10M attacker slots (10M slots means 400M witness connections, close to the usable unregistered capacity, so report what happens when the attacker alone would nearly fill admission: honest miners crowded out, or the attacker blocked by the cap).
+  - *Competition:* the attacker needs s/(1 − s) × H slots to win share s against H honest slots (registered IDs that keep mining included in H). Report the monthly and total cost for s ∈ {10, 25, 33, 40, 51} % against H ∈ {100k, 1M, 10M}, sustained over the time-floor horizon. Honest competition over time is an assumption with a sweep (growth, flat, decline), reporting how the attacker's cost and time to threshold change in each.
+  - *Capacity:* from the SPEC defaults, 2.9M genesis IDs give 290,000 WCs × 50 unregistered per leader WC = 14.5M unregistered places, about 10.9M usable at the +33 % spare-capacity target; capacity grows with registered IDs (every 10 new IDs form a WC, adding room for 50 unregistered miners). Genesis is swept over {1M, 2.9M, 10M} (1M gives 5M places). When admission is full, report who is admitted and whether an attacker can crowd out honest miners.
+  - *Full grid:* attacker slots A ∈ {10k, 100k, 1M, 10M} × honest fill h ∈ {0, 10, …, 100} % of usable capacity × genesis {1M, 2.9M, 10M} × honest online fraction f ∈ {1.0, 0.8, 0.5} (attacker online 100 %). Per cell, never dropped: whether A fits and what admission does if it does not; the attacker's share of new IDs s; the time to 33, 51 and 67 % of active IDs, t = T·f·G / (R·(s·(1 − T) − T·f·(1 − s))) or "never" when the denominator is not positive (M1's realistic variant; t = T·G / (R·(s − T)) at f = 1, the C2 formula at s = 1; check cell s = 40 %, f = 0.5, G = 2.9M, T = 51 %: 16.4 years); the monthly cost and the total cost to each threshold; the load on honest witnesses (verify and sign per watched miner) and how capacity limits bound it. One table per A and a chart of time to 51 % and total cost against h; weak (low-h) cells are shown as prominently as strong ones.
+  - *Honest multi-slotting,* an assumption with a sweep: {1, 10, 50} % of households × {1, 4, 16, 256} slots per household.
+  - *Admission granularity,* compared: pacing per /64, /56 and /48, each with and without per-provider or ASN caps (tunnel brokers that hand out free /48s, identified by ASN); report slots per household, slots per free /48 for an attacker, and the honest households hurt (shared ISPs, CGNAT, mobile /64).
 
 ## 5. `gb-protocol` and the Stage 3 testnet
 
@@ -263,4 +284,4 @@ Development and publication use two repositories.
   2. push `main` only, with `git push public main`: never another branch, never `--force`;
   3. disable it again with `git remote set-url --push public DISABLED`, and check with `git remote -v`.
 - **Reference results:** `results/` is ignored by git except the reference runs in `results/analytic/reference/`, `results/crypto/reference/` and `results/sim/reference/`. Each is produced from a clean commit, and its `run.json` records that commit and a SHA-256 of every file, so anyone can check out the commit, rerun the analysis and compare (outside the machine-dependent `bench/` and `perf/`).
-- **Before a release push**, check the commit authors (`git log --format='%an <%ae>' | sort -u`), files over 1 MB, and anything that looks like a secret, a key or a local path.
+- **Before a release push**, check the commit authors (`git log --format='%an <%ae>' | sort -u`), files over 1 MB, and anything that looks like a secret, a key or a local path, and list every published number that the new results confirm, refine or contradict (standing rule, §4).
