@@ -498,8 +498,11 @@ impl Sim<'_> {
     }
 
     /// True when every panel node accepted a block at height ≥ `height` long enough ago that
-    /// any household has it too.
-    fn horizon_reached(&self, height: u64, now: Micros) -> bool {
+    /// any household has it too. A block a node holds late (its PoWit after the deadline) does
+    /// not count at that node: the node does not extend it, so blocks at that height can still
+    /// win there (until 2026-10-21 such blocks counted, and a height whose blocks were all late
+    /// ended its round, stalling the chain until the late block's own miner extended it).
+    pub(crate) fn horizon_reached(&self, height: u64, now: Micros) -> bool {
         if self.settled_ids.len() as u64 > height {
             return true;
         }
@@ -511,6 +514,7 @@ impl Sim<'_> {
                     let block = &self.blocks[*b as usize];
                     block.height >= height
                         && block.panel[i] != INF
+                        && !block.panel_late[i]
                         && block.panel[i].saturating_add(margin) <= now
                 })
             })

@@ -1618,6 +1618,26 @@ mod tests {
     }
 
     #[test]
+    fn a_height_every_validator_holds_late_does_not_end_the_round_below_it() {
+        let cfg = gb_config::Config::default();
+        let spec = spec(&cfg);
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let b = block(&mut sim, 0, 1, 1);
+        let later = 10_000 * SECOND;
+        // On time everywhere: no later block at height 1 can win, so the round on genesis ends.
+        assert!(sim.horizon_reached(1, later));
+        // Late at every validator: none extends it, so blocks at height 1 can still win.
+        let n = sim.blocks[b as usize].panel_late.len();
+        sim.blocks[b as usize].panel_late = vec![true; n];
+        assert!(!sim.horizon_reached(1, later));
+        // An on-time child makes the late block an ancestor of the chain the validators hold.
+        let c = block(&mut sim, b, 2, 2);
+        assert_eq!(sim.blocks[c as usize].height, 2);
+        assert!(sim.horizon_reached(1, later));
+    }
+
+    #[test]
     fn a_gap_is_put_down_to_the_cause_that_covers_most_of_its_samples() {
         let s = SECOND;
         // At p = 1/3000, 100 miners expect a block in about 30.5 s and 10 in about 300 s.
