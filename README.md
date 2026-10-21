@@ -1,6 +1,13 @@
 # GrahamBell — Stage 1 simulation
 
-GrahamBell is a proposed Layer 1 blockchain whose Sybil resistance comes from time rather than hardware or capital. Identities (IDs) are issued one at a time at a fixed global rate through capped Proof of Work. Each miner is limited to one hash per second, and a Witness Chain of other participants enforces the limit. An attacker can still create identities, but only as fast as the shared issuance schedule allows, so taking control of the network takes years of sustained participation. The architecture calls this **Proof of Infrastructure Endurance (PoIE)** and **Proof of Time (PoT)** (A new Time-based Sybil-resistance model).
+## What is GrahamBell
+
+- A proposed Layer 1 blockchain whose Sybil resistance comes from time rather than hardware or capital: **Proof of Infrastructure Endurance (PoIE)**, also called **Proof of Time (PoT)**.
+- Identities (IDs) are issued one at a time at a fixed global pace, about one every 30 seconds, through capped proof of work: every miner hashes at one hash per second, whatever its hardware.
+- A Witness Chain of other participants supplies each round's entropy and checks the pace, so neither precomputed nor parallel work can win.
+- An attacker can still create IDs, but only as fast as the shared schedule allows, so taking control of a mature network takes years of sustained participation.
+- How a round works, rule by rule and with each rule's status: [docs/PROTOCOL_OVERVIEW.md](docs/PROTOCOL_OVERVIEW.md).
+- What GrahamBell does not claim, and what this repository does not cover: [What this is not](docs/PROTOCOL_OVERVIEW.md#what-this-is-not).
 
 **Stage 1** tests whether PoIE's claims hold under realistic and adversarial conditions, and publishes the results whether they confirm or refute the model. The rules under test are in [`docs/SPEC.md`](docs/SPEC.md), the single source of truth.
 
@@ -15,6 +22,7 @@ GrahamBell is a proposed Layer 1 blockchain whose Sybil resistance comes from ti
 | M2 | done | SPEC v0.5 (M1.2 answers, PoWit arrival deadline, Stage 3 testnet decisions, wire formats). The shared protocol core `gb-protocol` with test vectors, and `gb-crypto-tests`: grinding, sorted-hash ambiguity, beacon withholding, placement grinding, benchmarks, a threshold-BLS prototype and the simulator's entropy stand-in, all with real SHA-256 and BLS12-381 |
 | M2.1 | done | SPEC v0.6: H1–H9 thresholds locked before M3, the online-set grinding lever (S11(f)), optimistic entropy verification, the fork-choice order and witness double-signing evidence; a committed crypto reference run |
 | M3a | done | **Tier 1 issuance simulator** `gb-sim` (`gb sim`): measured inter-region latency (RIPE Atlas), household downtime with correlated outages, the validation ladder against M1 and M2 (V0–V4), and the honest baselines C1–C7 and A6: tagged-group amplification, fork choice, the PoWit deadline and a withholder, the issuance rate under Variant B and its correction candidates, One Chance costs and honest penalties, clock skew, quorum liveness and newcomers' patience; a committed sim reference run |
+| M3a.1 | done | SPEC v0.7: the architect's decisions on M3a (One Chance as "unreachable is not refusal", a 10 s PoWit deadline with the soft scope, void IDs in replaced blocks) and four experiments with criteria fixed in advance: E1 fork choice and start rule (rule (r), first-seen), E2 issuance (the issued-entropy count with the P2 correction), E3 liveness under regional blackouts (threshold entropy, failover) and E4 the offline points ladder. Three simulator bugs found and fixed on the way (docs/ASSUMPTIONS.md SIM-35, SIM-43, SIM-25); the reference run at the final v0.7 defaults follows |
 | M3b–M6 | planned | Attacker scenarios and Tier 2 at full scale, the witness layer, cost model, final runs; see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 
 M1 results are the ground truth that later simulators must reproduce before their own results are trusted. Every modelling assumption behind them is listed in [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md).
