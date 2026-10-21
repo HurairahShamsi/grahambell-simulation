@@ -1,6 +1,6 @@
 # GrahamBell — Stage 1 Simulation Specification
 
-**Version:** 0.6 (compiled from the protocol architect's papers and design decisions; amended 2026-10-05, 2026-10-06, 2026-10-07, 2026-10-08 and 2026-10-09, see the Changelog at the end)
+**Version:** 0.7 (compiled from the protocol architect's papers and design decisions; amended 2026-10-05, 2026-10-06, 2026-10-07, 2026-10-08 and 2026-10-09, and in v0.7 with the decisions of 2026-10-12, 2026-10-14, 2026-10-19 and 2026-10-21; see the Changelog at the end)
 **Owner:** Hurairah Shamsi, Protocol Architect
 **Purpose of this file:** single source of truth for building and running the Stage 1 simulation. Where this file and older papers disagree, **this file wins**. Where this file is silent or ambiguous, the implementer must **stop and ask**, not guess.
 
@@ -32,7 +32,9 @@ Unregistered-to-registered identity issuance (PoW-ID); the witness layer as it a
 
 ### Out of scope for Stage 1
 
-Proof of Call, Murphy, Data Saving Groups, Proof of Funds, Shamsi OS, smart contracts, storage pruning, the full reward schedule (used only as economic inputs), and the Stage 3 centralized-witness testnet itself.
+Proof of Call, Murphy, Data Saving Groups, Proof of Funds; throughput (transactions per second, TPS); the Single Chain Architecture (SCA); the Shamsi Operating System (SOS) VM and smart contracts; the software Block Processing Unit and Block Validation Unit (BPU/BVU); rewards and token economics, including the full reward schedule (used only as economic inputs, §6); storage, including pruning; and the Stage 3 centralized-witness testnet itself. These are separate designs, not tested in Stage 1.
+
+PoIE bounds how fast IDs can accumulate. It does not prove that one person holds one ID: genesis IDs are issued one per verified person (§2), but nothing ties an ID issued after launch to a person.
 
 ---
 
@@ -64,9 +66,9 @@ Proof of Call, Murphy, Data Saving Groups, Proof of Funds, Shamsi OS, smart cont
 |---|---|---|---|
 | Hash pacing | 1 hash/s per admitted /64 (unregistered) or per ID (registered) | — | D |
 | PoW-ID target interval | 30 s (≈1.05M IDs/yr) | adaptive variant (§3.9) | D / P |
-| Difficulty rule (§3.8) | Variant B: count-based, from the exact admitted online count | Variant A (Bitcoin-style retarget), for comparison | D |
+| Difficulty rule (§3.8) | Variant B: count-based, from the miners whose KWC issued entropy for the round | Variant A (Bitcoin-style retarget), for comparison; counts: the miners past their post-admission wait (the default until v0.6), all Globally Active miners, the lagged issued-entropy count | D |
 | Variant A comparison settings (§3.8) | window K = 144 blocks, 4× clamp per retarget | — | D |
-| Variant B correction from recent block times (§3.8) | — | no preferred form; M3 proposes one and tests it | P |
+| Variant B correction from recent block times (§3.8) | P2: every 144 blocks the factor is multiplied by the last 144 intervals' mean ÷ the target, kept within ×0.5 to ×1.5 | none; P1 within ×0.9–×1.1, ×0.75–×1.25 and ×0.5–×1.5; P2 within ×0.9–×1.1 and ×0.75–×1.25; B-exact | D |
 | PoW-Tx interval | 10 s | 1–10 s | O |
 | WC size | 10 | 10 | D |
 | KWC composition | 1 leader + 3 subordinate WCs (40 nodes) | 1 + 2 (30 nodes) for comparison | D |
@@ -75,7 +77,7 @@ Proof of Call, Murphy, Data Saving Groups, Proof of Funds, Shamsi OS, smart cont
 | Allocation beacon delay (§4.2) | 6 blocks after the ID's confirmation, or after its re-activation is confirmed when a returning ID is re-inserted | 3, 6, 12 | O |
 | Registered-miner PoWit quorum | ≥7 of 10 leader WC **and** ≥21 of 30 subordinates (28 total) | 30-node comparison: ≥7 of 10 leader **and** ≥14 of 20 subordinates (21 total) | D |
 | Unregistered-miner PoWit quorum | any ≥27 of 40 | 30-node comparison: any ≥20 of 30 | D |
-| Entropy signatures | **every online member** of the KWC (online must be ≥ quorum) | — | D |
+| Entropy signatures | **every online member** of the KWC, and at least the quorum must actually sign (§3.4) | threshold BLS entropy with t = ⌈2n/3⌉ of the members seated at key setup, or t = 21 of 40 (§12) | D |
 | Miner capacity per leader WC | 200 registered + 50 unregistered ² | registered/unregistered split: 200/50, 100/150, 15/235 | D default, O split |
 | Miners watched per witness node | 1,000 (800 registered + 200 unregistered) | — | D |
 | Spare witnessing capacity target | +33% over demand | — | D |
@@ -96,7 +98,7 @@ Proof of Call, Murphy, Data Saving Groups, Proof of Funds, Shamsi OS, smart cont
 | Re-activation wait after return | — | 1 d, 7 d, 14 d, 30 d | O |
 | Long-absence threshold L (§4.7) | 30 days (86,400 PoW-ID blocks at 30 s), the primary value | 3 d (8,640 blocks), 7 d (20,160), 30 d (86,400), 90 d (259,200), 365 d (1,051,200) | O |
 | One Chance wait (§4.5) | 1 grace epoch | 1, 2, 5 rounds | O |
-| PoWit arrival deadline D (§3.7) | none yet | 5, 10, 30, 60 s | O |
+| PoWit arrival deadline D (§3.7) | 10 s, soft scope: a node that got the PoWit late does not extend the block, but accepts a longer chain through it | 5, 30, 60 s and none; the permanent scope, for comparison | D |
 | Penalty ladder (lesser offences) | 24 h, then 30 days, then permanent | — | D |
 | Minimum attack time floor (adaptive issuance) | 2 years | 1–10 years | P |
 | Adaptive-cap checkpoint interval (§3.9) | T_min | T_min/4, T_min/2, T_min | D |
@@ -125,12 +127,15 @@ States, in order: **Locally Validated → Globally Pending → Canonically Selec
 
 A KWC at capacity rejects new joins; newcomers wait or try another KWC. Each chain accepts only as many new requests as it has free slots.
 
+**Failover [P]** (M3a.1 E3; off by default). A miner whose KWC cannot issue entropy for 2 consecutive rounds moves, by the self-service path (§3.2, about 450 s), to a KWC with spare capacity that can. At the v0.6 tie-break it cut the longest gap in a regional blackout under the all-online rule from 165.6 to 45.7 minutes. At the v0.7 defaults the longest gaps with and without it are close (18.7 and 17.8 minutes under the all-online rule; 6.1 minutes either way at t = 21 of 40), and in 31 days of realistic churn it moved about 58,000 miners under the all-online rule (about 830 at t = 21 of 40) for the same issuance. The architect decides whether it becomes a default.
+
 ### 3.2 Uniqueness [D]
 
 - One active session per /64 (unregistered). One active mining channel per ID (registered).
 - A miner may not join a KWC in which its own ID is a witness. If it does, its blocks are rejected even if valid.
 - Joining a different KWC while still counted live elsewhere is treated as parallel mining: rejected, and grounds for a ban.
 - Moving to another KWC is allowed at any time, but takes the grace epoch plus admission (a few minutes).
+- **Quick return [D].** A miner that shut down with its own offline request and comes back within the grace epoch is re-admitted at once.
 - **Self-service offline:** before rejoining, a miner may query peers; if still listed online, it broadcasts its own signed offline request, waits one epoch, then rejoins.
 - **Replay protection:** a signed join request names its target KWC; any other KWC ignores it. Only a request signed by the candidate key **for a different KWC** counts as evidence of duplication.
 
@@ -143,7 +148,7 @@ Fixed contents for the round, including: candidate public key, reward wallet, /6
 1. Miner builds header `H`, signs it with the candidate key: `σ_m = Sign(sk_m, "GB/PoW-ID/miner" ‖ H)`.
 2. Miner sends `(H, σ_m)` to **every** KWC member. Each member verifies, then signs: `σ_i = Sign(sk_i, "GB/entropy" ‖ H ‖ σ_m)`, and shares `σ_i` with all members and the miner.
 3. `E = SHA256("GB/entropy-out" ‖ AggregateBLS(σ_m, σ_i for every online member i) ‖ signer_bitfield)`.
-4. The aggregate **must include every online member's signature**. A missing online signature triggers One Chance (§4.5). Online members must number at least the quorum.
+4. The aggregate **must include every online member's signature**. A missing online signature triggers One Chance (§4.5). At least the quorum (27 of 40) must actually sign: members recorded offline during the round do not count towards it (M3a.1 found that the simulator had issued entropy with fewer signers; ASSUMPTIONS SIM-43).
 5. `E` is committed into the header. The header is then immutable for the round.
 
 **Optimistic verification [P].** A witness verifies the entropy aggregate once. Only if that fails does it verify the shares one by one to find the bad signature. The honest case therefore costs one aggregate verification per miner per round; M4/M5 load models use this.
@@ -156,10 +161,11 @@ Rules:
 
 ### 3.5 Hash chain [D]
 
-Let `t0 = timestamp(previous PoW-ID block) + 1 s`.
-
-- **Start rule (a):** the chain always starts at `t0`, regardless of when `E` arrives. A miner whose entropy arrives late computes the missed steps immediately; its witnesses do the same.
-- **Start rule (b), comparison only:** the hash chain starts when the miner's entropy arrives locally, rather than at `t0`. This is the rejected alternative, kept only for comparison in S13.
+- **Start rule (r) [D], the default** (architect, 2026-10-21; selected by M3a.1 E1): a miner's chain starts at `t0`, its entropy issue time as its KWC attests it: the clock time at which the last required signature was made (under a threshold, the t-th), or at which a record offline completed the required set, rounded up to a whole second, and never before `timestamp(previous PoW-ID block) + 1 s`. The entropy depends on the header only; `t0` is attested separately, by the KWC's signature over `"GB/t0" ‖ header_digest ‖ t0` (Appendix A). A miner whose entropy arrives late starts late: no missed step is ever computed.
+- **Start rule (a), comparison:** the chain always starts at `timestamp(previous PoW-ID block) + 1 s`, regardless of when `E` arrives; a miner whose entropy arrives late computes the missed steps immediately (catch-up). It was the default until v0.6. M3a found that catch-up costs issuance (−17 % on a fixed target) and, after a stall, sends out bursts of blocks with old timestamps; under a PoWit deadline those blocks are late everywhere.
+- **Start rule (b), comparison only:** the hash chain starts when the miner's entropy arrives locally. This is the rejected alternative, kept only for comparison in S13.
+- **Known risk of rule (r) [O]:** t or more colluding members of a KWC could attest an earlier `t0` than the real issue time (backdate it), which recreates catch-up for the miners they serve. Tier 1 assumes they do not (ASSUMPTIONS SIM-37). M4 tests it as scenario S30.
+- In every rule, `t0` below is that rule's start.
 - `h_0 = SHA256("GB/chain" ‖ prev_hash ‖ height ‖ t0 ‖ nonce=0 ‖ E ‖ header_digest)`
 - `h_{n+1} = SHA256("GB/chain" ‖ h_n ‖ prev_hash ‖ height ‖ (t0+n+1) ‖ nonce=n+1 ‖ E ‖ header_digest)`
 - **Fixed field order, fixed-length encodings, domain tags [P].** The older "sort fields by hexadecimal value before hashing" rule is tested separately (scenario S14), not used in the simulator.
@@ -167,28 +173,37 @@ Let `t0 = timestamp(previous PoW-ID block) + 1 s`.
 
 ### 3.6 Witnessing and signing [D]
 
-Every member recomputes the chain independently. An honest member signs the PoWit **only when its own clock reaches `t0 + N` (within tolerance δ)**, where `N` is the winning step. The miner collects at least the quorum, aggregates, and broadcasts the PoW-ID block with its PoWit (also to the CAC).
+Every member recomputes the chain independently. An honest member signs the PoWit **only when its own clock reaches `t0 + N`**, where `N` is the winning step: on time, at its own clock's `t0 + N` [D]. δ is the validators' tolerance (§3.7), not a margin for signing early. The miner collects at least the quorum, aggregates, and broadcasts the PoW-ID block with its PoWit (also to the CAC).
+
+**Entropy signing [D].** A member signs a miner's entropy request once it has received and validated the header's parent, whatever its own preferred tip.
 
 ### 3.7 Global validation [D]
 
 Validators check: quorum signatures with bitfield and proof of possession; full chain recomputation from inputs; `timestamp = t0 + N`; the block was not received before its own timestamp (local clock, tolerance δ); serialization of issuance; uniqueness. A new ID becomes active only after confirmation depth.
 
-**PoWit arrival deadline [O].** A PoW-ID block whose PoWit (the quorum signatures) is not received within D seconds of the block's timestamp is invalid and is not extended. D has no default yet and is swept (§2); M3 measures its effect.
+**PoWit arrival deadline [D].** A node that receives a PoW-ID block's PoWit (the quorum signatures) more than D seconds after the block's timestamp does not extend that block, but still accepts a longer chain through it (the soft scope). D = 10 s (§2). The permanent scope, in which the block and every chain through it stay invalid at that node for good, is a comparison only: in M3a it split 63 of 101 validators off the network chain. D = 10 s was decided on 2026-10-14 and kept on 2026-10-21 on the first M3a.1 E1 result. In the corrected E1 (after the late-block fix, ASSUMPTIONS SIM-25), the criteria as written select the same configuration without a deadline: with D = 10 s, 6 of the 15 reruns that use the P1 correction reorganised 7–8 blocks below confirmation, while none of its P2 reruns did, and no rerun without a deadline did. Judged on the P2 correction it uses, the configuration with D = 10 s passes and is selected by the simplicity order. The architect reviews D with the final M3a.1 defaults.
+
+**Early blocks [D].** A node that receives a block before its own timestamp (local clock, tolerance δ) rejects it for good. Re-evaluating it once the node's clock passes timestamp − δ is a comparison.
+
+**Confirmation [D].** Confirmation depth k means k blocks built on top of the block (k = 6, §2).
+
+**IDs in replaced blocks are void [D].** If the chain switches to a branch without a block whose ID had passed confirmation depth, that ID is void: it leaves the active list, the committee, its seat and any pending placement. This is neither a ban nor a penalty (no ban record, no offence). The miner returns to being a candidate, and a replaced block counts again if the chain returns to it.
 
 **Fork choice**, in this order (every block must carry a valid PoWit):
 
 1. The longest valid chain.
-2. At the same height, the block with the earlier timestamp (the smaller winning step N) wins.
-3. At the same height and timestamp, the block with the lower block hash wins [P].
+2. At the same height, the block this node received first, on its own clock (first-seen) [D] (architect, 2026-10-21; selected by M3a.1 E1).
+3. Then the lower block hash.
 
-**Same-height tie-break [P]:** steps 2 and 3 above. The rule is deterministic, so network latency cannot influence it. Compare against first-seen in M3.
+**Comparison:** v0.6's tie-break, the earlier timestamp (the smaller winning step N) and then the lower block hash. Under first-seen a miner never switches to a later block at the same height, so the [P] same-parent header rule (§3.4) changes nothing; in E1 the two header rules gave identical results.
 
-The confirmation depth stays as in §2. M1 finds that same-step ties end about 1.66% of rounds at the 30 s target; M3 measures the resulting fork and orphan rate under both tie-break rules.
+The confirmation depth stays as in §2. M1 finds that same-step ties end about 1.66% of rounds at the 30 s target.
 
-### 3.8 Difficulty [D; P correction]
+### 3.8 Difficulty [D]
 
-- **Variant B (default): count-based.** Per-hash success probability `p = 1 / (admitted online unregistered miners × target interval)`, computed from the exact admitted online count, which admission (§3.1) already tracks.
-- **[P] Variant B correction:** a small correction from recent block times. There is no preferred form. M3 proposes one and tests it (for example, the target interval ÷ the average interval over the last 144 blocks, bounded to ±10%); until then Variant B uses the count alone.
+- **Variant B (default): count-based.** Per-hash success probability `p = factor / (N × target interval)`.
+- **The count N [D], issued entropy** (architect, 2026-10-21; selected by M3a.1 E1/E2): the miners whose KWC issued entropy for the round, that is mining, online and with a header on the round's parent. Each KWC commits the number it issued in its entropy attestations; the block carries the sum over KWCs with Merkle roots of the headers, validators recompute it, and an inflated count is attributable to the members who signed it (ASSUMPTIONS SIM-36). The block mined in a round sets the next round's difficulty, a lag of one round. Comparisons: the miners past their post-admission wait (the default until v0.6), all Globally Active miners, and the count committed a confirmation depth before the parent (lagged; it removes the fork storms of the unlagged count but fails H5, with a hopping gain of 1.036 at m = 4).
+- **The correction [D], P2 ×1.5:** every 144 blocks the factor is multiplied by the last 144 intervals' mean ÷ the target interval, and kept within ×0.5 to ×1.5. Comparisons: no correction, P1 (the factor set to that ratio each block) and P2 at bounds ×1.1 and ×1.25, and B-exact. In the corrected E1 the selected configuration's closest variant was P2 ×1.25, 0.003 s nearer 30 s than P2 ×1.5 (mean deviations 0.217 and 0.220 s over 5 seeds), a tie within noise.
 - **Variant A (comparison): Bitcoin-style retarget** from recent block times over a window of K = 144 PoW-ID blocks, each retarget clamped to a factor of 4 in either direction.
 
 ### 3.9 Issuance rate [D default, P variant]
@@ -297,7 +312,7 @@ If an online member's signature is missing from a miner's aggregate, every other
 - **Bans are only for proven misbehaviour.** Being offline is not misbehaviour: offline beyond the allowance leads to deactivation (§4.7), never a ban.
 - **Miner complaints may trigger a check but never decide a ban.** Witnesses vote (66% of the KWC, meaning at least two-thirds rounded up: 27 of 40) only on behaviour they observed themselves after One Chance.
 - **Voting pool.** The full 40-member KWC votes on bans, MOBu/MOBr and offline requests. The subordinate-only proposer (§4.4) only proposes.
-- **[P] Unreachable is not refusal.** A member that cannot be reached is treated as offline under the allowance; a ban requires proof it refused while demonstrably online. Implement both this rule and the strict alternative (ban on failed One Chance) for comparison.
+- **Unreachable is not refusal [D], the default.** A member that cannot be reached is treated as offline under the allowance, without a penalty. A ban requires verifiable evidence: equivocation, or a signed refusal while demonstrably online. A member that is online but cut off by a network partition counts as unreachable. The strict alternatives (the §4.8 ladder on a failed One Chance, with or without a yearly reset, and an immediate ban) are comparisons only.
 - **Conflicting decisions [D].** If two conflicting KWC decisions are both approved, both are rejected. A member who signed both has produced equivocation evidence and may be banned.
 - **Witness double-signing [D].** A witness that signs PoWits for two different blocks from the same miner at the same height has produced equivocation evidence, and is banned under the rules above.
 
@@ -313,6 +328,8 @@ Grace epoch; self-service offline requests; forced signing via One Chance for me
 - On return an ID waits the **re-activation wait** and counts as active again. If its seat was vacated, it is re-inserted by §4.2, with the beacon of the block 6 blocks after its re-activation is confirmed.
 - The durations (deactivation threshold, re-activation wait, L) are [O] and swept (§2).
 - Only bans and absences longer than L change KWC compositions (§10 H6). Absent members that keep their seats reduce how many members are online to meet quorums; M1 section H maps the honest uptime this requires.
+
+**Offline points ladder [O]** (M3a.1 E4; a comparison, not in force). Every offline period of at least n earns points, whatever its cause: 1, 1, 2, 3, 4, 5, then 5 for each further period, recorded by a two-thirds decision of one of the member's KWCs (at the first round one can decide). At 20 points the member loses its seat (a 30-day cooldown) or is blacklisted; points reset after 12 months of block time. In E4 (10,000 miners, 290,000 IDs, every region including scheduled load-shedding, 365 days, under "unreachable is not refusal" and all-online entropy), n = 1 h and n = 6 h fail H7 in every region: the highest yearly loss rates are 947 % (seat loss) and 1,213 % (blacklist) of honest IDs at n = 1 h, and 151 % and 209 % at n = 6 h. At n = 24 h H7 holds in every region (highest 0.51 % and 0.52 % a year, in Africa), and no member reaches 20 points from scheduled load-shedding alone. The value of n and the outcome are the architect's decision.
 
 ### 4.8 Penalties [D]
 
@@ -359,7 +376,7 @@ The adversary cannot: break SHA-256 or BLS12-381 security; forge signatures.
 
 **B. Entropy and pacing integrity**
 
-- **S11** Grinding: (a) old flow with miner signing last using non-unique signatures; (b) subset selection; (c) colluding last witness; (d) header equivocation; (e) current BLS all-online-members flow; (f) the online-set lever: c colluding members choose among up to 2^c entropies by withholding, measured under the strict rule, under the [P] "unreachable is not refusal" rule (§4.6) and under threshold BLS entropy (§12). Expected: advantage in (a)–(c), detection in (d), none in (e); for (f), an advantage that ban rules can only price and threshold BLS entropy removes.
+- **S11** Grinding: (a) old flow with miner signing last using non-unique signatures; (b) subset selection; (c) colluding last witness; (d) header equivocation; (e) current BLS all-online-members flow; (f) the online-set lever: c colluding members choose among up to 2^c entropies by withholding, measured under the strict rule, under the default "unreachable is not refusal" rule (§4.6) and under threshold BLS entropy (§12). Expected: advantage in (a)–(c), detection in (d), none in (e); for (f), an advantage that ban rules can only price and threshold BLS entropy removes.
 - **S12** Early signing: fraction of KWCs capable of signing without honest members versus attacker share; detection via timestamp checks (§3.7); clock skew sweep.
 - **S13** Targeted delay of entropy: start rule (a) versus (b).
 - **S14** Sorted-hash collision test (separate unit test).
@@ -368,7 +385,7 @@ The adversary cannot: break SHA-256 or BLS12-381 security; forge signatures.
 
 - **S15** KWC stall and capture probabilities versus attacker share: exact calculation plus simulation over allocation and network growth.
 - **S16** Intermittent stalling that stays within the offline allowance.
-- **S17** Targeted flooding of honest witnesses and One Chance griefing; strict rule versus §4.6 [P].
+- **S17** Targeted flooding of honest witnesses and One Chance griefing; the strict rule versus the §4.6 default.
 - **S18** Stalling proposers trapping honest miners as "online"; self-service recovery time.
 - **S19** Lazy onboarding by chains; effect of the subordinate-only proposer.
 - **S20** Lazy subordinates that sign without recomputing.
@@ -387,6 +404,10 @@ The adversary cannot: break SHA-256 or BLS12-381 security; forge signatures.
 **E. Transaction-layer sanity**
 
 - **S29** Pool concentration and selfish-mining thresholds measured against active-ID share.
+
+**F. Start-rule integrity (M4)**
+
+- **S30** Backdated start under rule (r) (§3.5): t or more colluding members of a KWC attest an earlier `t0` than the real issue time. Measure the gain of the miners they serve against the backdate and the colluding share, and test countermeasures.
 
 ---
 
@@ -437,6 +458,13 @@ The adversary cannot: break SHA-256 or BLS12-381 security; forge signatures.
 5. **No silent assumptions.** Every modelling assumption is listed in `ASSUMPTIONS.md` with its source (this spec section, a paper, or an external data source).
 6. **Outputs** are machine-readable (CSV / JSON / Parquet) plus plots. Any front end reads outputs only and never recomputes.
 7. **Implementation language:** Rust, for the simulation and the Stage 3 testnet. Protocol-core logic is shared between them.
+8. **Tier 1 simulator conventions [D]** (architect, 2026-10-12 and 2026-10-14):
+   - Additive, behaviour-preserving changes to `gb-protocol` and `gb-config` are allowed, with the M1 tables, the M2 tables and the test vectors pinned byte for byte.
+   - Crypto modes: real, the M2 C6 stand-in, and a fast mode used at 10⁴–10⁵ miners only after the V0 gate shows the three agree.
+   - Latency comes from RIPE Atlas measurements, aggregated to regions and credited.
+   - A reference run of `gb sim` is committed in `results/sim/reference/`.
+   - A check whose analytic reference does not model the simulated rule is reported as **reference-limited**, not as a failure, and no new reference replaces it: the V2 old-design restart checks and the V3 Variant A checks at m = 4.
+   - The zero-latency orphan reference (C2) is E[H_K − 1], where K is the number of miners tied at the earliest step and H_K the K-th harmonic number. This was changed after the check failed against E[K − 1] in M3a (ASSUMPTIONS SIM-30).
 
 ---
 
@@ -446,22 +474,22 @@ The adversary cannot: break SHA-256 or BLS12-381 security; forge signatures.
 - Post-admission wait, convergence interval, clock tolerance δ.
 - Offline deactivation and re-activation durations.
 - Registered / unregistered capacity split.
-- Strict versus [P] rule for unreachable members (§4.6).
 - Mining-API streaming: format and whether mandatory.
 - Witness beneficiary details.
 - Key compromise and revocation (for example, a pre-registered backup key): post-Stage 1.
 - Diversity constraints in allocation.
 - Witness Chain decentralization trigger for Stage 4 (published criteria).
-- The Variant B correction from recent block times (§3.8): no preferred form; M3 proposes one and tests it.
 - How often a household ID is absent per year and how long absences last (§4.7); M3 household downtime profiles supply them.
 - **The leader-WC requirement is the main stall risk for registered KWCs.** The registered PoWit needs 7 of the leader WC's 10 members as well as 21 of the 30 subordinates; M1 section H shows this fails far more often under honest downtime than any 27 of 40. M4 compares it with a single 27-of-40 rule, together with the forced-signing (§4.5) and ban (§4.6) rules.
 - **[P] Separate validity from payment (M4).** Any 27 of 40 signatures make a PoWit valid, with no separate leader-WC requirement. A leader-WC member is paid only if its own signature is in the PoWit. The reward share of a leader member who did not sign is never generated: it is not created and does not go to the miner, so no one gains by omitting signatures. M4 compares this rule with 7 + 21 on liveness (M1 section H), on the incentive for leaders to stay online and sign, and on total issuance per block. The payment rule of §6 is unchanged until then.
 - **[P] Raising the attacker share that ID issuance can tolerate without relying on bans (M2/M4):**
   - (a) **Split rule:** a lower quorum for PoWits only, for example 51%, since validators recompute every PoWit (§3.7). M1 section G maps it.
   - (b) **Larger KWCs**, for example 60 or 100 seats. M1 section I maps the trade-off.
-  - (c) **Threshold BLS entropy:** any quorum of members produce the same signature, which removes the single-member entropy stall and entropy grinding. M2 measures the key-setup cost.
+  - (c) **Threshold BLS entropy:** any quorum of members produce the same signature, which removes the single-member entropy stall and entropy grinding. M2 measures the key-setup cost. **M3a.1 E3 (liveness):** the test fixed in advance was no gap over 10 minutes between final-chain blocks in any of 41 regional blackouts of 10.88 hours (the day-9.19 event, and one in each of the 8 regions over 5 seeds). At the v0.6 tie-break, the default when E3 ran, every entropy rule failed it, mostly through sit-out stalls (ASSUMPTIONS SIM-47). Rerun at the v0.7 defaults (an informational run of the configuration before its commit), t = 21 of 40 passed, with and without failover (longest gap 6.1 minutes). t = ⌈2n/3⌉ failed narrowly (1 of 41 blackouts; 16.3 minutes without failover, 14.8 with), and so did the all-online rule (17.8 minutes in 1 of 41; with failover, 18.7 minutes in 2 of 41). Every remaining long gap starts with a blackout of as_east, the largest region, while the difficulty still counts its miners. The security cost of t = 21 of 40 (E3_security.csv): an attacker with 25 % of seats holds at least 21 of a KWC's 40 with probability 1.7 × 10⁻⁴, against 1.9 × 10⁻⁸ for 27; at 33 %, 8.4 × 10⁻³ against 8.5 × 10⁻⁶. The architect decides; the reference run at the final defaults repeats E3.
+    - **[P] Share refresh (architect, 2026-10-19).** Every 30 days the shares of each KWC's threshold key are re-randomised (proactive secret sharing): the group public key stays the same, and shares stolen one by one over time expire at the next refresh, so an attacker needs t shares from a single 30-day epoch. M4 measures the cost per member.
   - Decisions that validators cannot recompute (bans, MOBu/MOBr, offline requests, committee records) remain bound by the one-third limit and rely on the ban rules.
-- **Online-set grinding lever (found in M2 C1(c′)).** Entropy comes from every online member, so c colluding members can choose among up to 2^c entropies by deciding who withholds; M2 measured 1.88× for one member. The [P] "unreachable is not refusal" rule (§4.6) makes withholding nearly free. M4 measures the lever (S11(f)) under the strict rule, under the [P] rule and under threshold BLS entropy, which removes it. **Threshold BLS entropy is the leading M4 candidate.**
+- **Online-set grinding lever (found in M2 C1(c′)).** Entropy comes from every online member, so c colluding members can choose among up to 2^c entropies by deciding who withholds; M2 measured 1.88× for one member. The default "unreachable is not refusal" rule (§4.6) makes withholding nearly free. M4 measures the lever (S11(f)) under the strict rule, under the default rule and under threshold BLS entropy, which removes it. **Threshold BLS entropy is the leading M4 candidate.**
+- **[P] Threshold-BLS randomness beacon (M4).** Replace the block-hash beacons used for seat placement (§4.2) and the committee lottery (§4.3) with a threshold-BLS randomness beacon, and compare it with the current beacons.
 - **[P] Witness peer topology (option 2).** No persistent witness-to-witness connections: the miner relays routine messages. Members connect on demand, through the global directory of member addresses, only for One Chance, decisions (MOBu/MOBr, offline requests, bans), proposer duties and catch-up. Online status comes from the network record, not from heartbeats: a member counts as online until an offline request is recorded, by the member itself or by its KWC proposer after One Chance fails. Address changes are announced network-wide and update the directory. M1 section I estimates the on-demand connections; M3/M4 measure how often a member that disappears without announcing it stalls its KWCs' entropy until One Chance fails (about one grace epoch). The alternative is persistent connections among all members of a node's KWCs.
 
 ---
@@ -512,10 +540,31 @@ Byte layouts that `gb-protocol` and its test vectors follow. They are proposed, 
 - **PoWit.** Members sign `"GB/powit" ‖ block hash`; the PoWit carries the aggregate signature (96 bytes) and the signer bitfield.
 - **BLS.** BLS12-381, minimal public-key size: public keys in G1 (48 bytes), signatures in G2 (96 bytes), ciphersuite `BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_`, with proofs of possession under `BLS_POP_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_`.
 - **Equivocation.** Two different headers at the same height, each signed by the same candidate key with the miner signature of §3.4, are proof of equivocation.
+- **Start attestation (rule (r), §3.5) [P], protocol version 2.** The KWC signs `"GB/t0" ‖ header_digest ‖ t0`, with `t0` a u64 of seconds; the block carries `t0` and that signature. The entropy is unchanged (it depends on the header only). `vectors/protocol_v1.json` (version 1, rule (a)) is unchanged.
 
 ---
 
 ## Changelog
+
+### v0.7 — 2026-10-21
+
+Incorporates the architect's M3a decisions (2026-10-12), the M3a.1 decisions (2026-10-14), the share refresh (2026-10-19) and the M3a.1 defaults (2026-10-21), with the M3a.1 evidence. §10 (H1–H9) is unchanged.
+
+- **Start rule (r) [D]** (§3.5): a miner's chain starts at its KWC's attested entropy issue time; no missed step is computed. Rule (a), the default until v0.6, is the comparison. Known risk: t or more colluding members could backdate `t0`, tested in M4 as S30 (§8). Appendix A records the start attestation [P] for protocol version 2; `vectors/protocol_v1.json` is unchanged.
+- **Fork choice [D]** (§3.7): at the same height, the block a node received first, then the lower block hash. v0.6's earlier timestamp then lower hash is the comparison. M3a.1 found that under v0.6's order, two blocks at the same timestamp whose later one has the lower hash leave nearly every miner sitting out under one header per height, which stalls the chain for up to tens of minutes (ASSUMPTIONS SIM-47).
+- **One header per height [D]** (§3.4, M3a decision 5) stays the default; re-signing on a new parent is the [P] comparison (identical under first-seen in E1).
+- **PoWit deadline [D]** (§2, §3.7): D = 10 s with the soft scope (M3a.1 decision 2; supersedes M3a decision 9, the permanent scope). The corrected E1 result for D is stated in §3.7.
+- **Difficulty [D]** (§3.8): the issued-entropy count with the P2 ×1.5 correction (supersedes M3a decision 6, the count after the post-admission wait). P1, other P2 bounds and B-exact (M3a decision 13) are comparisons.
+- **Entropy quorum** (§3.4): at least 27 of 40 members must actually sign (a clarification; the simulator had issued entropy with fewer, ASSUMPTIONS SIM-43).
+- **Unreachable is not refusal [D]** (§4.6; M3a.1 decision 1): bans only on verifiable evidence; a member cut off by a partition counts as unreachable. This supersedes M3a decision 11 (the strict ladder) and the interim default in M3a decision 15.
+- **IDs in replaced blocks are void [D]**, and confirmation depth k means k blocks built on top (§3.7; M3a.1 decision 3).
+- **Early blocks [D]** are rejected for good (§3.7; M3a decision 10). **Entropy signing [D]** after validating the header's parent (§3.6; M3a decision 7). **PoWit signing [D]** on time, at the member's own `t0 + N` (§3.6; M3a decision 12). **Quick return [D]** within the grace epoch (§3.2; M3a.1 decision 6).
+- **E3 (liveness)** (§3.1, §12): at the v0.6 tie-break every entropy rule failed the pre-set blackout test, mostly through sit-out stalls (SIM-47). Rerun at the v0.7 defaults, threshold entropy at t = 21 of 40 passed (longest gap 6.1 minutes), while ⌈2n/3⌉ and the all-online rule failed narrowly (15–19 minutes in 1 or 2 of 41 blackouts). Failover is [P]. Threshold entropy stays [P] (§12), now with its liveness result and its security cost.
+- **Offline points ladder [O]** (§4.7): M3a.1 E4 results; n and the outcome are open.
+- **[P] Threshold-BLS randomness beacon** for M4 (§12; M3a decision 15) and **[P] 30-day share refresh** of threshold keys (§12; 2026-10-19).
+- **Tier 1 simulator conventions** (§11 item 8): M3a decisions 1–3 and 8, and M3a.1 decisions 4 and 5. M3a decision 4 (the repository-local git author) and 14 (the withholder measured in C3) are recorded in ASSUMPTIONS.
+- **Scope** (§0): the out-of-scope list names throughput, SCA, the SOS VM and smart contracts, the BPU/BVU, rewards and token economics, and storage; PoIE bounds how fast IDs accumulate and does not prove one person per ID.
+- **Scenarios** (§8): S11(f) and S17 refer to the default unreachable rule; S30 (backdated start under rule (r)) is added for M4.
 
 ### v0.6 — 2026-10-09
 
