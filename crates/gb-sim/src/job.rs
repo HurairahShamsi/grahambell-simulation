@@ -527,6 +527,10 @@ pub struct JobResult {
     /// Miners whose household announced a shutdown and came back within the grace epoch,
     /// and re-admitted at once.
     pub quick_readmits: u64,
+    /// Rounds that ran out of draws without a block anyone extends and drew their transiently
+    /// dropped slots again (SIM-48).
+    #[serde(default)]
+    pub round_refreshes: u64,
     /// The longest gap between consecutive final-chain broadcasts after the warm-up, seconds.
     pub max_gap_s: f64,
     /// When that gap started, simulated seconds.

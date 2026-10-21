@@ -41,6 +41,9 @@ pub(crate) enum Ev {
     WitnessLongAbsence { w: u32, token: u32 },
     /// A round's candidate generator wakes.
     GroupWake { g: u32 },
+    /// A round that ran out of draws checks whether to draw its transiently dropped slots
+    /// again (SIM-48).
+    GroupRefresh { g: u32 },
     /// A candidate's miner decides whether to broadcast (`uses`: which use of the candidate slot it is for).
     Decide { c: u32, uses: u32 },
     /// A withholder releases its block.
@@ -97,6 +100,7 @@ impl Ev {
             Ev::WitnessDeactivate { w, .. } => ("witness_deactivate", Some(w), None),
             Ev::WitnessLongAbsence { w, .. } => ("witness_long_absence", Some(w), None),
             Ev::GroupWake { g } => ("round_wake", Some(g), None),
+            Ev::GroupRefresh { g } => ("round_refresh", Some(g), None),
             Ev::Decide { c, .. } => ("candidate_decide", Some(c), None),
             Ev::Release { c, .. } => ("withheld_release", Some(c), None),
             Ev::Found { d } => ("candidate_found", Some(d), None),
@@ -285,6 +289,7 @@ impl<'a> Sim<'a> {
             Ev::WitnessDeactivate { w, token } => self.on_witness_deactivate(now, w, token),
             Ev::WitnessLongAbsence { w, token } => self.on_witness_long_absence(now, w, token),
             Ev::GroupWake { g } => self.on_group_wake(now, g),
+            Ev::GroupRefresh { g } => self.on_group_refresh(now, g),
             Ev::Decide { c, uses } => self.on_decide(now, c, uses),
             Ev::Release { c, uses } => self.on_release(now, c, uses),
             Ev::Found { d } => self.on_found(now, d),

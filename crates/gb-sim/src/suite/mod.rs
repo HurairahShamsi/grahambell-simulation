@@ -409,11 +409,11 @@ pub fn run_suite(config: &Config, options: &SuiteOptions) -> Result<SuiteOutput,
         ranges.push(Some((all.len(), all.len() + list.len())));
         all.extend(list);
     }
-    // The M3a.1 experiments, stage 1 (E1 needs E2's hopping results; E4 needs E3's verdict).
+    // The M3a.1 experiments, stage 1 (E1 needs E2's hopping results).
     let run_e1 = wanted("E1");
     let run_e2 = run_e1 || wanted("E2");
     let run_e4 = wanted("E4");
-    let run_e3 = run_e4 || wanted("E3");
+    let run_e3 = wanted("E3");
     let mut stage1 = |run: bool, list: fn(&Ctx<'_>) -> Vec<JobSpec>| {
         run.then(|| {
             let jobs = list(&ctx);
@@ -441,21 +441,17 @@ pub fn run_suite(config: &Config, options: &SuiteOptions) -> Result<SuiteOutput,
         }
         None => (None, None),
     };
-    let (e3_out, setting) = match e3_range {
-        Some((a, b)) => {
-            let (o, s) = e::e3_analyse(&ctx, &results[a..b]);
-            (Some(o), Some(s))
-        }
-        None => (None, None),
-    };
+    let e3_out = e3_range.map(|(a, b)| e::e3_analyse(&ctx, &results[a..b]));
     // Stage 2: E1's criterion-4 reruns and E4.
     let e1_reruns = match (e1_range, &h5) {
         (Some((a, b)), Some(h)) => e::e1_stage2_jobs(&ctx, &results[a..b], h),
         _ => Vec::new(),
     };
-    let e4_list = match (&setting, run_e4) {
-        (Some(s), true) => e::e4_jobs(&ctx, s),
-        _ => Vec::new(),
+    let setting = e::e4_setting(&ctx);
+    let e4_list = if run_e4 {
+        e::e4_jobs(&ctx, &setting)
+    } else {
+        Vec::new()
     };
     let reruns = e1_reruns.len();
     let mut stage2_results = if e1_reruns.is_empty() {
@@ -495,8 +491,11 @@ pub fn run_suite(config: &Config, options: &SuiteOptions) -> Result<SuiteOutput,
     if let Some(o) = e3_out {
         absorb(&mut out, o);
     }
-    if let (true, Some(s)) = (run_e4, &setting) {
-        absorb(&mut out, e::e4_analyse(&ctx, &stage2_results[reruns..], s));
+    if run_e4 {
+        absorb(
+            &mut out,
+            e::e4_analyse(&ctx, &stage2_results[reruns..], &setting),
+        );
     }
     let specs: Vec<JobSpec> = v0_specs.into_iter().chain(all).chain(stage2).collect();
     let mut runs: Vec<JobResult> = v0_jobs
@@ -622,6 +621,7 @@ fn invariants(specs: &[JobSpec], runs: &[JobResult]) -> SectionOut {
             "partition_cuts",
             "voided_ids",
             "quick_readmits",
+            "round_refreshes",
             "events",
         ],
     );
@@ -649,6 +649,7 @@ fn invariants(specs: &[JobSpec], runs: &[JobResult]) -> SectionOut {
             n(res.partition_cuts),
             n(res.voided_ids),
             n(res.quick_readmits),
+            n(res.round_refreshes),
             n(res.events),
         ]);
     }

@@ -129,11 +129,19 @@ Each M1 table becomes a check that a later simulator must pass.
 **Decided 2026-10-12 for M4:**
 
 - a [P] threshold-BLS randomness beacon to replace the block-hash beacons for seat placement and the committee lottery; M4 compares it with the current beacons;
-- in the meantime strict One Chance stays the default, and "unreachable is not refusal" is a [P] comparison only.
+- in the meantime strict One Chance stays the default, and "unreachable is not refusal" is a [P] comparison only (superseded on 2026-10-14: "unreachable is not refusal" is the default).
+
+**Added to M4 on 2026-10-21 (architect, after the M3a.1 report):**
+
+- threshold entropy, now the [P] default at t = ⌈2n/3⌉: the blocking side of the threshold (n − t + 1 refusing or unreachable members stop a KWC's entropy: 14 at t = 27 against 20 at t = 21) next to the capture side (t colluders), as SPEC scenario S31; and S30 (backdated `t0` under rule (r)) at both thresholds;
+- failover ([P], off by default), revisited with correlated outages.
 
 ### Backlog (planned, not M3a.1; architect, 2026-10-20)
 
 - **M3b, adversarial: a sleeper attacker** that accumulates IDs quietly for years and keeps them active, then switches behaviour all at once.
+- **M3b, adversarial: a rotation attack** (architect, 2026-10-21; the idea came from a suggestion on Reddit). The attacker keeps a pool of IDs and deactivates and re-activates them, timed just before committee lotteries, seat beacons and KWC decisions, to inflate its share of the canonical active list at the moments that count. Measure its gain in committee and KWC seats against an always-on attacker of the same size, under the current re-activation delay (placement at the beacon 6 blocks after the re-activation is confirmed) and longer delays.
+- **M3b: adversarial withholding with the PoWit deadline,** D = 10 s with the soft scope ([P] since SPEC v0.7, no deadline being the default): in the corrected E1 it cut a 10 % withholder's amplification to 0.001, against 0.204 without a deadline.
+- **M3b: the P1 + deadline reorganisations.** In the corrected E1, with the P1 correction and D = 10 s, 6 of 15 reruns reorganised 7–8 blocks below confirmation (with P2 none did, nor did any run without a deadline); explain them.
 - **Admission variants:** caps per /48 and per provider or ASN, against /64-only admission; measure what they cost honest households behind shared ISPs.
 - **M5, cost model:**
   - *Per-slot load:* connections per slot (one per KWC member, 40), bytes per round (about 12 KB per slot per 30 s, estimated) and CPU per round, split into protocol-forced work (header signing 0.379 ms, sequential SHA-256 steps 0.969 µs each, and transport security on 40 witness connections: TLS/QUIC handshakes, keepalives and encryption of every message, to be benchmarked) and optional work (verifying the entropy aggregate, 4.397 ms at 40 members); timings from `results/crypto/reference/bench/K4_timings.csv`. The attacker is priced at the forced minimum, the optional work reported separately. Derive the cores, the memory for 4M+ connections, the servers and the monthly cost alongside bandwidth for 10k, 100k, 1M and 10M attacker slots (10M slots means 400M witness connections, close to the usable unregistered capacity, so report what happens when the attacker alone would nearly fill admission: honest miners crowded out, or the attacker blocked by the cap).

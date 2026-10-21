@@ -561,13 +561,15 @@ pub struct Entropy {
 impl Default for Entropy {
     fn default() -> Self {
         Entropy {
-            signers: Param::decided(EntropySigners::AllOnlineMembers).swept(
+            signers: Param::with_status(EntropySigners::ThresholdTwoThirds, Status::P).swept(
                 Sweep::values(vec![
-                    EntropySigners::AllOnlineMembers,
                     EntropySigners::ThresholdTwoThirds,
                     EntropySigners::ThresholdMajority,
+                    EntropySigners::AllOnlineMembers,
                 ])
-                .with_note("threshold entropy is the M3a.1 experiment (architect, 2026-10-14)"),
+                .with_note(
+                    "t = ⌈2n/3⌉ of the seated members is the [P] default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E3); t = 21 of 40 is [P]; every online member (the rule until v0.6) is the comparison",
+                ),
             ),
             equivocation_scope: Param::decided(EquivocationScope::SameHeight).swept(
                 Sweep::values(vec![
@@ -641,8 +643,8 @@ pub struct Timing {
     /// Wait before One Chance is judged to have failed, in rounds (SPEC §4.5; one grace epoch
     /// by default).
     pub one_chance_wait_rounds: Param<u32>,
-    /// PoWit arrival deadline D, in seconds after the block's timestamp (SPEC §3.7; "—" until
-    /// chosen).
+    /// PoWit arrival deadline D, in seconds after the block's timestamp (SPEC §3.7; none by
+    /// default).
     pub powit_deadline_s: Param<Option<f64>>,
     /// How a node treats a block whose PoWit reached it after D.
     pub powit_deadline_scope: Param<DeadlineScope>,
@@ -680,9 +682,10 @@ impl Default for Timing {
             clock_tolerance_s: Param::with_status(2.0, Status::O).swept(Sweep::range(0.5, 10.0)),
             one_chance_wait_rounds: Param::with_status(5, Status::O)
                 .swept(Sweep::values(vec![1, 2, 5])),
-            powit_deadline_s: Param::decided(Some(10.0)).swept(
-                Sweep::values(vec![Some(5.0), Some(10.0), Some(30.0), Some(60.0)])
-                    .with_note("no deadline is the comparison (architect, 2026-10-14)"),
+            powit_deadline_s: Param::decided(None).swept(
+                Sweep::values(vec![Some(10.0), Some(5.0), Some(30.0), Some(60.0)]).with_note(
+                    "no deadline is the default since SPEC v0.7 (architect, 2026-10-21; the E1 criteria as written); 10 s with the soft scope is [P], kept for M3b's adversarial withholding",
+                ),
             ),
         }
     }
@@ -849,9 +852,9 @@ pub struct Penalties {
     pub final_step: Param<PenaltyFinalStep>,
     /// The penalty for a failed One Chance under the strict rule.
     pub strict_offence: Param<StrictOffencePenalty>,
-    /// Offline points (the M3a.1 experiment E4; architect, 2026-10-14): a witness member
-    /// earns points for every offline period of at least this length, whatever its cause;
-    /// unset turns the ladder off.
+    /// Offline points (SPEC §4.7; the M3a.1 experiment E4, architect, 2026-10-14; 24 h by
+    /// default since 2026-10-21): a witness member earns points for every offline period of
+    /// at least this length, whatever its cause; unset turns the ladder off.
     pub offline_points_after_s: Param<Option<f64>>,
     /// Points added by the first, second, … award since the points last reset; the last
     /// step repeats.
@@ -881,20 +884,22 @@ impl Default for Penalties {
                     "yearly reset is [P]; immediate ban is §4.6 read literally (architect, 2026-10-12)",
                 ),
             ),
-            offline_points_after_s: Param::with_status(None, Status::O).swept(
-                Sweep::values(vec![Some(3_600.0), Some(21_600.0), Some(86_400.0)]).with_note(
-                    "off by default; n of the M3a.1 experiment (architect, 2026-10-14)",
+            offline_points_after_s: Param::decided(Some(86_400.0)).swept(
+                Sweep::values(vec![Some(86_400.0), Some(3_600.0), Some(21_600.0)]).with_note(
+                    "24 h is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E4: 1 h and 6 h fail H7); unset turns the ladder off",
                 ),
             ),
             offline_points_steps: Param::with_status(vec![1, 1, 2, 3, 4, 5], Status::O),
             offline_points_cap: Param::with_status(20, Status::O),
             offline_points_reset_s: Param::with_status(31_536_000.0, Status::O),
-            offline_points_outcome: Param::with_status(OfflinePointsOutcome::SeatLoss, Status::O)
-                .swept(Sweep::values(vec![
+            offline_points_outcome: Param::decided(OfflinePointsOutcome::SeatLoss).swept(
+                Sweep::values(vec![
                     OfflinePointsOutcome::SeatLoss,
                     OfflinePointsOutcome::Blacklist,
-                ])),
-            offline_points_seat_cooldown_s: Param::with_status(2_592_000.0, Status::O),
+                ])
+                .with_note("seat loss is the default since SPEC v0.7 (architect, 2026-10-21); blacklist is the comparison"),
+            ),
+            offline_points_seat_cooldown_s: Param::decided(2_592_000.0),
         }
     }
 }

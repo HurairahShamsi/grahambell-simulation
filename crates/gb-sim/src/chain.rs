@@ -192,6 +192,14 @@ pub(crate) struct Group {
     /// Miners whose KWC issued entropy for this round (count rule `IssuedEntropy`), counted
     /// when the round's first block is added.
     pub issued: Option<u64>,
+    /// Slots drawn while their miner could not mine (not mining, offline, or its KWC unable to
+    /// issue entropy), which a round left without draws can draw again (SIM-48).
+    pub transient: Vec<u32>,
+    /// The step from which slots drawn again after a refresh count their chains under rule (r).
+    pub origin: u64,
+    /// When the round was last refreshed (0 if never): the earliest time its slots request
+    /// entropy again.
+    pub refresh_at: Micros,
 }
 
 /// A miner's candidate block, between its winning step and its decision to broadcast.
@@ -1624,6 +1632,55 @@ mod tests {
     }
 
     #[test]
+    fn a_round_out_of_draws_draws_its_transient_slots_again_only_when_no_block_can_be_extended() {
+        let cfg = gb_config::Config::default();
+        let spec = spec(&cfg);
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let slots = sim.groups[0].slots;
+        // Every slot drawn; slots 1 and 3 were dropped while their miners could not mine.
+        if let crate::round::Generator::Gap {
+            remaining,
+            picked,
+            next_step,
+            ..
+        } = &mut sim.groups[0].generator
+        {
+            *remaining = 0;
+            *picked = (0..slots).collect();
+            *next_step = 10;
+        }
+        sim.groups[0].transient = vec![1, 3];
+        sim.pending.remove(&0);
+        let now = 100 * SECOND;
+        // A block at the round's height that the validators hold on time: the chain can go on,
+        // so nothing is drawn again.
+        let b = block(&mut sim, 0, 1, 1);
+        sim.on_group_refresh(now, 0);
+        assert_eq!(sim.res.round_refreshes, 0);
+        assert!(sim.groups[0].transient.is_empty());
+        // Late at every validator: nobody extends it, so slots 1 and 3 are drawn again, from now.
+        let n = sim.blocks[b as usize].panel_late.len();
+        sim.blocks[b as usize].panel_late = vec![true; n];
+        sim.groups[0].transient = vec![1, 3];
+        sim.on_group_refresh(now, 0);
+        assert_eq!(sim.res.round_refreshes, 1);
+        let t0 = sim.groups[0].t0;
+        assert_eq!(sim.groups[0].origin, 100 - t0);
+        assert_eq!(sim.groups[0].refresh_at, now);
+        let (step, winners) = sim.pending.get(&0).cloned().expect("a new draw");
+        assert!(step >= 100 - t0);
+        assert!(!winners.is_empty() && winners.iter().all(|m| *m == 1 || *m == 3));
+        if let crate::round::Generator::Gap {
+            remaining, picked, ..
+        } = &sim.groups[0].generator
+        {
+            assert_eq!(*remaining as usize + winners.len(), 2);
+            assert_eq!(picked.len(), slots as usize - 2 + winners.len());
+        }
+    }
+
+    #[test]
     fn a_height_every_validator_holds_late_does_not_end_the_round_below_it() {
         let cfg = gb_config::Config::default();
         let spec = spec(&cfg);
@@ -1710,6 +1767,7 @@ mod tests {
         let cfg = gb_config::Config::default();
         let mut spec = spec(&cfg);
         spec.count_rule = DifficultyCountRule::IssuedEntropy;
+        spec.entropy_signers = gb_config::protocol::EntropySigners::AllOnlineMembers;
         let mut sim = Sim::build(&spec, &cfg).unwrap();
         sim.start();
         let b = block(&mut sim, 0, 1, 3);

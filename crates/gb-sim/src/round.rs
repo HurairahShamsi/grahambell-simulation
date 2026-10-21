@@ -126,6 +126,9 @@ impl Sim<'_> {
             eligible: self.counts.after_wait,
             kwc_members: Vec::new(),
             issued: None,
+            transient: Vec::new(),
+            origin: 0,
+            refresh_at: 0,
         });
         let generator = match self.spec.crypto {
             CryptoMode::Fast => match self.spec.sampler {
@@ -445,6 +448,14 @@ impl Sim<'_> {
     /// Schedules the round's next wake: shortly before its next candidate could broadcast.
     fn schedule_wake(&mut self, now: Micros, g: u32) {
         let Some((step, winners)) = self.next_draw(g) else {
+            // Out of draws: a round left without a block anyone extends draws again, a round
+            // later, the slots it dropped while their miners could not mine (SIM-48).
+            if !self.groups[g as usize].closed && !self.groups[g as usize].transient.is_empty() {
+                self.q.push(
+                    now + micros(self.p.interval_s as f64),
+                    Ev::GroupRefresh { g },
+                );
+            }
             return;
         };
         self.pending.insert(g, (step, winners));
@@ -472,6 +483,7 @@ impl Sim<'_> {
             group.closed = true;
             // Candidates keep their own member lists; the round needs none any more.
             group.kwc_members = Vec::new();
+            group.transient = Vec::new();
             return;
         }
         if !self.groups[g as usize].first_recorded {
@@ -527,6 +539,91 @@ impl Sim<'_> {
             .copied()
             .filter(|b| self.blocks[*b as usize].height == height)
             .collect()
+    }
+
+    /// A round that ran out of draws (SIM-48): if no block at its height or above is held on
+    /// time by any validator, so that nobody would extend one, its slots dropped while their
+    /// miners could not mine are drawn again, from now. Without this, a round whose every slot
+    /// was drawn during an outage, when nobody could mine, stayed without candidates for good
+    /// and stopped the chain, whereas a miner that becomes able to mine joins the round.
+    pub(crate) fn on_group_refresh(&mut self, now: Micros, g: u32) {
+        let (closed, height, t0, p) = {
+            let grp = &self.groups[g as usize];
+            (grp.closed, grp.height, grp.t0, grp.p)
+        };
+        if closed || self.groups[g as usize].transient.is_empty() {
+            return;
+        }
+        // Its height settled, or its parent lost: the round can never matter again.
+        let parent = self.groups[g as usize].parent;
+        let parent_lost =
+            self.blocks[parent as usize].settled && !self.blocks[parent as usize].canonical;
+        if parent_lost || (height as usize) < self.settled_ids.len() {
+            self.groups[g as usize].transient = Vec::new();
+            return;
+        }
+        let extendable = |b: u32| {
+            let block = &self.blocks[b as usize];
+            !block.withheld
+                && block
+                    .panel
+                    .iter()
+                    .zip(&block.panel_late)
+                    .any(|(at, late)| *at != INF && !*late)
+        };
+        if self.blocks_from(height).into_iter().any(extendable) {
+            // A block someone extends stays so (or settles), so the round never needs a refresh.
+            self.groups[g as usize].transient = Vec::new();
+            return;
+        }
+        let now_step = (now / SECOND).saturating_sub(t0);
+        let slots = std::mem::take(&mut self.groups[g as usize].transient);
+        match &mut self.groups[g as usize].generator {
+            Generator::Gap {
+                next_step,
+                remaining,
+                picked,
+                ..
+            } => {
+                let mut back = vec![false; self.miners.len()];
+                for m in &slots {
+                    back[*m as usize] = true;
+                }
+                picked.retain(|m| !back[*m as usize]);
+                *remaining += slots.len() as u64;
+                *next_step = (*next_step).max(now_step);
+            }
+            Generator::List { .. } => {
+                if self.spec.crypto != CryptoMode::Fast {
+                    // Stand-in and real modes compute each slot's chain once (V0 only).
+                    return;
+                }
+                let refresh = u64::from(self.res.round_refreshes as u32) + 1;
+                let mut fresh = Vec::with_capacity(slots.len());
+                for m in &slots {
+                    let u = self.keyed.uniforms(
+                        Purpose::Round,
+                        (u64::from(g) << 24) | u64::from(*m),
+                        refresh,
+                    );
+                    let n = geometric_failures(1.0 - u[0], p);
+                    if n < 100_000 {
+                        fresh.push((now_step + n, *m));
+                    }
+                }
+                if let Generator::List { items, pos } = &mut self.groups[g as usize].generator {
+                    let mut rest: Vec<(u64, u32)> = items.split_off(*pos);
+                    rest.extend(fresh);
+                    rest.sort();
+                    items.extend(rest);
+                }
+            }
+        }
+        let grp = &mut self.groups[g as usize];
+        grp.origin = now_step;
+        grp.refresh_at = now;
+        self.res.round_refreshes += 1;
+        self.schedule_wake(now, g);
     }
 
     /// Unsettled blocks at `height` or above.
@@ -590,14 +687,24 @@ impl Sim<'_> {
     /// The checks of a drawn slot up to its entropy: whether it mines this round, on which
     /// block, and when its chain starts and it finds its step.
     fn prepare(&mut self, now: Micros, g: u32, m: u32, step: u64) -> Option<Prep> {
-        let (parent, height, t0_round) = {
+        let (parent, height, t0_round, origin, refresh_at) = {
             let grp = &self.groups[g as usize];
-            (grp.parent, grp.height, grp.t0)
+            (grp.parent, grp.height, grp.t0, grp.origin, grp.refresh_at)
+        };
+        // After a refresh (SIM-48), rule (r) counts a slot's chain from the refresh: its next
+        // success after the refresh is as likely at every step as a fresh chain's first.
+        let step = if self.spec.start_rule == ConfigStartRule::R {
+            step.saturating_sub(origin)
+        } else {
+            step
         };
         let miner = self.miners[m as usize].clone();
         if !matches!(miner.phase, Phase::Mining | Phase::Waiting) || miner.idle || miner.kwc == NONE
         {
             self.drop(0);
+            if miner.phase != Phase::Gone {
+                self.groups[g as usize].transient.push(m);
+            }
             return None;
         }
         let node = self.node_of(miner.household);
@@ -647,12 +754,13 @@ impl Sim<'_> {
         } else {
             a_parent
         };
-        let mut start = a_parent.max(miner.mine_at);
+        let mut start = a_parent.max(miner.mine_at).max(refresh_at);
         let hh = &self.hh[miner.household as usize];
         if !hh.online() {
             let back = hh.back_at(now);
             if !miner.ghost || back == u64::MAX {
                 self.drop(3);
+                self.groups[g as usize].transient.push(m);
                 return None;
             }
             start = start.max(back);
@@ -661,6 +769,7 @@ impl Sim<'_> {
         let Some(timing) = self.entropy_ready(&node, m, k, start, parent, g) else {
             self.res.quorum_failures += 1;
             self.drop(4);
+            self.groups[g as usize].transient.push(m);
             return None;
         };
         if timing.stalled {
@@ -1320,6 +1429,7 @@ mod tests {
         let cfg = Config::default();
         let mut spec = small(&cfg);
         spec.start_rule = rule;
+        spec.entropy_signers = EntropySigners::AllOnlineMembers;
         let mut sim = Sim::build(&spec, &cfg).unwrap();
         sim.start();
         let k = sim.miners[0].kwc;
@@ -1352,6 +1462,8 @@ mod tests {
         let cfg = Config::default();
         let mut spec = small(&cfg);
         spec.start_rule = ConfigStartRule::R;
+        // A member away without announcing it delays the entropy (all-online-members rule).
+        spec.entropy_signers = EntropySigners::AllOnlineMembers;
         let mut sim = Sim::build(&spec, &cfg).unwrap();
         sim.start();
         let k = sim.miners[0].kwc;

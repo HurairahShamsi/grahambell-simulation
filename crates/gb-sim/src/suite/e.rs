@@ -1196,7 +1196,7 @@ fn binomial_tail(seats: u64, k: u64, s: f64) -> f64 {
         .sum()
 }
 
-pub(crate) fn e3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, E4Setting) {
+pub(crate) fn e3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
     let mut out = SectionOut::default();
     let configs = e3_configs();
     let regions = region_names(ctx);
@@ -1504,35 +1504,6 @@ pub(crate) fn e3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, E
     out.tables.push(diagnosis);
     out.tables.push(gap_table);
     out.tables.push(security);
-    // E4's setting: the two-thirds threshold if it passes the blackout test (without failover
-    // first), otherwise the protocol rule.
-    let find = |s: EntropySigners, fo: Option<u32>| {
-        configs
-            .iter()
-            .position(|c| *c == (s, fo))
-            .is_some_and(|i| passes[i])
-    };
-    let setting = if find(EntropySigners::ThresholdTwoThirds, None) {
-        E4Setting {
-            signers: EntropySigners::ThresholdTwoThirds,
-            failover: None,
-            reason: "threshold entropy (t = ⌈2n/3⌉) passed E3's blackout test without failover"
-                .to_string(),
-        }
-    } else if find(EntropySigners::ThresholdTwoThirds, Some(2)) {
-        E4Setting {
-            signers: EntropySigners::ThresholdTwoThirds,
-            failover: Some(2),
-            reason: "threshold entropy (t = ⌈2n/3⌉) passed E3's blackout test with failover"
-                .to_string(),
-        }
-    } else {
-        E4Setting {
-            signers: EntropySigners::AllOnlineMembers,
-            failover: None,
-            reason: "threshold entropy did not pass E3's blackout test, so E4 keeps the all-online-members rule".to_string(),
-        }
-    };
     let p_candidates: Vec<String> = configs
         .iter()
         .enumerate()
@@ -1540,7 +1511,7 @@ pub(crate) fn e3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, E
         .map(|(_, c)| e3_name(c))
         .collect();
     out.summary = format!(
-        "## E3 — liveness: threshold entropy and failover\n\nEvery configuration (entropy rule × failover after 2 rounds below quorum) on C7's three departure profiles, on the day-9.19 event replayed as a regional blackout of as_east (10.88 h, seed 0), and on a scripted regional blackout of the same length in every region over {} seeds (`E3_liveness.csv`, `E3_outages.csv` with each outage's miners that lost power and miners that lost witnessing while powered, `E3_blackout_test.csv`). Next to the test, a diagnosis of every scripted blackout (`E3_blackout_diagnosis.csv`: the region's share of witness nodes and miners, KWCs that could not issue entropy, failover moves and spare capacity) and of every gap over 10 minutes that overlaps one (`E3_blackout_gaps.csv`: its cause, sampled each round — no miners with power, no entropy, a difficulty that implies over four target intervals with the miners holding entropy, or other). The test fixed in advance: no gap between final-chain blocks longer than 10 minutes during any blackout. The security cost of the 21-of-40 threshold is in `E3_security.csv`.\n\n{}\n\n{}\n\nE4 then runs with: {}.\n",
+        "## E3 — liveness: threshold entropy and failover\n\nEvery configuration (entropy rule × failover after 2 rounds below quorum) on C7's three departure profiles, on the day-9.19 event replayed as a regional blackout of as_east (10.88 h, seed 0), and on a scripted regional blackout of the same length in every region over {} seeds (`E3_liveness.csv`, `E3_outages.csv` with each outage's miners that lost power and miners that lost witnessing while powered, `E3_blackout_test.csv`). Next to the test, a diagnosis of every scripted blackout (`E3_blackout_diagnosis.csv`: the region's share of witness nodes and miners, KWCs that could not issue entropy, failover moves and spare capacity) and of every gap over 10 minutes that overlaps one (`E3_blackout_gaps.csv`: its cause, sampled each round — no miners with power, no entropy, a difficulty that implies over four target intervals with the miners holding entropy, or other). The test fixed in advance: no gap between final-chain blocks longer than 10 minutes during any blackout. The security cost of the 21-of-40 threshold is in `E3_security.csv`.\n\n{}\n\n{}\n",
         e3_seeds(ctx),
         lines
             .iter()
@@ -1554,10 +1525,9 @@ pub(crate) fn e3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, E
                 "**[P] candidate for SPEC v0.7:** {} (no gap over 10 minutes in any blackout).",
                 p_candidates.join("; ")
             )
-        },
-        setting.reason
+        }
     );
-    (out, setting)
+    out
 }
 
 // ---------------------------------------------------------------------- E4
@@ -1572,7 +1542,28 @@ fn outcome_name(o: OfflinePointsOutcome) -> &'static str {
 }
 
 /// E4: the C5 setup (every region, load-shedding included) for 365 days, n × outcome, under
-/// "unreachable is not refusal" and E3's entropy setting.
+/// "unreachable is not refusal" and the configured entropy rule and failover.
+/// E4's entropy rule and failover: the configured defaults (SPEC v0.7: threshold entropy with
+/// t = ⌈2n/3⌉, failover off; architect, 2026-10-21). Until then E4 took the threshold only if
+/// it passed E3's blackout test.
+pub(crate) fn e4_setting(ctx: &Ctx<'_>) -> E4Setting {
+    let signers = ctx.cfg.entropy.signers.value;
+    let failover = ctx.cfg.admission.failover_after_rounds.value;
+    let rule = match signers {
+        EntropySigners::AllOnlineMembers => "every online member signs the entropy",
+        EntropySigners::ThresholdTwoThirds => "threshold entropy with t = ⌈2n/3⌉",
+        EntropySigners::ThresholdMajority => "threshold entropy with t = 21 of 40",
+    };
+    E4Setting {
+        signers,
+        failover,
+        reason: format!(
+            "the configured defaults: {rule}, failover {}",
+            failover.map_or("off".to_string(), |n| format!("after {n} rounds"))
+        ),
+    }
+}
+
 pub(crate) fn e4_jobs(ctx: &Ctx<'_>, setting: &E4Setting) -> Vec<JobSpec> {
     let mut jobs = Vec::new();
     let pen = &ctx.cfg.penalties;

@@ -11,10 +11,10 @@ GrahamBell is a blockchain design whose security rests on time rather than on co
 A round runs from one identity-issuance (PoW-ID) block to the next, 30 seconds on average.
 
 1. **Header.** A miner (an admitted IPv6 /64) builds its header for the next height and signs it; it signs one header per height. [D] ([§3.3](SPEC.md#33-pow-id-header-d), [§3.4](SPEC.md#34-entropy-lock-d))
-2. **Witness entropy.** Its witness group, a King Witness Chain (KWC) of 40 registered IDs, signs the header; the signatures give an unpredictable entropy, so no work can be done in advance. Every online member must sign, and at least 27 must. [D] ([§3.4](SPEC.md#34-entropy-lock-d))
+2. **Witness entropy.** Its witness group, a King Witness Chain (KWC) of 40 registered IDs, signs the header with a threshold key: any 27 members give the same group signature, which becomes an unpredictable entropy, so no work can be done in advance and no member can steer it by withholding. [P] ([§3.4](SPEC.md#34-entropy-lock-d)); the comparison is every online member signing.
 3. **Sequential chain.** The miner hashes one step per second from the moment its KWC issued the entropy (start rule (r)), each step depending on the last. [D] ([§3.5](SPEC.md#35-hash-chain-d))
 4. **PoWit.** When a step's hash is below the target, the members recompute the chain and sign a Proof of Witness (PoWit) when their own clocks reach that step. [D] ([§3.6](SPEC.md#36-witnessing-and-signing-d))
-5. **Block.** Validators recompute the chain and check signatures, timestamp and timing; a block whose PoWit arrives more than 10 s after its timestamp is not extended (the soft deadline). The ID becomes active once 6 blocks are built on it; IDs in replaced blocks are void, not penalised. [D] ([§3.7](SPEC.md#37-global-validation-d))
+5. **Block.** Validators recompute the chain and check signatures, timestamp and timing; there is no PoWit arrival deadline by default [D] (a 10 s deadline is [P], for M3b). The ID becomes active once 6 blocks are built on it; IDs in replaced blocks are void, not penalised. [D] ([§3.7](SPEC.md#37-global-validation-d))
 
 ## Issuance, fork choice and difficulty
 
@@ -26,7 +26,7 @@ A round runs from one identity-issuance (PoW-ID) block to the next, 30 seconds o
 
 - **Seats:** every registered ID is a witness in one Witness Chain (WC) of 10; a KWC is a leading WC and three subordinate WCs, with no two WCs watching each other. Seats come from a deterministic shuffle seeded by a later block, so nobody chooses where an ID lands. [D] ([§4.1](SPEC.md#41-duty-d), [§4.2](SPEC.md#42-allocation-d))
 - **One Chance:** a member that does not sign is asked again; one that cannot be reached is recorded offline, never banned ("unreachable is not refusal"). Bans need verifiable evidence, such as two conflicting signatures. [D] ([§4.5](SPEC.md#45-one-chance-d), [§4.6](SPEC.md#46-ban-principle-d))
-- **Offline:** a long absence leads to deactivation, never a ban; an offline points ladder is under test. [D rules, O values] ([§4.7](SPEC.md#47-offline-handling-d-rules-o-values), [§4.8](SPEC.md#48-penalties-d))
+- **Offline:** a long absence leads to deactivation, never a ban. Every offline period of 24 hours or more earns points, and at 20 points a member loses its seat for 30 days [D]. ([§4.7](SPEC.md#47-offline-handling-d-rules-o-values), [§4.8](SPEC.md#48-penalties-d))
 
 ## Network and threat model in the simulations
 
@@ -41,6 +41,8 @@ PoIE does not prove that one person holds one ID; it bounds how fast IDs can acc
 
 - **Subnet and provider concentration:** a /48 holds 65,536 /64s, and a few providers serve many households. Admission caps per /48 and per provider are planned (M3b), with their cost in M5.
 - **Sleeper accumulation:** an attacker that gathers IDs quietly for years, then switches behaviour at once (M3b).
-- **Regional blackouts beyond a third of a KWC:** they stall issuance. In M3a.1 E3 at the v0.7 defaults, a blackout of the largest region (as_east) still left gaps of 15–19 minutes under the all-online rule; threshold entropy at 21 of 40 kept every gap under 7 minutes, at a security cost ([§12](SPEC.md#12-open-questions)). M4 continues with the witness layer.
+- **Regional blackouts beyond a third of a KWC:** they stall issuance. In M3a.1 E3 at the v0.7 defaults, a 10.88-hour blackout of the largest region (about 38 % of witnesses) still paused the chain for 15–19 minutes, under the default threshold and the all-online rule alike; a threshold of 21 of 40 kept every gap under 7 minutes, at a security cost ([§3.4](SPEC.md#34-entropy-lock-d), [§12](SPEC.md#12-open-questions)). M4 continues with the witness layer.
+- **Threshold entropy, both sides:** 14 members refusing or unreachable stop a KWC's entropy at the default threshold of 27, and 27 colluding members produce it alone; M4 measures both (scenario S31), and backdated starts at both thresholds.
+- **Rotation of IDs:** an attacker that deactivates and re-activates a pool of IDs around committee lotteries and seat beacons, to inflate its share at the moments that count (M3b).
 - **Threshold-BLS share theft over time:** a 30-day share refresh is proposed [P] and costed in M4 ([§12](SPEC.md#12-open-questions)).
 - **Backdated starts under rule (r):** t colluding members could attest an earlier start; M4 scenario S30 ([§3.5](SPEC.md#35-hash-chain-d)).

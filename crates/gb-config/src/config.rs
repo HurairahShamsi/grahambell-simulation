@@ -935,10 +935,10 @@ mod tests {
 
     #[test]
     fn an_optional_parameter_with_a_default_can_be_unset_and_read_back() {
-        // The PoWit deadline defaults to 10 s (architect, 2026-10-14); "none" removes it.
-        let text = "[timing]\npowit_deadline_s.value = \"none\"\n";
+        // The offline points ladder defaults to 24 h (architect, 2026-10-21); "none" removes it.
+        let text = "[penalties]\noffline_points_after_s.value = \"none\"\n";
         let config = Config::from_toml_str(text).unwrap();
-        assert_eq!(config.timing.powit_deadline_s.value, None);
+        assert_eq!(config.penalties.offline_points_after_s.value, None);
         let written = config.to_toml_string().unwrap();
         assert!(written.contains("value = \"none\""), "{written}");
         assert_eq!(Config::from_toml_str(&written).unwrap(), config);

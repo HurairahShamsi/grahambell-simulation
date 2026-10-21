@@ -211,7 +211,7 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "entropy.signers",
         "§2, §3.4",
         "",
-        "KWC members whose signatures the entropy must include: every online member, or (the M3a.1 experiment) a threshold of the seated members.",
+        "KWC members whose signatures make the entropy: a threshold of the seated members (⌈2n/3⌉ by default since SPEC v0.7, [P]; or 21 of 40), or every online member.",
     ),
     doc(
         "entropy.equivocation_scope",
@@ -265,7 +265,7 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "timing.powit_deadline_s",
         "§2, §3.7",
         "s",
-        "PoWit arrival deadline D after the block's timestamp.",
+        "PoWit arrival deadline D after the block's timestamp; none by default since SPEC v0.7 (10 s with the soft scope is [P]).",
     ),
     doc(
         "timing.powit_deadline_scope",
@@ -404,7 +404,7 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "penalties.offline_points_after_s",
         "§4.7, §4.8",
         "s",
-        "Offline points (M3a.1 experiment): an offline period at least this long earns points, whatever its cause; unset is off.",
+        "Offline points: an offline period at least this long earns points, whatever its cause (24 h by default since SPEC v0.7; unset is off).",
     ),
     doc(
         "penalties.offline_points_steps",
