@@ -79,13 +79,13 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "issuance.count_based_correction",
         "§2, §3.8",
         "",
-        "Variant B's correction [P]; none by default (the count alone). M3 compares P1, P2 and B-exact.",
+        "Variant B's correction from recent block times: P2 with bound ×1.5 by default since SPEC v0.7; none, P1, P2 at other bounds and B-exact are comparisons.",
     ),
     doc(
         "issuance.difficulty_count_rule",
         "§3.8",
         "",
-        "Which admitted miners Variant B counts: those past the post-admission wait, all Globally Active, or (the M3a.1 experiment) those whose KWC issued entropy for the round, either for the parent's round or, lagged, as committed at the block a confirmation depth before the parent.",
+        "Which admitted miners Variant B counts: those whose KWC issued entropy for the round (the default since SPEC v0.7), those past the post-admission wait, all Globally Active, or the issued count as committed at the block a confirmation depth before the parent (lagged).",
     ),
     doc(
         "issuance.min_attack_time_floor_years",
@@ -115,13 +115,13 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "issuance.start_rule",
         "§3.5",
         "",
-        "Where the PoW-ID hash chain starts; rule (b) is kept for comparison in S13, rule (r) (the KWC-attested entropy issue time) is the M3a.1 experiment.",
+        "Where the PoW-ID hash chain starts: rule (r), the KWC-attested entropy issue time (the default since SPEC v0.7); rule (a), the previous timestamp + 1 s, is the comparison and rule (b) is kept for S13.",
     ),
     doc(
         "issuance.same_height_tie_break",
         "§3.7",
         "",
-        "Which of two valid PoW-ID blocks at the same height is kept.",
+        "Which of two valid PoW-ID blocks at the same height is kept: the first seen (the default since SPEC v0.7), or the earlier timestamp and then the lower hash (v0.6, the comparison).",
     ),
     doc(
         "transactions.pow_tx_interval_s",
@@ -794,6 +794,10 @@ mod tests {
         let config = Config::default();
         assert_eq!(
             status_of(&config, "issuance.count_based_correction").unwrap(),
+            Some(Status::D)
+        );
+        assert_eq!(
+            status_of(&config, "issuance.min_attack_time_floor_years").unwrap(),
             Some(Status::P)
         );
         assert_eq!(

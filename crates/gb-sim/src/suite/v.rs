@@ -5,12 +5,14 @@ use super::{
     Chart, ChartPanel, ChartSeries, Ctx, SectionOut, Table, count_check, div, f, mc_check, mean_se,
     n, p_check, r,
 };
-use crate::job::{GroupSpec, JobResult, JobSpec, Sampler, Strategy};
+use crate::job::{ForkRule, GroupSpec, JobResult, JobSpec, Sampler, Strategy};
 use crate::rng::{Keyed, Purpose};
 use crate::samplers::any_success;
 use crate::stats::{binned, chi_square_p, chi_square_two_sample, geometric_pit, ks_uniform};
 use gb_analytic::validation::Check;
-use gb_config::protocol::{CountBasedCorrection, DifficultyVariant, StartRule};
+use gb_config::protocol::{
+    CountBasedCorrection, DifficultyCountRule, DifficultyVariant, StartRule,
+};
 use gb_config::sim::CryptoMode;
 use gb_protocol::issuance::variant_b_target;
 
@@ -27,6 +29,19 @@ fn min_p(ctx: &Ctx<'_>) -> f64 {
 
 // ---------------------------------------------------------------------- V0
 
+/// A job in the configuration that M1's and M2's references model, whatever the defaults:
+/// start rule (a), the v0.6 tie-break, the count after the post-admission wait and no
+/// correction. V0–V3 reproduce those references, so SPEC v0.7's new defaults do not change
+/// them (architect, 2026-10-21).
+fn m1_job(ctx: &Ctx<'_>, id: &str, section: &'static str, rep: u64) -> JobSpec {
+    let mut j = ctx.job(id, section, rep);
+    j.start_rule = StartRule::A;
+    j.fork_rule = ForkRule::V06;
+    j.count_rule = DifficultyCountRule::AfterPostAdmissionWait;
+    j.correction = None;
+    j
+}
+
 pub(crate) fn v0_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
     let mut jobs = Vec::new();
     // A fixed slot count (instant re-admission, no outages) so every round has the same law.
@@ -38,17 +53,17 @@ pub(crate) fn v0_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
         j.record_rounds = true;
         j
     };
-    let mut real = small(ctx.job("V0-real-32", V0, 0), ctx.pick(32, 8));
+    let mut real = small(m1_job(ctx, "V0-real-32", V0, 0), ctx.pick(32, 8));
     real.crypto = CryptoMode::Real;
     // Quick runs still pass 12 blocks, where placements (confirmation + beacon delay) begin.
     real.days = ctx.days(500.0 * 30.5 / 86_400.0, 40.0 * 30.5 / 86_400.0);
     jobs.push(real);
-    let mut standin = small(ctx.job("V0-standin-32", V0, 0), ctx.pick(32, 8));
+    let mut standin = small(m1_job(ctx, "V0-standin-32", V0, 0), ctx.pick(32, 8));
     standin.crypto = CryptoMode::StandIn;
     standin.days = ctx.days(2_000.0 * 30.5 / 86_400.0, 40.0 * 30.5 / 86_400.0);
     jobs.push(standin);
     let ideal = |id: &str, m: u32, registered: u64, days: f64| {
-        let mut j = ctx.job(id, V0, 0).idealised();
+        let mut j = m1_job(ctx, id, V0, 0).idealised();
         j.miners = m;
         j.registered_ids = registered;
         j.days = days;
@@ -74,7 +89,7 @@ pub(crate) fn v0_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
     pm10.sampler = Sampler::PerMiner;
     jobs.push(pm10);
     // Horizon audit under stress: loss, partitions, skew, a short deadline, One Chance of one round.
-    let mut audit = ctx.job("V0-audit", V0, 0);
+    let mut audit = m1_job(ctx, "V0-audit", V0, 0);
     audit.miners = ctx.pick(10_000, 300);
     audit.registered_ids = ctx.pick(29_000, 2_900);
     audit.days = ctx.days(2.0, 0.4);
@@ -93,7 +108,7 @@ pub(crate) fn v0_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
         ("V0-gap-r-1000", Sampler::Gap),
         ("V0-permin-r-1000", Sampler::PerMiner),
     ] {
-        let mut j = ctx.job(id, V0, 0);
+        let mut j = m1_job(ctx, id, V0, 0);
         j.miners = m;
         j.registered_ids = ctx.pick(2_900, 1_300);
         j.outages = false;
@@ -419,15 +434,31 @@ fn v1_reference(s: f64, f: f64, genesis: u64) -> (f64, f64) {
 }
 
 pub(crate) fn v1_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
+    let mut jobs = v1_set(ctx, true);
+    jobs.extend(v1_set(ctx, false));
+    jobs
+}
+
+/// V1's jobs: pinned to M1's model (the checks), or at the configured defaults (`pinned`
+/// false: a reported comparison, SPEC v0.7; architect, 2026-10-21), with the same seeds.
+fn v1_set(ctx: &Ctx<'_>, pinned: bool) -> Vec<JobSpec> {
     let genesis = v1_genesis(ctx);
     let reps = ctx.reps(200, 3);
     let mut jobs = Vec::new();
     for (ci, (s, f)) in V1_CASES.iter().enumerate() {
         let (blocks, _) = v1_reference(*s, *f, genesis);
         for rep in 0..reps {
-            let mut j = ctx
-                .job(&format!("V1-s{s}-f{f}-r{rep}"), V1, 1_000 * ci as u64 + rep)
-                .idealised();
+            let id = if pinned {
+                format!("V1-s{s}-f{f}-r{rep}")
+            } else {
+                format!("V1-defaults-s{s}-f{f}-r{rep}")
+            };
+            let base = if pinned {
+                m1_job(ctx, &id, V1, 1_000 * ci as u64 + rep)
+            } else {
+                ctx.job(&id, V1, 1_000 * ci as u64 + rep)
+            };
+            let mut j = base.idealised();
             j.miners = ctx.pick(1_000, 100);
             j.registered_ids = genesis.max(130);
             j.days = 3.0 * blocks * 30.6 / 86_400.0 + 0.1;
@@ -446,9 +477,11 @@ pub(crate) fn v1_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
     jobs
 }
 
-pub(crate) fn v1_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
+pub(crate) fn v1_analyse(ctx: &Ctx<'_>, all: &[JobResult]) -> SectionOut {
     let mut out = SectionOut::default();
     let genesis = v1_genesis(ctx);
+    // The pinned jobs come first; the jobs at the configured defaults follow.
+    let (results, defaults) = all.split_at(all.len() / 2);
     let mut table = Table::new(
         "V1_time_to_threshold.csv",
         &[
@@ -601,6 +634,101 @@ pub(crate) fn v1_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
     ]);
     out.tables.push(table);
     out.tables.push(t2);
+    // A reported comparison, not a check: the same runs at the configured defaults (SPEC v0.7:
+    // start rule (r), first seen, the issued-entropy count, P2 ×1.5; architect, 2026-10-21).
+    let interval_of = |runs: &[JobResult]| {
+        let (sum, count) = runs.iter().fold((0.0, 0u64), |a, r| {
+            (a.0 + r.interval_sum_s, a.1 + r.interval_count)
+        });
+        div(sum, count as f64)
+    };
+    let blocks_of = |runs: &[JobResult]| {
+        let b: Vec<f64> = runs
+            .iter()
+            .filter_map(|r| r.threshold_blocks)
+            .map(|b| b as f64)
+            .collect();
+        mean_se(&b)
+    };
+    let share_of = |runs: &[JobResult]| {
+        let (a, h) = runs.iter().fold((0u64, 0u64), |x, r| {
+            (x.0 + r.v1_attacker_blocks, x.1 + r.v1_honest_active)
+        });
+        div(a as f64, (a + h) as f64)
+    };
+    let (pinned_interval, defaults_interval) = (interval_of(results), interval_of(defaults));
+    let dreps = defaults.len() / V1_CASES.len().max(1);
+    let mut comparison = Table::new(
+        "V1_defaults_comparison.csv",
+        &[
+            "attacker_share",
+            "honest_online_fraction",
+            "closed_form_blocks",
+            "pinned_mean_blocks",
+            "pinned_se_blocks",
+            "defaults_mean_blocks",
+            "defaults_se_blocks",
+            "pinned_mean_interval_s",
+            "defaults_mean_interval_s",
+            "pinned_mean_days",
+            "defaults_mean_days",
+        ],
+    );
+    let mut comparison_rows = Vec::new();
+    for (ci, (s, fr)) in V1_CASES.iter().enumerate() {
+        let (pm, ps) = blocks_of(
+            &results[(ci * reps).min(results.len())..((ci + 1) * reps).min(results.len())],
+        );
+        let (dm, ds) = blocks_of(
+            &defaults[(ci * dreps).min(defaults.len())..((ci + 1) * dreps).min(defaults.len())],
+        );
+        let (reference, _) = v1_reference(*s, *fr, genesis);
+        comparison.push(vec![
+            f(*s),
+            f(*fr),
+            f(reference),
+            f(pm),
+            f(ps),
+            f(dm),
+            f(ds),
+            f(pinned_interval),
+            f(defaults_interval),
+            f(pm * pinned_interval / 86_400.0),
+            f(dm * defaults_interval / 86_400.0),
+        ]);
+        comparison_rows.push(format!(
+            "s = {s}, f = {fr}: {} blocks pinned, {} at the defaults (closed form {})",
+            r(pm, 1),
+            r(dm, 1),
+            r(reference, 1)
+        ));
+    }
+    let a7 = V1_CASES.iter().position(|c| *c == (0.6, 0.7)).unwrap_or(3);
+    let mut long_run = Table::new(
+        "V1_defaults_long_run_share.csv",
+        &[
+            "attacker_share",
+            "honest_online_fraction",
+            "m1_a7",
+            "pinned",
+            "defaults",
+        ],
+    );
+    let (pinned_share, defaults_share) = (
+        share_of(&results[(a7 * reps).min(results.len())..((a7 + 1) * reps).min(results.len())]),
+        share_of(
+            &defaults[(a7 * dreps).min(defaults.len())..((a7 + 1) * dreps).min(defaults.len())],
+        ),
+    );
+    long_run.push(vec![
+        f(0.6),
+        f(0.7),
+        f(0.6 / (0.6 + 0.7 * 0.4)),
+        f(pinned_share),
+        f(defaults_share),
+    ]);
+    out.tables.push(comparison);
+    out.tables.push(long_run);
     // x is the attacker's share of slots; the f = 0.7 case (the realistic online race, M1 A-3)
     // is a single point per series.
     let pick = |online: f64, simulated: bool| -> Vec<(f64, f64)> {
@@ -643,9 +771,15 @@ pub(crate) fn v1_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
         }],
     });
     out.summary = format!(
-        "## V1 — M1 A1/A7/F1 in the idealised simulator\n\nBlocks to 51 % of active IDs, the long-run share and the tie rate are compared with M1's closed forms at G = {genesis} (`V1_time_to_threshold.csv`). The mean interval with an exact count is **{} s**, not 30 s: blocks start one second after their parent (start rule (a)) and each step is a whole second, so the mean interval is 1/(1 − (1 − p)^r) = {} s for p = 1/(30r). This is the discrete-step bias that B-exact removes (C4).\n",
+        "## V1 — M1 A1/A7/F1 in the idealised simulator\n\nBlocks to 51 % of active IDs, the long-run share and the tie rate are compared with M1's closed forms at G = {genesis} (`V1_time_to_threshold.csv`). The mean interval with an exact count is **{} s**, not 30 s: blocks start one second after their parent (start rule (a)) and each step is a whole second, so the mean interval is 1/(1 − (1 − p)^r) = {} s for p = 1/(30r). This is the discrete-step bias that B-exact removes (C4).\n\nA reported comparison, not a check: the same runs at the configured defaults (`V1_defaults_comparison.csv`, `V1_defaults_long_run_share.csv`) have a mean interval of {} s (pinned {} s); blocks to 51 %: {}; long-run share at s = 0.6, f = 0.7: {} at the defaults, {} pinned, M1 A7 {}.\n",
         r(mean, 3),
-        r(expected, 3)
+        r(expected, 3),
+        r(defaults_interval, 3),
+        r(pinned_interval, 3),
+        comparison_rows.join("; "),
+        r(defaults_share, 4),
+        r(pinned_share, 4),
+        r(0.6 / (0.6 + 0.7 * 0.4), 4)
     );
     out
 }
@@ -660,7 +794,7 @@ pub(crate) fn v2_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
     let target = variant_b_target(u64::from(m), 30);
     let mut jobs = Vec::new();
     let base = |id: &str, rep: u64| {
-        let mut j = ctx.job(id, V2, rep);
+        let mut j = m1_job(ctx, id, V2, rep);
         j.miners = m;
         j.registered_ids = ctx.pick(2_900, 1_300);
         j.outages = false;
@@ -864,7 +998,7 @@ pub(crate) fn v3_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
     let honest = ctx.pick(1_000u32, 100);
     let mut jobs = Vec::new();
     let hop = |id: &str, rep: u64, ratio: f64, k: u32, idle: u32, cycles: f64| {
-        let mut j = ctx.job(id, V3, rep).idealised();
+        let mut j = m1_job(ctx, id, V3, rep).idealised();
         let total = (f64::from(honest) * (1.0 + ratio)).round() as u32;
         j.miners = total;
         j.registered_ids = ctx.pick(2_900, 1_300).max(u64::from(total) / 30 * 10 + 130);

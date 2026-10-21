@@ -620,7 +620,10 @@ impl JobSpec {
             early_block: timing.early_block.value,
             deadline: timing.powit_deadline_s.value,
             deadline_scope: timing.powit_deadline_scope.value,
-            fork_rule: ForkRule::V06,
+            fork_rule: match issuance.same_height_tie_break.value {
+                gb_config::protocol::TieBreak::LowerBlockHash => ForkRule::V06,
+                gb_config::protocol::TieBreak::FirstSeen => ForkRule::FirstSeen,
+            },
             equivocation: config.entropy.equivocation_scope.value,
             difficulty: issuance.difficulty_variant.value,
             window_blocks: issuance.retarget_window_blocks.value,

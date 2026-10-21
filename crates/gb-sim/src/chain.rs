@@ -1405,8 +1405,11 @@ mod tests {
         let cfg = gb_config::Config::default();
         let mut spec = spec(&cfg);
         spec.equivocation = scope;
-        // No PoWit deadline: the later block would be late under D = 10 s.
+        // No PoWit deadline: the later block would be late under D = 10 s. The v0.6 tie-break,
+        // under which a later block at the same height can be the better one.
         spec.deadline = None;
+        spec.fork_rule = ForkRule::V06;
+        spec.start_rule = gb_config::protocol::StartRule::A;
         let mut sim = Sim::build(&spec, &cfg).unwrap();
         sim.start();
         let p = block(&mut sim, 0, 8, 1);
@@ -1602,6 +1605,9 @@ mod tests {
         spec.count_rule = DifficultyCountRule::IssuedEntropy;
         spec.equivocation = scope;
         spec.deadline = None;
+        // The v0.6 tie-break, under which the later block P (earlier timestamp) is the better one.
+        spec.fork_rule = ForkRule::V06;
+        spec.start_rule = gb_config::protocol::StartRule::A;
         let mut sim = Sim::build(&spec, &cfg).unwrap();
         sim.start();
         let s = block(&mut sim, 0, 2, 1);

@@ -327,11 +327,12 @@ pub enum StartRule {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TieBreak {
-    /// The SPEC v0.6 order (status P for its last step): keep the block with the earlier
+    /// The SPEC v0.6 order, the comparison since v0.7: keep the block with the earlier
     /// timestamp (smaller winning step N), then the one with the lower block hash.
     #[default]
     LowerBlockHash,
-    /// Comparison: keep the block seen first.
+    /// The default since SPEC v0.7 (architect, 2026-10-21): keep the block seen first, then
+    /// the one with the lower block hash.
     FirstSeen,
 }
 
@@ -401,45 +402,64 @@ impl Default for Issuance {
             ),
             retarget_window_blocks: Param::decided(144),
             retarget_clamp_factor: Param::decided(4.0),
-            count_based_correction: Param::with_status(None, Status::P).swept(
+            count_based_correction: Param::decided(Some(CountBasedCorrection::Accumulated {
+                window_blocks: 144,
+                bound: 0.50,
+            }))
+            .swept(
                 Sweep::values(vec![
                     Some(CountBasedCorrection::RecentIntervalRatio {
                         window_blocks: 144,
                         bound: 0.10,
                     }),
+                    Some(CountBasedCorrection::RecentIntervalRatio {
+                        window_blocks: 144,
+                        bound: 0.25,
+                    }),
+                    Some(CountBasedCorrection::RecentIntervalRatio {
+                        window_blocks: 144,
+                        bound: 0.50,
+                    }),
                     Some(CountBasedCorrection::Accumulated {
                         window_blocks: 144,
                         bound: 0.10,
                     }),
+                    Some(CountBasedCorrection::Accumulated {
+                        window_blocks: 144,
+                        bound: 0.25,
+                    }),
                     Some(CountBasedCorrection::DiscreteExact),
                 ])
-                .with_note("P1, P2 and B-exact, proposed and compared in M3"),
-            ),
-            difficulty_count_rule: Param::decided(DifficultyCountRule::AfterPostAdmissionWait)
-                .swept(
-                    Sweep::values(vec![
-                        DifficultyCountRule::AfterPostAdmissionWait,
-                        DifficultyCountRule::AllGloballyActive,
-                        DifficultyCountRule::IssuedEntropy,
-                        DifficultyCountRule::IssuedEntropyLagged,
-                    ])
-                    .with_note(
-                        "all Globally Active miners is the comparison (architect, 2026-10-12); issued entropy, unlagged and lagged, is the M3a.1 experiment (2026-10-14 and 2026-10-16)",
-                    ),
+                .with_note(
+                    "P2 x1.5 is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E1/E2); no correction, P1 and P2 at other bounds and B-exact are comparisons",
                 ),
+            ),
+            difficulty_count_rule: Param::decided(DifficultyCountRule::IssuedEntropy).swept(
+                Sweep::values(vec![
+                    DifficultyCountRule::IssuedEntropy,
+                    DifficultyCountRule::AfterPostAdmissionWait,
+                    DifficultyCountRule::AllGloballyActive,
+                    DifficultyCountRule::IssuedEntropyLagged,
+                ])
+                .with_note(
+                    "issued entropy is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E1/E2); the count after the post-admission wait (the default until v0.6), all Globally Active miners and the lagged count are comparisons",
+                ),
+            ),
             min_attack_time_floor_years: Param::with_status(2.0, Status::P)
                 .swept(Sweep::range(1.0, 10.0)),
             cap_checkpoint_interval_fraction_of_t_min: Param::decided(1.0)
                 .swept(Sweep::values(vec![0.25, 0.5, 1.0])),
             cap_safety_factor: Param::decided(Fraction::new(7, 6)),
             confirmation_depth_blocks: Param::with_status(6, Status::O).swept(Sweep::range(3, 12)),
-            start_rule: Param::decided(StartRule::A).swept(
-                Sweep::values(vec![StartRule::A, StartRule::B, StartRule::R]).with_note(
-                    "rule (b) is the rejected alternative, kept for S13; rule (r) is the M3a.1 experiment (architect, 2026-10-14)",
+            start_rule: Param::decided(StartRule::R).swept(
+                Sweep::values(vec![StartRule::R, StartRule::A, StartRule::B]).with_note(
+                    "rule (r) is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E1); rule (a) (the default until v0.6) is the comparison, rule (b) the rejected alternative kept for S13",
                 ),
             ),
-            same_height_tie_break: Param::with_status(TieBreak::LowerBlockHash, Status::P).swept(
-                Sweep::values(vec![TieBreak::LowerBlockHash, TieBreak::FirstSeen]),
+            same_height_tie_break: Param::decided(TieBreak::FirstSeen).swept(
+                Sweep::values(vec![TieBreak::FirstSeen, TieBreak::LowerBlockHash]).with_note(
+                    "first seen is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E1); the v0.6 order is the comparison",
+                ),
             ),
         }
     }
@@ -660,7 +680,7 @@ impl Default for Timing {
             clock_tolerance_s: Param::with_status(2.0, Status::O).swept(Sweep::range(0.5, 10.0)),
             one_chance_wait_rounds: Param::with_status(5, Status::O)
                 .swept(Sweep::values(vec![1, 2, 5])),
-            powit_deadline_s: Param::with_status(Some(10.0), Status::O).swept(
+            powit_deadline_s: Param::decided(Some(10.0)).swept(
                 Sweep::values(vec![Some(5.0), Some(10.0), Some(30.0), Some(60.0)])
                     .with_note("no deadline is the comparison (architect, 2026-10-14)"),
             ),
@@ -976,7 +996,7 @@ mod tests {
             issuance.difficulty_variant.value,
             DifficultyVariant::CountBased
         );
-        assert_eq!(issuance.count_based_correction.status, Status::P);
+        assert_eq!(issuance.count_based_correction.status, Status::D);
         let cac = Cac::default();
         assert_eq!(cac.seat_selection.value, CacSeatSelection::Lottery);
         assert_eq!(cac.lottery_beacon_offset_blocks.value, 3);

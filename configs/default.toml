@@ -23,14 +23,14 @@ difficulty_variant = { value = "count_based", status = "D", sweep = { values = [
 retarget_window_blocks = { value = 144, status = "D" }
 retarget_clamp_factor = { value = 4.0, status = "D" }
 # Variant B correction [P]: none by default; M3 compares P1, P2 and B-exact.
-count_based_correction = { status = "P", sweep = { values = [{ form = "recent_interval_ratio", window_blocks = 144, bound = 0.1 }, { form = "accumulated", window_blocks = 144, bound = 0.1 }, { form = "discrete_exact" }], note = "P1, P2 and B-exact, proposed and compared in M3" } }
-difficulty_count_rule = { value = "after_post_admission_wait", status = "D", sweep = { values = ["after_post_admission_wait", "all_globally_active", "issued_entropy", "issued_entropy_lagged"], note = "all Globally Active miners is the comparison (architect, 2026-10-12); issued entropy, unlagged and lagged, is the M3a.1 experiment (2026-10-14 and 2026-10-16)" } }
+count_based_correction = { value = { form = "accumulated", window_blocks = 144, bound = 0.5 }, status = "D", sweep = { values = [{ form = "recent_interval_ratio", window_blocks = 144, bound = 0.1 }, { form = "recent_interval_ratio", window_blocks = 144, bound = 0.25 }, { form = "recent_interval_ratio", window_blocks = 144, bound = 0.5 }, { form = "accumulated", window_blocks = 144, bound = 0.1 }, { form = "accumulated", window_blocks = 144, bound = 0.25 }, { form = "discrete_exact" }], note = "P2 x1.5 is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E1/E2); no correction, P1 and P2 at other bounds and B-exact are comparisons" } }
+difficulty_count_rule = { value = "issued_entropy", status = "D", sweep = { values = ["issued_entropy", "after_post_admission_wait", "all_globally_active", "issued_entropy_lagged"], note = "issued entropy is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E1/E2); the count after the post-admission wait (the default until v0.6), all Globally Active miners and the lagged count are comparisons" } }
 min_attack_time_floor_years = { value = 2.0, status = "P", sweep = { range = [1.0, 10.0] } }
 cap_checkpoint_interval_fraction_of_t_min = { value = 1.0, status = "D", sweep = { values = [0.25, 0.5, 1.0] } }
 cap_safety_factor = { value = { numerator = 7, denominator = 6 }, status = "D" }
 confirmation_depth_blocks = { value = 6, status = "O", sweep = { range = [3, 12] } }
-start_rule = { value = "a", status = "D", sweep = { values = ["a", "b", "r"], note = "rule (b) is the rejected alternative, kept for S13; rule (r) is the M3a.1 experiment (architect, 2026-10-14)" } }
-same_height_tie_break = { value = "lower_block_hash", status = "P", sweep = { values = ["lower_block_hash", "first_seen"] } }
+start_rule = { value = "r", status = "D", sweep = { values = ["r", "a", "b"], note = "rule (r) is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E1); rule (a) (the default until v0.6) is the comparison, rule (b) the rejected alternative kept for S13" } }
+same_height_tie_break = { value = "first_seen", status = "D", sweep = { values = ["first_seen", "lower_block_hash"], note = "first seen is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E1); the v0.6 order is the comparison" } }
 
 # ---------------------------------------------------------------- SPEC §2, §5: transaction layer
 [transactions]
@@ -77,7 +77,7 @@ clock_tolerance_s = { value = 2.0, status = "O", sweep = { range = [0.5, 10.0] }
 # One Chance wait: one grace epoch (5 rounds) by default.
 one_chance_wait_rounds = { value = 5, status = "O", sweep = { values = [1, 2, 5] } }
 # PoWit deadline D: 10 s with the soft scope (architect, 2026-10-14). value = "none" turns it off.
-powit_deadline_s ={ value = 10.0, status = "O", sweep = { values = [5.0, 10.0, 30.0, 60.0], note = "no deadline is the comparison (architect, 2026-10-14)" } }
+powit_deadline_s ={ value = 10.0, status = "D", sweep = { values = [5.0, 10.0, 30.0, 60.0], note = "no deadline is the comparison (architect, 2026-10-14)" } }
 powit_deadline_scope = { value = "not_extended_only", status = "D", sweep = { values = ["not_extended_only", "permanent"], note = "permanent is the comparison (architect, 2026-10-14)" } }
 early_block = { value = "permanent", status = "D", sweep = { values = ["permanent", "reevaluate_later"], note = "re-evaluation is the comparison (architect, 2026-10-12)" } }
 witness_signing = { value = "on_time", status = "D", sweep = { values = ["on_time", "earliest_within_tolerance"], note = "earliest within δ (the earlier P-4 reading) is the comparison" } }
