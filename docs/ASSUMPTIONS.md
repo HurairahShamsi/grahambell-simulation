@@ -298,7 +298,7 @@ Values are the `[sim]` defaults in `configs/default.toml`; every one is a config
 1. **PoWit deadline:** none by default [D], applying E1's criteria as written; D = 10 s with the soft scope is [P], kept for M3b's adversarial withholding. Start rule (r) removes catch-up, the deadline's main purpose.
 2. **Entropy:** threshold BLS entropy with t = ⌈2n/3⌉ of the seated members is the [P] default; it closes the online-set grinding lever at the same liveness as the all-online rule. t = 21 of 40 stays [P]. M4 measures the threshold's blocking side next to its capture side, and S30 at both thresholds.
 3. **Failover:** [P], off by default; M4 revisits it with correlated outages.
-4. **Offline points ladder:** n = 24 h, and seat loss with a 30-day cooldown at 20 points [D]; E4 is rerun under the threshold entropy default.
+4. **Offline points ladder:** n = 24 h, and seat loss with a 30-day cooldown at 20 points [D]. E4 rerun under the threshold entropy default (efab187): H7 holds in every region at n = 24 h (0.34–0.50 % a year, highest in Africa), and n = 1 h and 6 h fail in every region, as under the all-online rule.
 5. **The laptop-heavy stalls of E2:** traced before the reference run (SIM-48).
 6. **One reference run** at these final defaults then replaces the M3a reference.
 
