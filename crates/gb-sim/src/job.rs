@@ -531,6 +531,17 @@ pub struct JobResult {
     /// dropped slots again (SIM-48).
     #[serde(default)]
     pub round_refreshes: u64,
+    /// Slots skipped before their round's first block because their miner could not mine:
+    /// not mining, offline, KWC unable to issue entropy (SIM-48).
+    #[serde(default)]
+    pub skipped_slots: [u64; 3],
+    /// Of those, the slots whose miner could mine again by the round's first block.
+    #[serde(default)]
+    pub skipped_able_again: [u64; 3],
+    /// The wins those slots could have added (Σ p × steps from when each could mine again),
+    /// an upper bound on what the skip rule took from issuance.
+    #[serde(default)]
+    pub skipped_lost_wins: [f64; 3],
     /// The longest gap between consecutive final-chain broadcasts after the warm-up, seconds.
     pub max_gap_s: f64,
     /// When that gap started, simulated seconds.

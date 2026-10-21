@@ -127,6 +127,7 @@ impl Sim<'_> {
             kwc_members: Vec::new(),
             issued: None,
             transient: Vec::new(),
+            skips_scored: false,
             origin: 0,
             refresh_at: 0,
         });
@@ -577,7 +578,10 @@ impl Sim<'_> {
             return;
         }
         let now_step = (now / SECOND).saturating_sub(t0);
-        let slots = std::mem::take(&mut self.groups[g as usize].transient);
+        let slots: Vec<u32> = std::mem::take(&mut self.groups[g as usize].transient)
+            .into_iter()
+            .map(|(m, _, _)| m)
+            .collect();
         match &mut self.groups[g as usize].generator {
             Generator::Gap {
                 next_step,
@@ -703,7 +707,9 @@ impl Sim<'_> {
         {
             self.drop(0);
             if miner.phase != Phase::Gone {
-                self.groups[g as usize].transient.push(m);
+                self.groups[g as usize]
+                    .transient
+                    .push((m, crate::chain::SKIP_NOT_MINING, now));
             }
             return None;
         }
@@ -760,7 +766,11 @@ impl Sim<'_> {
             let back = hh.back_at(now);
             if !miner.ghost || back == u64::MAX {
                 self.drop(3);
-                self.groups[g as usize].transient.push(m);
+                self.groups[g as usize].transient.push((
+                    m,
+                    crate::chain::SKIP_OFFLINE,
+                    back.max(now),
+                ));
                 return None;
             }
             start = start.max(back);
@@ -769,7 +779,9 @@ impl Sim<'_> {
         let Some(timing) = self.entropy_ready(&node, m, k, start, parent, g) else {
             self.res.quorum_failures += 1;
             self.drop(4);
-            self.groups[g as usize].transient.push(m);
+            self.groups[g as usize]
+                .transient
+                .push((m, crate::chain::SKIP_NO_ENTROPY, now));
             return None;
         };
         if timing.stalled {

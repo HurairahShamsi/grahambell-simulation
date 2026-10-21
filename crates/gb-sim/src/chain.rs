@@ -86,6 +86,13 @@ pub(crate) fn diagnose_gap(
 /// Not accepted (never received, or invalid at that node).
 pub(crate) const INF: Micros = u64::MAX;
 
+/// Why a drawn slot was skipped (SIM-48): its miner was not mining.
+pub(crate) const SKIP_NOT_MINING: u8 = 0;
+/// Why a drawn slot was skipped: its household was offline.
+pub(crate) const SKIP_OFFLINE: u8 = 1;
+/// Why a drawn slot was skipped: its KWC could not issue entropy.
+pub(crate) const SKIP_NO_ENTROPY: u8 = 2;
+
 /// Hashes the 64-bit node keys of [`OwnCache`] with one multiplication. The keys are
 /// distinct integers, and the map is only looked up, never iterated, so the hash cannot
 /// change a result.
@@ -192,9 +199,13 @@ pub(crate) struct Group {
     /// Miners whose KWC issued entropy for this round (count rule `IssuedEntropy`), counted
     /// when the round's first block is added.
     pub issued: Option<u64>,
-    /// Slots drawn while their miner could not mine (not mining, offline, or its KWC unable to
-    /// issue entropy), which a round left without draws can draw again (SIM-48).
-    pub transient: Vec<u32>,
+    /// Slots drawn while their miner could not mine (SIM-48), with why (`SKIP_NOT_MINING`,
+    /// `SKIP_OFFLINE`, `SKIP_NO_ENTROPY`) and the earliest time it could mine again (the
+    /// household's scheduled return when offline, the skip itself otherwise). A round left
+    /// without draws can draw them again; its first block scores them (`score_skips`).
+    pub transient: Vec<(u32, u8, Micros)>,
+    /// Whether the round's skipped slots have been scored, at its first block.
+    pub skips_scored: bool,
     /// The step from which slots drawn again after a refresh count their chains under rule (r).
     pub origin: u64,
     /// When the round was last refreshed (0 if never): the earliest time its slots request
@@ -529,9 +540,39 @@ impl Sim<'_> {
 
     // ------------------------------------------------------------------ blocks
 
+    /// Scores the slots round `g` skipped before its first block, at `now` (SIM-48): how many
+    /// could mine again by then, and the wins they could have added, Σ p × steps from the
+    /// earliest time each could mine again to `now`. That is an upper bound on what the
+    /// skip rule (a slot drawn while its miner could not mine is lost for the round) took
+    /// from the round; it reads the state and changes nothing.
+    pub(crate) fn score_skips(&mut self, g: u32, now: Micros) {
+        if self.groups[g as usize].skips_scored {
+            return;
+        }
+        self.groups[g as usize].skips_scored = true;
+        let p = self.groups[g as usize].p;
+        for i in 0..self.groups[g as usize].transient.len() {
+            let (m, why, able_from) = self.groups[g as usize].transient[i];
+            let r = usize::from(why);
+            self.res.skipped_slots[r] += 1;
+            let miner = &self.miners[m as usize];
+            let able = matches!(miner.phase, Phase::Mining | Phase::Waiting)
+                && !miner.idle
+                && miner.kwc != NONE
+                && miner.mine_at <= now
+                && self.hh[miner.household as usize].online()
+                && self.kwc_can_issue(miner.kwc);
+            if able && able_from < now {
+                self.res.skipped_able_again[r] += 1;
+                self.res.skipped_lost_wins[r] += p * ((now - able_from) / SECOND) as f64;
+            }
+        }
+    }
+
     /// Records a broadcast block and opens its round.
     pub(crate) fn add_block(&mut self, now: Micros, c: u32, withheld: bool) -> u32 {
         let cand = self.candidates[c as usize].clone();
+        self.score_skips(cand.group, now);
         let parent = self.groups[cand.group as usize].parent;
         let miner = cand.miner;
         let h = self.miners[miner as usize].household;
@@ -1632,6 +1673,33 @@ mod tests {
     }
 
     #[test]
+    fn skipped_slots_are_scored_once_at_their_rounds_first_block() {
+        let cfg = gb_config::Config::default();
+        let spec = spec(&cfg);
+        let mut sim = Sim::build(&spec, &cfg).unwrap();
+        sim.start();
+        let p = sim.groups[0].p;
+        let now = 1_000 * SECOND;
+        // Slot 1 was skipped at 10 s while not mining, slots 2 and 3 while offline until 40 s;
+        // by 1,000 s slots 1 and 2 can mine again, but slot 3's household is offline again.
+        sim.groups[0].transient = vec![
+            (1, SKIP_NOT_MINING, 10 * SECOND),
+            (2, SKIP_OFFLINE, 40 * SECOND),
+            (3, SKIP_OFFLINE, 40 * SECOND),
+        ];
+        let h = sim.miners[3].household;
+        sim.set_cause(0, h, crate::household::bit::CRASH, true, false, u64::MAX);
+        sim.score_skips(0, now);
+        assert_eq!(sim.res.skipped_slots, [1, 2, 0]);
+        assert_eq!(sim.res.skipped_able_again, [1, 1, 0]);
+        assert!((sim.res.skipped_lost_wins[0] - p * 990.0).abs() < 1e-12);
+        assert!((sim.res.skipped_lost_wins[1] - p * 960.0).abs() < 1e-12);
+        // A later block in the same round does not score them again.
+        sim.score_skips(0, 2 * now);
+        assert_eq!(sim.res.skipped_slots, [1, 2, 0]);
+    }
+
+    #[test]
     fn a_round_out_of_draws_draws_its_transient_slots_again_only_when_no_block_can_be_extended() {
         let cfg = gb_config::Config::default();
         let spec = spec(&cfg);
@@ -1650,7 +1718,7 @@ mod tests {
             *picked = (0..slots).collect();
             *next_step = 10;
         }
-        sim.groups[0].transient = vec![1, 3];
+        sim.groups[0].transient = vec![(1, SKIP_NOT_MINING, 0), (3, SKIP_OFFLINE, 0)];
         sim.pending.remove(&0);
         let now = 100 * SECOND;
         // A block at the round's height that the validators hold on time: the chain can go on,
@@ -1662,7 +1730,7 @@ mod tests {
         // Late at every validator: nobody extends it, so slots 1 and 3 are drawn again, from now.
         let n = sim.blocks[b as usize].panel_late.len();
         sim.blocks[b as usize].panel_late = vec![true; n];
-        sim.groups[0].transient = vec![1, 3];
+        sim.groups[0].transient = vec![(1, SKIP_NOT_MINING, 0), (3, SKIP_OFFLINE, 0)];
         sim.on_group_refresh(now, 0);
         assert_eq!(sim.res.round_refreshes, 1);
         let t0 = sim.groups[0].t0;

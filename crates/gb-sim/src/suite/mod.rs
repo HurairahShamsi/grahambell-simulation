@@ -508,6 +508,58 @@ pub fn run_suite(config: &Config, options: &SuiteOptions) -> Result<SuiteOutput,
     Ok(out)
 }
 
+/// The skip rule (SIM-48): rounds refreshed, and the slots skipped before their round's first
+/// block because their miner could not mine, with the wins they could have added if they had
+/// been drawn again once able (an upper bound on what the rule took from issuance).
+fn skip_rule_text(specs: &[JobSpec], runs: &[&JobResult]) -> String {
+    let refreshes: u64 = runs.iter().map(|r| r.round_refreshes).sum();
+    let refreshed = runs.iter().filter(|r| r.round_refreshes > 0).count();
+    let mut skipped = [0u64; 3];
+    let mut able = 0u64;
+    let (mut lost, mut rounds) = (0.0f64, 0u64);
+    let mut by_section: std::collections::BTreeMap<&str, (u64, f64)> =
+        std::collections::BTreeMap::new();
+    let mut worst: Option<(f64, &str)> = None;
+    for (spec, run) in specs.iter().zip(runs) {
+        for (total, s) in skipped.iter_mut().zip(run.skipped_slots) {
+            *total += s;
+        }
+        able += run.skipped_able_again.iter().sum::<u64>();
+        let l: f64 = run.skipped_lost_wins.iter().sum();
+        lost += l;
+        rounds += run.rounds;
+        let e = by_section.entry(spec.section.as_str()).or_insert((0, 0.0));
+        e.0 += run.rounds;
+        e.1 += l;
+        if run.rounds > 0 {
+            let per = 1_000.0 * l / run.rounds as f64;
+            if worst.is_none_or(|(w, _)| per > w) {
+                worst = Some((per, run.id.as_str()));
+            }
+        }
+    }
+    let per_1000 = |l: f64, n: u64| if n == 0 { 0.0 } else { 1_000.0 * l / n as f64 };
+    let sections: Vec<String> = by_section
+        .iter()
+        .filter(|(_, (n, _))| *n > 0)
+        .map(|(s, (n, l))| format!("{s} {}", r(per_1000(*l, *n), 3)))
+        .collect();
+    format!(
+        "**The skip rule (SIM-48).** {refreshes} rounds ran out of draws without a block anyone extends and drew their skipped slots again, in {refreshed} runs (`ALL_runs.csv`, column `round_refreshes`). Before their round's first block, {} drawn slots were skipped because their miner could not mine ({} not mining, {} offline, {} with a KWC unable to issue entropy); {able} of them could mine again by that block. Had they been drawn again once able, they could have added at most {} wins over {rounds} rounds, {} per 1,000 rounds: an upper bound on what the rule took from issuance{}. By section, per 1,000 rounds: {}.",
+        skipped.iter().sum::<u64>(),
+        skipped[0],
+        skipped[1],
+        skipped[2],
+        r(lost, 1),
+        r(per_1000(lost, rounds), 3),
+        worst.map_or(String::new(), |(w, id)| format!(
+            " (at most {} in one run, `{id}`)",
+            r(w, 3)
+        )),
+        sections.join(", ")
+    )
+}
+
 /// Moves the runs' sampled traces into the output.
 fn take_traces(out: &mut SuiteOutput, runs: &mut [JobResult]) {
     for run in runs {
@@ -622,6 +674,9 @@ fn invariants(specs: &[JobSpec], runs: &[JobResult]) -> SectionOut {
             "voided_ids",
             "quick_readmits",
             "round_refreshes",
+            "skipped_slots",
+            "skipped_able_again",
+            "skipped_lost_wins",
             "events",
         ],
     );
@@ -650,6 +705,9 @@ fn invariants(specs: &[JobSpec], runs: &[JobResult]) -> SectionOut {
             n(res.voided_ids),
             n(res.quick_readmits),
             n(res.round_refreshes),
+            n(res.skipped_slots.iter().sum()),
+            n(res.skipped_able_again.iter().sum()),
+            f(res.skipped_lost_wins.iter().sum()),
             n(res.events),
         ]);
     }
@@ -718,9 +776,10 @@ fn invariants(specs: &[JobSpec], runs: &[JobResult]) -> SectionOut {
             storms.join(", ")
         )
     };
+    let skip_text = skip_rule_text(specs, &all);
     SectionOut {
         summary: format!(
-            "## Invariants of every run\n\n**{passed} of {} hold** across all {} runs: recounted caches and counters, self-validation of every broadcast block, and no reorg below a confirmed ID (`validation.csv`, section ALL; every run in `ALL_runs.csv`). {deep_text}\n\n{storm_text}\n",
+            "## Invariants of every run\n\n**{passed} of {} hold** across all {} runs: recounted caches and counters, self-validation of every broadcast block, and no reorg below a confirmed ID (`validation.csv`, section ALL; every run in `ALL_runs.csv`). {deep_text}\n\n{storm_text}\n\n{skip_text}\n",
             checks.len(),
             all.len()
         ),
