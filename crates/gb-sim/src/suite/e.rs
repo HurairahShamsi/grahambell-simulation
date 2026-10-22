@@ -542,13 +542,19 @@ pub(crate) fn e1_configs() -> Vec<ForkConfig> {
     v
 }
 
-fn e1_seeds(ctx: &Ctx<'_>) -> u64 {
+pub(crate) fn e1_seeds(ctx: &Ctx<'_>) -> u64 {
     ctx.reps(5, 1)
 }
 
 /// An E1 run: the C3 setup (RIPE latency, 0.5 % loss, one 5-minute partition per region per
 /// day, realistic churn) under `c`, with a 10 % withholder or honest.
-fn e1_job(ctx: &Ctx<'_>, c: &ForkConfig, withhold: bool, seed: u64, tag: &str) -> JobSpec {
+pub(crate) fn e1_job(
+    ctx: &Ctx<'_>,
+    c: &ForkConfig,
+    withhold: bool,
+    seed: u64,
+    tag: &str,
+) -> JobSpec {
     let mut j = realistic(
         ctx,
         &format!(

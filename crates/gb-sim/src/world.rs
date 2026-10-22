@@ -566,14 +566,36 @@ impl<'a> Sim<'a> {
         let spec = self.spec;
         let shares = self.cfg.sim.network.region_shares.clone();
         // Miner slots and their groups.
-        let miner_regions = spread_regions(spec.miners as usize, &shares, &mut self.keyed);
+        let mut miner_regions = spread_regions(spec.miners as usize, &shares, &mut self.keyed);
         let group_shares: Vec<f64> = {
             let tagged: f64 = spec.groups.iter().map(|g| g.share).sum();
             std::iter::once((1.0 - tagged).max(0.0))
                 .chain(spec.groups.iter().map(|g| g.share))
                 .collect()
         };
-        let miner_groups = if spec.groups_by_region {
+        let miner_groups = if let Some(home) = spec.groups_in_region {
+            // Every tagged slot in one region; the untagged slots spread over the regions by
+            // their shares (W1).
+            assert!(
+                usize::from(home) < shares.len(),
+                "groups_in_region {home} is not a region"
+            );
+            let groups = spread_salted(spec.miners as usize, &group_shares, &mut self.keyed, 100);
+            let untagged = groups.iter().filter(|g| **g == 0).count();
+            let spread = spread_salted(untagged, &shares, &mut self.keyed, 101);
+            let slots = miner_regions.iter_mut().zip(&groups);
+            for ((region, _), spread_region) in slots.filter(|(_, g)| **g == 0).zip(spread) {
+                *region = spread_region;
+            }
+            for (region, _) in miner_regions
+                .iter_mut()
+                .zip(&groups)
+                .filter(|(_, g)| **g > 0)
+            {
+                *region = usize::from(home);
+            }
+            groups
+        } else if spec.groups_by_region {
             // Each region's miners split into the groups by their shares (SIM-51).
             let mut groups = vec![0usize; spec.miners as usize];
             for region in 0..shares.len() {
@@ -3021,6 +3043,32 @@ mod tests {
                     "region {region} group {g}: {c} of {n}"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn groups_in_one_region_put_every_tagged_slot_there_and_spread_the_rest() {
+        // W1: the withholder in one small region; the honest slots keep the regions' shares.
+        let cfg = gb_config::Config::default();
+        let mut spec = small_sim(&cfg);
+        spec.miners = 1_000;
+        spec.groups = vec![crate::job::GroupSpec {
+            label: "withholder".to_string(),
+            share: 0.1,
+            strategy: Strategy::Withhold,
+            always_online: false,
+        }];
+        let home = cfg.sim.network.regions.len() - 1;
+        spec.groups_in_region = Some(home as u8);
+        let sim = Sim::build(&spec, &cfg).unwrap();
+        let region_of = |m: &Miner| sim.hh[m.household as usize].region as usize;
+        let tagged: Vec<&Miner> = sim.miners.iter().filter(|m| m.group == 1).collect();
+        assert_eq!(tagged.len(), 100);
+        assert!(tagged.iter().all(|m| region_of(m) == home));
+        let untagged: Vec<&Miner> = sim.miners.iter().filter(|m| m.group == 0).collect();
+        for (region, share) in cfg.sim.network.region_shares.iter().enumerate() {
+            let c = untagged.iter().filter(|m| region_of(m) == region).count() as f64;
+            assert!((c - share * 900.0).abs() <= 1.0, "region {region}: {c}");
         }
     }
 

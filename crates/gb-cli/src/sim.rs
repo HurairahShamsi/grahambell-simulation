@@ -67,10 +67,11 @@ pub const SIM_CHARTS: &[&str] = &[
     "C6_clock_skew.png",
 ];
 
-/// Sections of the suite, in the order they run (V0 always runs: it gates the others).
+/// Sections of the suite, in the order they run (V0 always runs: it gates the others). W1 is
+/// supplementary, not part of a full run: it runs only when named.
 pub const SECTIONS: &[&str] = &[
     "V0", "V1", "V2", "V3", "V4", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "A6", "E1", "E2", "E3",
-    "E4",
+    "E4", "W1",
 ];
 
 /// Colours of series that share a panel, in fixed order: the first three are the M1 charts'
@@ -617,7 +618,7 @@ pub fn render_summary(
     let _ = writeln!(s, "- Runs: {}\n", out.perf.len());
     let _ = writeln!(
         s,
-        "Every run is seeded and single-threaded, so these tables are reproducible bit for bit whatever the thread count; wall times are machine-dependent and are in `perf/`. Every protocol decision goes through `gb-protocol` (SPEC v0.6 and the architect's decisions of 2026-10-12 and 2026-10-14). Values marked as checks are compared with M1's closed forms or with exact expectations at 5 standard errors (`validation.csv`); every other number is a measurement, reported as it came out.\n"
+        "Every run is seeded and single-threaded, so these tables are reproducible bit for bit whatever the thread count; wall times are machine-dependent and are in `perf/`. Every protocol decision goes through `gb-protocol` (SPEC v0.7). Values marked as checks are compared with M1's closed forms or with exact expectations at 5 standard errors (`validation.csv`); every other number is a measurement, reported as it came out.\n"
     );
     let count = |status: CheckStatus| {
         out.checks

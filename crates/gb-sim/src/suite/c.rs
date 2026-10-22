@@ -718,35 +718,51 @@ fn scope_name(s: DeadlineScope) -> &'static str {
 
 pub(crate) fn c3_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
     let mut jobs = Vec::new();
-    let m = ctx.pick(10_000, 300);
-    let registered = ctx.pick(29_000, 2_900);
-    let days = ctx.days(10.0, 0.5);
     for withhold in [false, true] {
         for (d, scope) in c3_configs() {
-            let label = format!(
-                "C3-{}-D{}-{}",
-                if withhold { "withholder" } else { "honest" },
-                d.map_or("none".to_string(), |x| x.to_string()),
-                scope_name(scope)
-            );
-            let mut j = realistic(ctx, &label, C3, 0, m, registered, days);
-            j.deadline = d;
-            j.deadline_scope = scope;
-            j.loss = 0.005;
-            j.partition_rate_per_region_per_day = 1.0;
-            j.partition_length_s = 300.0;
-            if withhold {
-                j.groups = vec![GroupSpec {
-                    label: "withholder".to_string(),
-                    share: 0.1,
-                    strategy: Strategy::Withhold,
-                    always_online: false,
-                }];
-            }
-            jobs.push(j);
+            jobs.push(c3_job(ctx, d, scope, withhold));
         }
     }
     jobs
+}
+
+/// One C3 run: partitions (one per region per day, 5 min) and 0.5 % loss, deadline `d` with
+/// `scope`, honest or with a 10 % withholder.
+pub(crate) fn c3_job(
+    ctx: &Ctx<'_>,
+    d: Option<f64>,
+    scope: DeadlineScope,
+    withhold: bool,
+) -> JobSpec {
+    let label = format!(
+        "C3-{}-D{}-{}",
+        if withhold { "withholder" } else { "honest" },
+        d.map_or("none".to_string(), |x| x.to_string()),
+        scope_name(scope)
+    );
+    let mut j = realistic(
+        ctx,
+        &label,
+        C3,
+        0,
+        ctx.pick(10_000, 300),
+        ctx.pick(29_000, 2_900),
+        ctx.days(10.0, 0.5),
+    );
+    j.deadline = d;
+    j.deadline_scope = scope;
+    j.loss = 0.005;
+    j.partition_rate_per_region_per_day = 1.0;
+    j.partition_length_s = 300.0;
+    if withhold {
+        j.groups = vec![GroupSpec {
+            label: "withholder".to_string(),
+            share: 0.1,
+            strategy: Strategy::Withhold,
+            always_online: false,
+        }];
+    }
+    j
 }
 
 pub(crate) fn c3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {

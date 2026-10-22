@@ -235,6 +235,11 @@ pub struct JobSpec {
     /// of the specification when false, so other jobs keep their specifications.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub groups_by_region: bool,
+    /// Every tagged slot in this region, and the untagged slots spread over the regions by
+    /// their shares (W1); it takes precedence over `groups_by_region`. Left out of the
+    /// specification when unset.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub groups_in_region: Option<u8>,
 }
 
 /// One traced event: when it was processed, what it was, and the entities it names.
@@ -698,6 +703,7 @@ impl JobSpec {
             post_wait_rounds: None,
             track_outages: false,
             groups_by_region: false,
+            groups_in_region: None,
             warmup_days: 1.0,
             trace_every: if sim.trace_sample > 0.0 {
                 (1.0 / sim.trace_sample).round().max(1.0) as u64

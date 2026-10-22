@@ -73,7 +73,8 @@ enum Command {
         /// Worker threads (default: `sim.threads`); results do not depend on it.
         #[arg(long)]
         threads: Option<usize>,
-        /// Run only these sections (repeat or separate with commas); V0 always runs.
+        /// Run only these sections (repeat or separate with commas); V0 always runs, and W1
+        /// (supplementary) runs only when named.
         #[arg(long, value_delimiter = ',')]
         only: Vec<String>,
         /// Write a sampled trace of every run's events, this fraction of them, to trace/.
