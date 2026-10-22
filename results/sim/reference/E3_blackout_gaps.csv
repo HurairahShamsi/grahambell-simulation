@@ -1,0 +1,9 @@
+config,run,region,gap_start_day,gap_s,cause,share_no_miners,share_no_entropy,share_difficulty_too_high,share_other,expected_interval_with_entropy_s,samples
+"all-online (One Chance), no failover",day-9.19 event,as_east,8.990997944085647,1171.692406,no entropy,0,0.5384615384615384,0,0.46153846153846156,12.422474346344472,39
+"all-online (One Chance), no failover",blackout as_east seed 2,as_east,1.9439258907986112,635.269037,no entropy,0,0.5714285714285714,0,0.42857142857142855,19.839188044306887,21
+"all-online (One Chance), no failover",blackout as_east seed 3,as_east,1.4995972440046295,1070.078303,difficulty too high,0,0.14705882352941177,0.8529411764705882,0,458.6652773017746,34
+"all-online (One Chance), failover",day-9.19 event,as_east,8.73811600423611,1120.176356,other,0,0.14285714285714285,0.3142857142857143,0.5428571428571428,318.87301630882854,35
+"all-online (One Chance), failover",blackout as_east seed 1,as_east,1.4996661521180557,996.136975,other,0,0.15625,0.34375,0.5,329.56525030662243,32
+"threshold 2n/3, no failover",day-9.19 event,as_east,9.007328918136574,721.696248,no entropy,0,0.5416666666666666,0,0.4583333333333333,11.355076518060125,24
+"threshold 2n/3, no failover",blackout as_east seed 3,as_east,1.4998051775115742,979.992475,difficulty too high,0,0,1,0,459.41503867613085,32
+"threshold 2n/3, failover",day-9.19 event,as_east,8.738567200960647,885.083685,difficulty too high,0,0,0.5517241379310345,0.4482758620689655,491.12504368528295,29

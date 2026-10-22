@@ -1,289 +1,289 @@
 one_chance_wait_rounds,rule,region,device,id_years,penalties,bans,bans_per_id_year
-1,"strict, ladder",na_east,always_on,79.7162267110513,19267,5762,72.28139411171097
-1,"strict, ladder",na_east,desktop_on,67.07038097090592,19429,5910,88.11639227997924
-1,"strict, ladder",na_east,laptop_night,165.19435096617946,22989,6534,39.553410645002735
-1,"strict, ladder",na_west,always_on,29.685729058443236,8030,2424,81.65539728627834
-1,"strict, ladder",na_west,desktop_on,29.972457016710344,8549,2576,85.94557324959445
-1,"strict, ladder",na_west,laptop_night,38.00226379402204,10754,3282,86.36327608768076
-1,"strict, ladder",sa_east,always_on,138.22061427628356,17099,4706,34.04701986487608
-1,"strict, ladder",sa_east,desktop_on,114.13512494580016,17479,5002,43.82524663091508
-1,"strict, ladder",sa_east,laptop_night,153.65419235984555,22021,6269,40.79940744681092
-1,"strict, ladder",eu_west,always_on,280.1598132433487,32357,8837,31.54271091808632
-1,"strict, ladder",eu_west,desktop_on,210.03494536895604,32906,9399,44.749696215976485
-1,"strict, ladder",eu_west,laptop_night,285.8798244364228,41291,11779,41.20262779376216
-1,"strict, ladder",af,always_on,72.10385146431234,37579,11865,164.5543165731245
-1,"strict, ladder",af,desktop_on,53.009310229092776,36923,11797,222.54581221706832
-1,"strict, ladder",af,laptop_night,129.34343973221178,44484,13855,107.11791822364486
-1,"strict, ladder",as_south,always_on,144.94187841446526,72034,22813,157.39412411067008
-1,"strict, ladder",as_south,desktop_on,112.65658377581559,71728,22879,203.08622215572208
-1,"strict, ladder",as_south,laptop_night,152.17190507883814,90290,28847,189.56850139357047
-1,"strict, ladder",as_east,always_on,821.6468892716258,103359,28644,34.86169104272074
-1,"strict, ladder",as_east,desktop_on,668.0019164387375,106455,30499,45.65705464229318
-1,"strict, ladder",as_east,laptop_night,921.5508398305509,131669,37522,40.71614758324057
-1,"strict, ladder",oc,always_on,14.720466525024381,1634,431,29.27896335807782
-1,"strict, ladder",oc,desktop_on,12.352627744305302,1666,458,37.07713123720927
-1,"strict, ladder",oc,laptop_night,15.168043205689498,2096,596,39.29313701957559
-1,"strict, ladder with yearly reset [P]",na_east,always_on,79.7162267110513,19267,5762,72.28139411171097
-1,"strict, ladder with yearly reset [P]",na_east,desktop_on,67.07038097090592,19429,5910,88.11639227997924
-1,"strict, ladder with yearly reset [P]",na_east,laptop_night,165.19435096617946,22989,6534,39.553410645002735
-1,"strict, ladder with yearly reset [P]",na_west,always_on,29.685729058443236,8030,2424,81.65539728627834
-1,"strict, ladder with yearly reset [P]",na_west,desktop_on,29.972457016710344,8549,2576,85.94557324959445
-1,"strict, ladder with yearly reset [P]",na_west,laptop_night,38.00226379402204,10754,3282,86.36327608768076
-1,"strict, ladder with yearly reset [P]",sa_east,always_on,138.22061427628356,17099,4706,34.04701986487608
-1,"strict, ladder with yearly reset [P]",sa_east,desktop_on,114.13512494580016,17479,5002,43.82524663091508
-1,"strict, ladder with yearly reset [P]",sa_east,laptop_night,153.65419235984555,22021,6269,40.79940744681092
-1,"strict, ladder with yearly reset [P]",eu_west,always_on,280.1598132433487,32357,8837,31.54271091808632
-1,"strict, ladder with yearly reset [P]",eu_west,desktop_on,210.03494536895604,32906,9399,44.749696215976485
-1,"strict, ladder with yearly reset [P]",eu_west,laptop_night,285.8798244364228,41291,11779,41.20262779376216
-1,"strict, ladder with yearly reset [P]",af,always_on,72.10385146431234,37579,11865,164.5543165731245
-1,"strict, ladder with yearly reset [P]",af,desktop_on,53.009310229092776,36923,11797,222.54581221706832
-1,"strict, ladder with yearly reset [P]",af,laptop_night,129.34343973221178,44484,13855,107.11791822364486
-1,"strict, ladder with yearly reset [P]",as_south,always_on,144.94187841446526,72034,22813,157.39412411067008
-1,"strict, ladder with yearly reset [P]",as_south,desktop_on,112.65658377581559,71728,22879,203.08622215572208
-1,"strict, ladder with yearly reset [P]",as_south,laptop_night,152.17190507883814,90290,28847,189.56850139357047
-1,"strict, ladder with yearly reset [P]",as_east,always_on,821.6468892716258,103359,28644,34.86169104272074
-1,"strict, ladder with yearly reset [P]",as_east,desktop_on,668.0019164387375,106455,30499,45.65705464229318
-1,"strict, ladder with yearly reset [P]",as_east,laptop_night,921.5508398305509,131669,37522,40.71614758324057
-1,"strict, ladder with yearly reset [P]",oc,always_on,14.720466525024381,1634,431,29.27896335807782
-1,"strict, ladder with yearly reset [P]",oc,desktop_on,12.352627744305302,1666,458,37.07713123720927
-1,"strict, ladder with yearly reset [P]",oc,laptop_night,15.168043205689498,2096,596,39.29313701957559
-1,"strict, immediate ban",na_east,always_on,7.410903745387052,6980,6980,941.8554389327659
-1,"strict, immediate ban",na_east,desktop_on,7.6460003764810365,7016,7016,917.6039307532725
-1,"strict, immediate ban",na_east,laptop_night,17.093620531398024,8696,8696,508.72780193212736
-1,"strict, immediate ban",na_west,always_on,1.805999505031233,2905,2905,1608.5275726306254
-1,"strict, immediate ban",na_west,desktop_on,2.710328952370434,3089,3089,1139.7140547454148
-1,"strict, immediate ban",na_west,laptop_night,3.3856964720116696,3839,3839,1133.8878224127966
-1,"strict, immediate ban",sa_east,always_on,17.42865675652131,6588,6588,377.9981493717212
-1,"strict, immediate ban",sa_east,desktop_on,14.032220632038236,6591,6591,469.70470126100287
-1,"strict, immediate ban",sa_east,laptop_night,14.945572182532395,8307,8307,555.8167929969779
-1,"strict, immediate ban",eu_west,always_on,32.60716359910385,12541,12541,384.6087367238734
-1,"strict, immediate ban",eu_west,desktop_on,22.64622468923093,12343,12343,545.035659116706
-1,"strict, immediate ban",eu_west,laptop_night,27.648711880041894,15503,15503,560.7132826752329
-1,"strict, immediate ban",af,always_on,5.841367439301022,13158,13158,2252.5547548117406
-1,"strict, immediate ban",af,desktop_on,6.209230087102931,12811,12811,2063.218759860337
-1,"strict, immediate ban",af,laptop_night,12.68031815578465,15621,15621,1231.909153073879
-1,"strict, immediate ban",as_south,always_on,16.6236334299026,25125,25125,1511.4024323229564
-1,"strict, immediate ban",as_south,desktop_on,10.674213675686936,24793,24793,2322.700364943224
-1,"strict, immediate ban",as_south,laptop_night,13.594609287798047,31095,31095,2287.303690876175
-1,"strict, immediate ban",as_east,always_on,91.45789830975406,39652,39652,433.55468180238165
-1,"strict, immediate ban",as_east,desktop_on,74.37251053655699,40095,40095,539.110481960828
-1,"strict, immediate ban",as_east,laptop_night,98.9024673722906,49418,49418,499.66397515624965
-1,"strict, immediate ban",oc,always_on,1.415056804919869,640,640,452.2786631426019
-1,"strict, immediate ban",oc,desktop_on,1.172744439359716,638,638,544.0230442263528
-1,"strict, immediate ban",oc,laptop_night,1.405849725083904,795,795,565.4942955958916
-1,unreachable is not refusal [P],na_east,always_on,529.9520409786843,0,0,0
-1,unreachable is not refusal [P],na_east,desktop_on,535.091362848263,0,0,0
-1,unreachable is not refusal [P],na_east,laptop_night,678.3735917633911,0,0,0
-1,unreachable is not refusal [P],na_west,always_on,222.02867624017838,0,0,0
-1,unreachable is not refusal [P],na_west,desktop_on,230.57302072371988,0,0,0
-1,unreachable is not refusal [P],na_west,laptop_night,293.53336111085525,0,0,0
-1,unreachable is not refusal [P],sa_east,always_on,507.70280205739226,0,0,0
-1,unreachable is not refusal [P],sa_east,desktop_on,508.92532965023474,0,0,0
-1,unreachable is not refusal [P],sa_east,laptop_night,653.5376854696484,0,0,0
-1,unreachable is not refusal [P],eu_west,always_on,971.422984385212,0,0,0
-1,unreachable is not refusal [P],eu_west,desktop_on,949.1831736821202,0,0,0
-1,unreachable is not refusal [P],eu_west,laptop_night,1219.9735961906051,0,0,0
-1,unreachable is not refusal [P],af,always_on,971.2746933448332,0,0,0
-1,unreachable is not refusal [P],af,desktop_on,946.9204909956463,0,0,0
-1,unreachable is not refusal [P],af,laptop_night,1219.3340241060084,0,0,0
-1,unreachable is not refusal [P],as_south,always_on,1896.026399231436,0,0,0
-1,unreachable is not refusal [P],as_south,desktop_on,1869.5879043703296,0,0,0
-1,unreachable is not refusal [P],as_south,laptop_night,2414.496401681103,0,0,0
-1,unreachable is not refusal [P],as_east,always_on,3066.1056079136665,0,0,0
-1,unreachable is not refusal [P],as_east,desktop_on,3052.352854621657,0,0,0
-1,unreachable is not refusal [P],as_east,laptop_night,3916.813472571896,0,0,0
-1,unreachable is not refusal [P],oc,always_on,48.276443652586934,0,0,0
-1,unreachable is not refusal [P],oc,desktop_on,49.465345470949956,0,0,0
-1,unreachable is not refusal [P],oc,laptop_night,63.11659070573937,0,0,0
-2,"strict, ladder",na_east,always_on,109.97069685324742,18521,5336,48.522016797990574
-2,"strict, ladder",na_east,desktop_on,91.509860101807,18858,5568,60.84590222086954
-2,"strict, ladder",na_east,laptop_night,231.96589853913468,21446,5680,24.486357847301136
-2,"strict, ladder",na_west,always_on,42.3109471678439,7764,2262,53.46134160095353
-2,"strict, ladder",na_west,desktop_on,40.24681121028021,8331,2446,60.775001209915
-2,"strict, ladder",na_west,laptop_night,54.86837261584466,10407,3051,55.60580448341828
-2,"strict, ladder",sa_east,always_on,194.16974815979424,15815,3993,20.56448050143174
-2,"strict, ladder",sa_east,desktop_on,156.69476242351394,16559,4463,28.4821262113243
-2,"strict, ladder",sa_east,laptop_night,216.58848726854563,20617,5461,25.21371319810257
-2,"strict, ladder",eu_west,always_on,376.61063212567444,29840,7555,20.06050641044809
-2,"strict, ladder",eu_west,desktop_on,291.50662129614926,30906,8311,28.510501624443844
-2,"strict, ladder",eu_west,laptop_night,402.2907864226625,38581,10260,25.50393980244042
-2,"strict, ladder",af,always_on,101.98224836673783,36911,11442,112.19599668810481
-2,"strict, ladder",af,desktop_on,76.71762007627913,36144,11378,148.3101273043537
-2,"strict, ladder",af,laptop_night,181.1318014745943,43206,13145,72.57146394496456
-2,"strict, ladder",as_south,always_on,203.45253100278543,70488,21940,107.83842251487953
-2,"strict, ladder",as_south,desktop_on,159.9232886739301,70570,22207,138.86032599841147
-2,"strict, ladder",as_south,laptop_night,219.6103298681852,88610,27847,126.80186772960253
-2,"strict, ladder",as_east,always_on,1127.499547311731,95946,24658,21.869631840466326
-2,"strict, ladder",as_east,desktop_on,913.2234272646597,100636,27254,29.843737234854757
-2,"strict, ladder",as_east,laptop_night,1299.4128463679726,123122,32707,25.1705992375097
-2,"strict, ladder",oc,always_on,19.838593760257478,1495,361,18.196854291315187
-2,"strict, ladder",oc,desktop_on,16.47508231122848,1600,416,25.250253209143487
-2,"strict, ladder",oc,laptop_night,20.619808174371155,1977,529,25.6549428358653
-2,"strict, ladder with yearly reset [P]",na_east,always_on,109.97069685324742,18521,5336,48.522016797990574
-2,"strict, ladder with yearly reset [P]",na_east,desktop_on,91.509860101807,18858,5568,60.84590222086954
-2,"strict, ladder with yearly reset [P]",na_east,laptop_night,231.96589853913468,21446,5680,24.486357847301136
-2,"strict, ladder with yearly reset [P]",na_west,always_on,42.3109471678439,7764,2262,53.46134160095353
-2,"strict, ladder with yearly reset [P]",na_west,desktop_on,40.24681121028021,8331,2446,60.775001209915
-2,"strict, ladder with yearly reset [P]",na_west,laptop_night,54.86837261584466,10407,3051,55.60580448341828
-2,"strict, ladder with yearly reset [P]",sa_east,always_on,194.16974815979424,15815,3993,20.56448050143174
-2,"strict, ladder with yearly reset [P]",sa_east,desktop_on,156.69476242351394,16559,4463,28.4821262113243
-2,"strict, ladder with yearly reset [P]",sa_east,laptop_night,216.58848726854563,20617,5461,25.21371319810257
-2,"strict, ladder with yearly reset [P]",eu_west,always_on,376.61063212567444,29840,7555,20.06050641044809
-2,"strict, ladder with yearly reset [P]",eu_west,desktop_on,291.50662129614926,30906,8311,28.510501624443844
-2,"strict, ladder with yearly reset [P]",eu_west,laptop_night,402.2907864226625,38581,10260,25.50393980244042
-2,"strict, ladder with yearly reset [P]",af,always_on,101.98224836673783,36911,11442,112.19599668810481
-2,"strict, ladder with yearly reset [P]",af,desktop_on,76.71762007627913,36144,11378,148.3101273043537
-2,"strict, ladder with yearly reset [P]",af,laptop_night,181.1318014745943,43206,13145,72.57146394496456
-2,"strict, ladder with yearly reset [P]",as_south,always_on,203.45253100278543,70488,21940,107.83842251487953
-2,"strict, ladder with yearly reset [P]",as_south,desktop_on,159.9232886739301,70570,22207,138.86032599841147
-2,"strict, ladder with yearly reset [P]",as_south,laptop_night,219.6103298681852,88610,27847,126.80186772960253
-2,"strict, ladder with yearly reset [P]",as_east,always_on,1127.499547311731,95946,24658,21.869631840466326
-2,"strict, ladder with yearly reset [P]",as_east,desktop_on,913.2234272646597,100636,27254,29.843737234854757
-2,"strict, ladder with yearly reset [P]",as_east,laptop_night,1299.4128463679726,123122,32707,25.1705992375097
-2,"strict, ladder with yearly reset [P]",oc,always_on,19.838593760257478,1495,361,18.196854291315187
-2,"strict, ladder with yearly reset [P]",oc,desktop_on,16.47508231122848,1600,416,25.250253209143487
-2,"strict, ladder with yearly reset [P]",oc,laptop_night,20.619808174371155,1977,529,25.6549428358653
-2,"strict, immediate ban",na_east,always_on,9.990109170593941,6914,6914,692.0845290010923
-2,"strict, immediate ban",na_east,desktop_on,9.435388893611949,6947,6947,736.2706591461572
-2,"strict, immediate ban",na_east,laptop_night,29.478447501689264,8454,8454,286.78579492748196
-2,"strict, immediate ban",na_west,always_on,2.3121942199290015,2877,2877,1244.2726373082714
-2,"strict, immediate ban",na_west,desktop_on,2.8996315857636983,3064,3064,1056.6859648802629
-2,"strict, immediate ban",na_west,laptop_night,3.789697733413749,3799,3799,1002.4546196664269
-2,"strict, immediate ban",sa_east,always_on,26.988311667747205,6421,6421,237.91780971884634
-2,"strict, immediate ban",sa_east,desktop_on,20.564783552451395,6479,6479,315.05315791313933
-2,"strict, immediate ban",sa_east,laptop_night,25.626340714872306,8097,8097,315.96395638729985
-2,"strict, immediate ban",eu_west,always_on,54.09751163527076,12182,12182,225.18595831416243
-2,"strict, immediate ban",eu_west,desktop_on,31.12467670603249,12121,12121,389.4337639063973
-2,"strict, immediate ban",eu_west,laptop_night,45.88432729112773,15229,15229,331.89982068113926
-2,"strict, immediate ban",af,always_on,6.589698431648934,13035,13035,1978.0874853689268
-2,"strict, immediate ban",af,desktop_on,7.2852708857948105,12671,12671,1739.2627122083486
-2,"strict, immediate ban",af,laptop_night,19.956249769577056,15549,15549,779.1544092469804
-2,"strict, immediate ban",as_south,always_on,19.331667202600038,24903,24903,1288.1972226715468
-2,"strict, immediate ban",as_south,desktop_on,15.88374360778189,24621,24621,1550.075385750843
-2,"strict, immediate ban",as_south,laptop_night,16.845690090691072,30933,30933,1836.2560294928835
-2,"strict, immediate ban",as_east,always_on,146.02755634033392,38692,38692,264.96368883845366
-2,"strict, immediate ban",as_east,desktop_on,114.36275599656393,39211,39211,342.86511949028323
-2,"strict, immediate ban",as_east,laptop_night,154.58090735065394,48401,48401,313.1111133291924
-2,"strict, immediate ban",oc,always_on,1.8989687887694704,634,634,333.86541355997286
-2,"strict, immediate ban",oc,desktop_on,1.7531400664907086,638,638,363.918441084457
-2,"strict, immediate ban",oc,laptop_night,2.7609996656853437,765,765,277.0735576348248
-2,unreachable is not refusal [P],na_east,always_on,529.8028638844069,0,0,0
-2,unreachable is not refusal [P],na_east,desktop_on,533.1603888876575,0,0,0
-2,unreachable is not refusal [P],na_east,laptop_night,679.6961044506296,0,0,0
-2,unreachable is not refusal [P],na_west,always_on,221.88919702533525,0,0,0
-2,unreachable is not refusal [P],na_west,desktop_on,231.19175875925558,0,0,0
-2,unreachable is not refusal [P],na_west,laptop_night,293.55627912312184,0,0,0
-2,unreachable is not refusal [P],sa_east,always_on,506.2060919299106,0,0,0
-2,unreachable is not refusal [P],sa_east,desktop_on,507.18038716866346,0,0,0
-2,unreachable is not refusal [P],sa_east,laptop_night,653.0521941138579,0,0,0
-2,unreachable is not refusal [P],eu_west,always_on,970.3835099157035,0,0,0
-2,unreachable is not refusal [P],eu_west,desktop_on,947.619002579374,0,0,0
-2,unreachable is not refusal [P],eu_west,laptop_night,1218.803817380907,0,0,0
-2,unreachable is not refusal [P],af,always_on,971.2140463643233,0,0,0
-2,unreachable is not refusal [P],af,desktop_on,947.429875810112,0,0,0
-2,unreachable is not refusal [P],af,laptop_night,1222.0043497439087,0,0,0
-2,unreachable is not refusal [P],as_south,always_on,1895.9986865648743,0,0,0
-2,unreachable is not refusal [P],as_south,desktop_on,1868.2643343861316,0,0,0
-2,unreachable is not refusal [P],as_south,laptop_night,2414.144071104594,0,0,0
-2,unreachable is not refusal [P],as_east,always_on,3059.938654389234,0,0,0
-2,unreachable is not refusal [P],as_east,desktop_on,3054.598091388685,0,0,0
-2,unreachable is not refusal [P],as_east,laptop_night,3911.685833762493,0,0,0
-2,unreachable is not refusal [P],oc,always_on,48.15199764668954,0,0,0
-2,unreachable is not refusal [P],oc,desktop_on,48.918139934571144,0,0,0
-2,unreachable is not refusal [P],oc,laptop_night,63.402380801647375,0,0,0
-5,"strict, ladder",na_east,always_on,235.24927654843376,15804,3682,15.651482776151875
-5,"strict, ladder",na_east,desktop_on,187.0960772930123,16778,4307,23.020258159954796
-5,"strict, ladder",na_east,laptop_night,426.56612193915106,16059,3146,7.375175472675656
-5,"strict, ladder",na_west,always_on,93.76374048517212,6751,1602,17.085495861306235
-5,"strict, ladder",na_west,desktop_on,85.53753557693925,7337,1827,21.359044163210093
-5,"strict, ladder",na_west,laptop_night,123.65952578771899,9065,2160,17.46731589208889
-5,"strict, ladder",sa_east,always_on,351.4804043455429,11229,1964,5.587793731081455
-5,"strict, ladder",sa_east,desktop_on,290.0754742650883,12961,2717,9.36652782136639
-5,"strict, ladder",sa_east,laptop_night,408.86387827265867,15591,3034,7.420562591192561
-5,"strict, ladder",eu_west,always_on,659.4241779702999,21674,3902,5.9172837914592575
-5,"strict, ladder",eu_west,desktop_on,549.6477537512847,24067,4969,9.040335316731722
-5,"strict, ladder",eu_west,laptop_night,766.5657122679135,28747,5554,7.245301884907273
-5,"strict, ladder",af,always_on,216.0842327356413,34099,9827,45.477635621949375
-5,"strict, ladder",af,desktop_on,167.90165946878798,34169,10142,60.40440596053396
-5,"strict, ladder",af,laptop_night,353.51017857134184,38720,10905,30.84776807296162
-5,"strict, ladder",as_south,always_on,421.25904540412233,65630,19050,45.22158089620354
-5,"strict, ladder",as_south,desktop_on,333.9667637846828,66159,19689,58.954968383303004
-5,"strict, ladder",as_south,laptop_night,484.6345492515891,82964,24370,50.28531300055697
-5,"strict, ladder",as_east,always_on,2020.6759843511313,71229,13139,6.5022794855549915
-5,"strict, ladder",as_east,desktop_on,1705.9366873359945,79509,16852,9.878443980424754
-5,"strict, ladder",as_east,laptop_night,2465.3462734237446,92617,17969,7.2886312943964615
-5,"strict, ladder",oc,always_on,33.55370153927598,1121,188,5.60295858207889
-5,"strict, ladder",oc,desktop_on,29.77023239712289,1245,240,8.061744255083294
-5,"strict, ladder",oc,laptop_night,38.90897649729795,1528,309,7.94161213727785
-5,"strict, ladder with yearly reset [P]",na_east,always_on,235.24927654843376,15804,3682,15.651482776151875
-5,"strict, ladder with yearly reset [P]",na_east,desktop_on,187.0960772930123,16778,4307,23.020258159954796
-5,"strict, ladder with yearly reset [P]",na_east,laptop_night,426.56612193915106,16059,3146,7.375175472675656
-5,"strict, ladder with yearly reset [P]",na_west,always_on,93.76374048517212,6751,1602,17.085495861306235
-5,"strict, ladder with yearly reset [P]",na_west,desktop_on,85.53753557693925,7337,1827,21.359044163210093
-5,"strict, ladder with yearly reset [P]",na_west,laptop_night,123.65952578771899,9065,2160,17.46731589208889
-5,"strict, ladder with yearly reset [P]",sa_east,always_on,351.4804043455429,11229,1964,5.587793731081455
-5,"strict, ladder with yearly reset [P]",sa_east,desktop_on,290.0754742650883,12961,2717,9.36652782136639
-5,"strict, ladder with yearly reset [P]",sa_east,laptop_night,408.86387827265867,15591,3034,7.420562591192561
-5,"strict, ladder with yearly reset [P]",eu_west,always_on,659.4241779702999,21674,3902,5.9172837914592575
-5,"strict, ladder with yearly reset [P]",eu_west,desktop_on,549.6477537512847,24067,4969,9.040335316731722
-5,"strict, ladder with yearly reset [P]",eu_west,laptop_night,766.5657122679135,28747,5554,7.245301884907273
-5,"strict, ladder with yearly reset [P]",af,always_on,216.0842327356413,34099,9827,45.477635621949375
-5,"strict, ladder with yearly reset [P]",af,desktop_on,167.90165946878798,34169,10142,60.40440596053396
-5,"strict, ladder with yearly reset [P]",af,laptop_night,353.51017857134184,38720,10905,30.84776807296162
-5,"strict, ladder with yearly reset [P]",as_south,always_on,421.25904540412233,65630,19050,45.22158089620354
-5,"strict, ladder with yearly reset [P]",as_south,desktop_on,333.9667637846828,66159,19689,58.954968383303004
-5,"strict, ladder with yearly reset [P]",as_south,laptop_night,484.6345492515891,82964,24370,50.28531300055697
-5,"strict, ladder with yearly reset [P]",as_east,always_on,2020.6759843511313,71229,13139,6.5022794855549915
-5,"strict, ladder with yearly reset [P]",as_east,desktop_on,1705.9366873359945,79509,16852,9.878443980424754
-5,"strict, ladder with yearly reset [P]",as_east,laptop_night,2465.3462734237446,92617,17969,7.2886312943964615
-5,"strict, ladder with yearly reset [P]",oc,always_on,33.55370153927598,1121,188,5.60295858207889
-5,"strict, ladder with yearly reset [P]",oc,desktop_on,29.77023239712289,1245,240,8.061744255083294
-5,"strict, ladder with yearly reset [P]",oc,laptop_night,38.90897649729795,1528,309,7.94161213727785
-5,"strict, immediate ban",na_east,always_on,16.534202304449174,6668,6668,403.2852554492885
-5,"strict, immediate ban",na_east,desktop_on,15.362304053542713,6721,6721,437.4994777199495
-5,"strict, immediate ban",na_east,laptop_night,84.86836655884733,7675,7675,90.43416659466624
-5,"strict, immediate ban",na_west,always_on,3.5662932611890863,2803,2803,785.970136136649
-5,"strict, immediate ban",na_west,desktop_on,4.4498083100441725,3008,3008,675.9841751408253
-5,"strict, immediate ban",na_west,laptop_night,5.606843994674276,3737,3737,666.5068626039233
-5,"strict, immediate ban",sa_east,always_on,83.22153535099085,5560,5560,66.8096301822651
-5,"strict, immediate ban",sa_east,desktop_on,55.396979401991096,5938,5938,107.189959887715
-5,"strict, immediate ban",sa_east,laptop_night,78.40554178680233,7455,7455,95.08256470277804
-5,"strict, immediate ban",eu_west,always_on,150.40584395822074,10717,10717,71.25388028790248
-5,"strict, immediate ban",eu_west,desktop_on,96.55769338384945,11055,11055,114.49113594763122
-5,"strict, immediate ban",eu_west,laptop_night,149.61025333955567,13679,13679,91.43089925096324
-5,"strict, immediate ban",af,always_on,10.754648436539826,12857,12857,1195.4830579414624
-5,"strict, immediate ban",af,desktop_on,10.702116143056767,12527,12527,1170.5161701246502
-5,"strict, immediate ban",af,laptop_night,60.56069705072946,14878,14878,245.670884328449
-5,"strict, immediate ban",as_south,always_on,30.603950336238782,24475,24475,799.7333589650561
-5,"strict, immediate ban",as_south,desktop_on,26.059997003812505,24217,24217,929.2786947157791
-5,"strict, immediate ban",as_south,laptop_night,32.205300271767115,30466,30466,945.9933533583018
-5,"strict, immediate ban",as_east,always_on,404.03304398987177,34726,34726,85.94841564708877
-5,"strict, immediate ban",as_east,desktop_on,295.9324410093908,36220,36220,122.39279977706342
-5,"strict, immediate ban",as_east,laptop_night,475.4846164457798,43711,43711,91.92936740359175
-5,"strict, immediate ban",oc,always_on,6.121906010830192,565,565,92.29151819718649
-5,"strict, immediate ban",oc,desktop_on,4.052492856749683,593,593,146.32968421210688
-5,"strict, immediate ban",oc,laptop_night,7.6326976613800115,712,712,93.28287737670833
-5,unreachable is not refusal [P],na_east,always_on,529.0043927198258,0,0,0
-5,unreachable is not refusal [P],na_east,desktop_on,528.763446074766,0,0,0
-5,unreachable is not refusal [P],na_east,laptop_night,680.911992524751,0,0,0
-5,unreachable is not refusal [P],na_west,always_on,221.56074167146625,0,0,0
-5,unreachable is not refusal [P],na_west,desktop_on,230.5175445279024,0,0,0
-5,unreachable is not refusal [P],na_west,laptop_night,294.2653307762831,0,0,0
-5,unreachable is not refusal [P],sa_east,always_on,507.35160246863484,0,0,0
-5,unreachable is not refusal [P],sa_east,desktop_on,506.920637143795,0,0,0
-5,unreachable is not refusal [P],sa_east,laptop_night,653.3355333305269,0,0,0
-5,unreachable is not refusal [P],eu_west,always_on,966.0818973016025,0,0,0
-5,unreachable is not refusal [P],eu_west,desktop_on,947.7510029021953,0,0,0
-5,unreachable is not refusal [P],eu_west,laptop_night,1217.5539962081018,0,0,0
-5,unreachable is not refusal [P],af,always_on,966.6533086516184,0,0,0
-5,unreachable is not refusal [P],af,desktop_on,941.7231340646359,0,0,0
-5,unreachable is not refusal [P],af,laptop_night,1218.8565699851154,0,0,0
-5,unreachable is not refusal [P],as_south,always_on,1892.7788431127908,0,0,0
-5,unreachable is not refusal [P],as_south,desktop_on,1864.0012504755332,0,0,0
-5,unreachable is not refusal [P],as_south,laptop_night,2406.9151110208286,0,0,0
-5,unreachable is not refusal [P],as_east,always_on,3052.3132306061975,0,0,0
-5,unreachable is not refusal [P],as_east,desktop_on,3040.966793052886,0,0,0
-5,unreachable is not refusal [P],as_east,laptop_night,3902.7668872425634,0,0,0
-5,unreachable is not refusal [P],oc,always_on,48.06013783241618,0,0,0
-5,unreachable is not refusal [P],oc,desktop_on,48.69847480409704,0,0,0
-5,unreachable is not refusal [P],oc,laptop_night,62.8876632569995,0,0,0
+1,"strict, ladder",na_east,always_on,138.81209053441043,18635,5222,37.61920146794063
+1,"strict, ladder",na_east,desktop_on,119.0481208639289,19193,5505,46.24180507890732
+1,"strict, ladder",na_east,laptop_night,168.80440764788727,23555,6670,39.51318625466875
+1,"strict, ladder",na_west,always_on,46.02102418915415,7871,2280,49.542574077204726
+1,"strict, ladder",na_west,desktop_on,43.16781133549277,8512,2510,58.145176286393436
+1,"strict, ladder",na_west,laptop_night,62.1830477593289,10498,3065,49.28996101739286
+1,"strict, ladder",sa_east,always_on,126.18498695234406,18358,5123,40.59912453717485
+1,"strict, ladder",sa_east,desktop_on,101.77702619529047,18722,5405,53.10628736222699
+1,"strict, ladder",sa_east,laptop_night,134.60655935926135,23236,6725,49.96041821447314
+1,"strict, ladder",eu_west,always_on,250.66786252723023,34200,9576,38.20194540877673
+1,"strict, ladder",eu_west,desktop_on,187.28138166753766,34537,10064,53.73732247376109
+1,"strict, ladder",eu_west,laptop_night,257.349978997753,42813,12425,48.28055571789453
+1,"strict, ladder",af,always_on,116.98403801357865,37013,11431,97.71418557695172
+1,"strict, ladder",af,desktop_on,90.39504845994927,36693,11448,126.64410490439849
+1,"strict, ladder",af,laptop_night,128.09300861113383,44980,14007,109.35023036676893
+1,"strict, ladder",as_south,always_on,234.3386291350587,73134,22501,96.01916714734972
+1,"strict, ladder",as_south,desktop_on,178.56380105725606,73180,22805,127.71345516265994
+1,"strict, ladder",as_south,laptop_night,266.8664298897234,89603,27812,104.21692983824413
+1,"strict, ladder",as_east,always_on,822.6144351887681,106952,29733,36.14451525297762
+1,"strict, ladder",as_east,desktop_on,676.8022178170539,110312,31599,46.68867679234099
+1,"strict, ladder",as_east,laptop_night,892.0978079239031,134348,38547,43.209387645180826
+1,"strict, ladder",oc,always_on,12.669696113713897,1745,480,37.88567584351449
+1,"strict, ladder",oc,desktop_on,11.330368063138886,1753,496,43.77615954186325
+1,"strict, ladder",oc,laptop_night,13.322116386973788,2205,637,47.81522556152199
+1,"strict, ladder with yearly reset [P]",na_east,always_on,138.81209053441043,18635,5222,37.61920146794063
+1,"strict, ladder with yearly reset [P]",na_east,desktop_on,119.0481208639289,19193,5505,46.24180507890732
+1,"strict, ladder with yearly reset [P]",na_east,laptop_night,168.80440764788727,23555,6670,39.51318625466875
+1,"strict, ladder with yearly reset [P]",na_west,always_on,46.02102418915415,7871,2280,49.542574077204726
+1,"strict, ladder with yearly reset [P]",na_west,desktop_on,43.16781133549277,8512,2510,58.145176286393436
+1,"strict, ladder with yearly reset [P]",na_west,laptop_night,62.1830477593289,10498,3065,49.28996101739286
+1,"strict, ladder with yearly reset [P]",sa_east,always_on,126.18498695234406,18358,5123,40.59912453717485
+1,"strict, ladder with yearly reset [P]",sa_east,desktop_on,101.77702619529047,18722,5405,53.10628736222699
+1,"strict, ladder with yearly reset [P]",sa_east,laptop_night,134.60655935926135,23236,6725,49.96041821447314
+1,"strict, ladder with yearly reset [P]",eu_west,always_on,250.66786252723023,34200,9576,38.20194540877673
+1,"strict, ladder with yearly reset [P]",eu_west,desktop_on,187.28138166753766,34537,10064,53.73732247376109
+1,"strict, ladder with yearly reset [P]",eu_west,laptop_night,257.349978997753,42813,12425,48.28055571789453
+1,"strict, ladder with yearly reset [P]",af,always_on,116.98403801357865,37013,11431,97.71418557695172
+1,"strict, ladder with yearly reset [P]",af,desktop_on,90.39504845994927,36693,11448,126.64410490439849
+1,"strict, ladder with yearly reset [P]",af,laptop_night,128.09300861113383,44980,14007,109.35023036676893
+1,"strict, ladder with yearly reset [P]",as_south,always_on,234.3386291350587,73134,22501,96.01916714734972
+1,"strict, ladder with yearly reset [P]",as_south,desktop_on,178.56380105725606,73180,22805,127.71345516265994
+1,"strict, ladder with yearly reset [P]",as_south,laptop_night,266.8664298897234,89603,27812,104.21692983824413
+1,"strict, ladder with yearly reset [P]",as_east,always_on,822.6144351887681,106952,29733,36.14451525297762
+1,"strict, ladder with yearly reset [P]",as_east,desktop_on,676.8022178170539,110312,31599,46.68867679234099
+1,"strict, ladder with yearly reset [P]",as_east,laptop_night,892.0978079239031,134348,38547,43.209387645180826
+1,"strict, ladder with yearly reset [P]",oc,always_on,12.669696113713897,1745,480,37.88567584351449
+1,"strict, ladder with yearly reset [P]",oc,desktop_on,11.330368063138886,1753,496,43.77615954186325
+1,"strict, ladder with yearly reset [P]",oc,laptop_night,13.322116386973788,2205,637,47.81522556152199
+1,"strict, immediate ban",na_east,always_on,16.112258423439208,7139,7139,443.0787920838325
+1,"strict, immediate ban",na_east,desktop_on,13.556841655036106,7208,7208,531.6872604558575
+1,"strict, immediate ban",na_east,laptop_night,18.178988283224086,8845,8845,486.550728907303
+1,"strict, immediate ban",na_west,always_on,4.559177665116754,2955,2955,648.1431997286131
+1,"strict, immediate ban",na_west,desktop_on,5.256144657674881,3158,3158,600.8206024902252
+1,"strict, immediate ban",na_west,laptop_night,7.922188400258083,3883,3883,490.14234499567095
+1,"strict, immediate ban",sa_east,always_on,13.656447406329214,7005,7005,512.9445302702565
+1,"strict, immediate ban",sa_east,desktop_on,9.040128773851716,7008,7008,775.2101961501274
+1,"strict, immediate ban",sa_east,laptop_night,12.869236068246659,8605,8605,668.6488579715959
+1,"strict, immediate ban",eu_west,always_on,30.09951853861179,13054,13054,433.69464475832973
+1,"strict, immediate ban",eu_west,desktop_on,20.591061759294334,12808,12808,622.0174631946195
+1,"strict, immediate ban",eu_west,laptop_night,26.037539690604575,15930,15930,611.8089569633265
+1,"strict, immediate ban",af,always_on,14.486029284057151,13158,13158,908.3234433663104
+1,"strict, immediate ban",af,desktop_on,9.784955652338343,12959,12959,1324.3800442675633
+1,"strict, immediate ban",af,laptop_night,11.817181740885005,15859,15859,1342.0289496886674
+1,"strict, immediate ban",as_south,always_on,30.569811829553018,26124,26124,854.5685575579802
+1,"strict, immediate ban",as_south,desktop_on,17.618880709280457,25816,25816,1465.2463130874053
+1,"strict, immediate ban",as_south,laptop_night,29.91277078616929,31731,31731,1060.784379582496
+1,"strict, immediate ban",as_east,always_on,96.50890951079036,41029,41029,425.13173351536705
+1,"strict, immediate ban",as_east,desktop_on,79.5126275515609,41375,41375,520.3575994664482
+1,"strict, immediate ban",as_east,laptop_night,98.06671074667743,50214,50214,512.0391988032625
+1,"strict, immediate ban",oc,always_on,1.2139330941192605,675,675,556.0438242189366
+1,"strict, immediate ban",oc,desktop_on,1.3660093177216193,659,659,482.4271631610484
+1,"strict, immediate ban",oc,laptop_night,1.0817966035522582,815,815,753.3763716060973
+1,unreachable is not refusal [P],na_east,always_on,552.2601567317848,0,0,0
+1,unreachable is not refusal [P],na_east,desktop_on,551.3598244907155,0,0,0
+1,unreachable is not refusal [P],na_east,laptop_night,700.4276491734802,0,0,0
+1,unreachable is not refusal [P],na_west,always_on,228.09743164994833,0,0,0
+1,unreachable is not refusal [P],na_west,desktop_on,240.49759974068502,0,0,0
+1,unreachable is not refusal [P],na_west,laptop_night,304.92987339585625,0,0,0
+1,unreachable is not refusal [P],sa_east,always_on,528.7044183769038,0,0,0
+1,unreachable is not refusal [P],sa_east,desktop_on,525.2071912902269,0,0,0
+1,unreachable is not refusal [P],sa_east,laptop_night,671.2459469339174,0,0,0
+1,unreachable is not refusal [P],eu_west,always_on,1006.5285922392828,0,0,0
+1,unreachable is not refusal [P],eu_west,desktop_on,981.5230976984171,0,0,0
+1,unreachable is not refusal [P],eu_west,laptop_night,1250.2039077075049,0,0,0
+1,unreachable is not refusal [P],af,always_on,993.3721190640127,0,0,0
+1,unreachable is not refusal [P],af,desktop_on,969.4859477684006,0,0,0
+1,unreachable is not refusal [P],af,laptop_night,1229.5653455788688,0,0,0
+1,unreachable is not refusal [P],as_south,always_on,1976.167760618582,0,0,0
+1,unreachable is not refusal [P],as_south,desktop_on,1935.7186066667703,0,0,0
+1,unreachable is not refusal [P],as_south,laptop_night,2466.68773390425,0,0,0
+1,unreachable is not refusal [P],as_east,always_on,3174.2267315778786,0,0,0
+1,unreachable is not refusal [P],as_east,desktop_on,3163.5427042154174,0,0,0
+1,unreachable is not refusal [P],as_east,laptop_night,3981.206747480473,0,0,0
+1,unreachable is not refusal [P],oc,always_on,50.679334973235434,0,0,0
+1,unreachable is not refusal [P],oc,desktop_on,50.48828646391899,0,0,0
+1,unreachable is not refusal [P],oc,laptop_night,64.12223670281645,0,0,0
+2,"strict, ladder",na_east,always_on,189.20886973318198,17326,4554,24.06863909932947
+2,"strict, ladder",na_east,desktop_on,162.1422833797825,18175,4947,30.51024012294649
+2,"strict, ladder",na_east,laptop_night,237.04793695481607,21913,5778,24.3748166477456
+2,"strict, ladder",na_west,always_on,65.21088719094597,7419,2033,31.175775818646837
+2,"strict, ladder",na_west,desktop_on,58.501264384261276,8162,2299,39.29829592911337
+2,"strict, ladder",na_west,laptop_night,88.65018414082542,9919,2717,30.648554499152585
+2,"strict, ladder",sa_east,always_on,172.39338533966634,17217,4510,26.16109655897734
+2,"strict, ladder",sa_east,desktop_on,138.45685034063422,17838,4903,35.41175454979327
+2,"strict, ladder",sa_east,laptop_night,189.2629275467724,21987,6011,31.76004977791811
+2,"strict, ladder",eu_west,always_on,345.12013111629375,32053,8366,24.24083455502902
+2,"strict, ladder",eu_west,desktop_on,261.17725294585836,32831,9077,34.754175172681094
+2,"strict, ladder",eu_west,laptop_night,370.9630348703119,40357,10953,29.525852902915656
+2,"strict, ladder",af,always_on,160.77106805164956,36021,10840,67.42506678202527
+2,"strict, ladder",af,desktop_on,123.69113143959878,35954,11029,89.16564891627428
+2,"strict, ladder",af,laptop_night,179.02544078249986,43861,13356,74.60392188742807
+2,"strict, ladder",as_south,always_on,317.33000014373823,71203,21386,67.39356502792981
+2,"strict, ladder",as_south,desktop_on,245.17702456133603,71506,21884,89.25795571242554
+2,"strict, ladder",as_south,laptop_night,377.7074450228583,87234,26386,69.85829998241935
+2,"strict, ladder",as_east,always_on,1139.453377523113,99655,25663,22.522202756364592
+2,"strict, ladder",as_east,desktop_on,932.9676836934092,104112,28128,30.148954236707937
+2,"strict, ladder",as_east,laptop_night,1264.1014569928907,126174,33852,26.77949607029872
+2,"strict, ladder",oc,always_on,17.954906444356872,1653,418,23.28054458514737
+2,"strict, ladder",oc,desktop_on,14.942058934649195,1667,446,29.84863076438341
+2,"strict, ladder",oc,laptop_night,18.558655340607597,2089,571,30.767315277988555
+2,"strict, ladder with yearly reset [P]",na_east,always_on,189.20886973318198,17326,4554,24.06863909932947
+2,"strict, ladder with yearly reset [P]",na_east,desktop_on,162.1422833797825,18175,4947,30.51024012294649
+2,"strict, ladder with yearly reset [P]",na_east,laptop_night,237.04793695481607,21913,5778,24.3748166477456
+2,"strict, ladder with yearly reset [P]",na_west,always_on,65.21088719094597,7419,2033,31.175775818646837
+2,"strict, ladder with yearly reset [P]",na_west,desktop_on,58.501264384261276,8162,2299,39.29829592911337
+2,"strict, ladder with yearly reset [P]",na_west,laptop_night,88.65018414082542,9919,2717,30.648554499152585
+2,"strict, ladder with yearly reset [P]",sa_east,always_on,172.39338533966634,17217,4510,26.16109655897734
+2,"strict, ladder with yearly reset [P]",sa_east,desktop_on,138.45685034063422,17838,4903,35.41175454979327
+2,"strict, ladder with yearly reset [P]",sa_east,laptop_night,189.2629275467724,21987,6011,31.76004977791811
+2,"strict, ladder with yearly reset [P]",eu_west,always_on,345.12013111629375,32053,8366,24.24083455502902
+2,"strict, ladder with yearly reset [P]",eu_west,desktop_on,261.17725294585836,32831,9077,34.754175172681094
+2,"strict, ladder with yearly reset [P]",eu_west,laptop_night,370.9630348703119,40357,10953,29.525852902915656
+2,"strict, ladder with yearly reset [P]",af,always_on,160.77106805164956,36021,10840,67.42506678202527
+2,"strict, ladder with yearly reset [P]",af,desktop_on,123.69113143959878,35954,11029,89.16564891627428
+2,"strict, ladder with yearly reset [P]",af,laptop_night,179.02544078249986,43861,13356,74.60392188742807
+2,"strict, ladder with yearly reset [P]",as_south,always_on,317.33000014373823,71203,21386,67.39356502792981
+2,"strict, ladder with yearly reset [P]",as_south,desktop_on,245.17702456133603,71506,21884,89.25795571242554
+2,"strict, ladder with yearly reset [P]",as_south,laptop_night,377.7074450228583,87234,26386,69.85829998241935
+2,"strict, ladder with yearly reset [P]",as_east,always_on,1139.453377523113,99655,25663,22.522202756364592
+2,"strict, ladder with yearly reset [P]",as_east,desktop_on,932.9676836934092,104112,28128,30.148954236707937
+2,"strict, ladder with yearly reset [P]",as_east,laptop_night,1264.1014569928907,126174,33852,26.77949607029872
+2,"strict, ladder with yearly reset [P]",oc,always_on,17.954906444356872,1653,418,23.28054458514737
+2,"strict, ladder with yearly reset [P]",oc,desktop_on,14.942058934649195,1667,446,29.84863076438341
+2,"strict, ladder with yearly reset [P]",oc,laptop_night,18.558655340607597,2089,571,30.767315277988555
+2,"strict, immediate ban",na_east,always_on,26.25392489623795,6968,6968,265.40793529117155
+2,"strict, immediate ban",na_east,desktop_on,20.09827918292014,7088,7088,352.6670087269712
+2,"strict, immediate ban",na_east,laptop_night,30.36257264194569,8668,8668,285.4830551487991
+2,"strict, immediate ban",na_west,always_on,7.663180848742039,2893,2893,377.5194735845109
+2,"strict, immediate ban",na_west,desktop_on,7.799290705637846,3113,3113,399.1388598644895
+2,"strict, immediate ban",na_west,laptop_night,11.046967615469319,3818,3818,345.61520707760275
+2,"strict, immediate ban",sa_east,always_on,21.91754809673172,6857,6857,312.85433798238114
+2,"strict, immediate ban",sa_east,desktop_on,14.609555113861218,6905,6905,472.63588426787146
+2,"strict, immediate ban",sa_east,laptop_night,20.546737502773226,8474,8474,412.4255735907587
+2,"strict, immediate ban",eu_west,always_on,48.67221919781193,12709,12709,261.1140443041754
+2,"strict, immediate ban",eu_west,desktop_on,29.536497282711014,12633,12633,427.7081293384995
+2,"strict, immediate ban",eu_west,laptop_night,41.88710817574733,15669,15669,374.076910114133
+2,"strict, immediate ban",af,always_on,19.861448597613666,13084,13084,658.7636312475229
+2,"strict, immediate ban",af,desktop_on,15.04602625672026,12865,12865,855.0430379751523
+2,"strict, immediate ban",af,laptop_night,18.36564494604209,15750,15750,857.5794667855769
+2,"strict, immediate ban",as_south,always_on,41.59692596807396,25926,25926,623.2672101755417
+2,"strict, immediate ban",as_south,desktop_on,26.794975256428668,25598,25598,955.3283686596617
+2,"strict, immediate ban",as_south,laptop_night,42.94430581880424,31498,31498,733.4616173073127
+2,"strict, immediate ban",as_east,always_on,152.27430663164373,40080,40080,263.2092103164506
+2,"strict, immediate ban",as_east,desktop_on,119.81009441785284,40695,40695,339.6625317568906
+2,"strict, immediate ban",as_east,laptop_night,152.97227771353673,49292,49292,322.22831964564574
+2,"strict, immediate ban",oc,always_on,1.596530609474506,676,676,423.41812677334366
+2,"strict, immediate ban",oc,desktop_on,1.6556480417929347,660,660,398.63544868224085
+2,"strict, immediate ban",oc,laptop_night,1.8763478415512116,800,800,426.3601781525888
+2,unreachable is not refusal [P],na_east,always_on,552.2601567317848,0,0,0
+2,unreachable is not refusal [P],na_east,desktop_on,551.3598244907155,0,0,0
+2,unreachable is not refusal [P],na_east,laptop_night,700.4276491734802,0,0,0
+2,unreachable is not refusal [P],na_west,always_on,228.09743164994833,0,0,0
+2,unreachable is not refusal [P],na_west,desktop_on,240.49759974068502,0,0,0
+2,unreachable is not refusal [P],na_west,laptop_night,304.92987339585625,0,0,0
+2,unreachable is not refusal [P],sa_east,always_on,528.7044183769038,0,0,0
+2,unreachable is not refusal [P],sa_east,desktop_on,525.2071912902269,0,0,0
+2,unreachable is not refusal [P],sa_east,laptop_night,671.2459469339174,0,0,0
+2,unreachable is not refusal [P],eu_west,always_on,1006.5285922392828,0,0,0
+2,unreachable is not refusal [P],eu_west,desktop_on,981.5230976984171,0,0,0
+2,unreachable is not refusal [P],eu_west,laptop_night,1250.2039077075049,0,0,0
+2,unreachable is not refusal [P],af,always_on,993.3721190640127,0,0,0
+2,unreachable is not refusal [P],af,desktop_on,969.4859477684006,0,0,0
+2,unreachable is not refusal [P],af,laptop_night,1229.5653455788688,0,0,0
+2,unreachable is not refusal [P],as_south,always_on,1976.167760618582,0,0,0
+2,unreachable is not refusal [P],as_south,desktop_on,1935.7186066667703,0,0,0
+2,unreachable is not refusal [P],as_south,laptop_night,2466.68773390425,0,0,0
+2,unreachable is not refusal [P],as_east,always_on,3174.2267315778786,0,0,0
+2,unreachable is not refusal [P],as_east,desktop_on,3163.5427042154174,0,0,0
+2,unreachable is not refusal [P],as_east,laptop_night,3981.206747480473,0,0,0
+2,unreachable is not refusal [P],oc,always_on,50.679334973235434,0,0,0
+2,unreachable is not refusal [P],oc,desktop_on,50.48828646391899,0,0,0
+2,unreachable is not refusal [P],oc,laptop_night,64.12223670281645,0,0,0
+5,"strict, ladder",na_east,always_on,358.3827448131103,12876,2396,6.685589735213027
+5,"strict, ladder",na_east,desktop_on,304.48539392043443,14550,3106,10.200817714138479
+5,"strict, ladder",na_east,laptop_night,440.1554340759663,16621,3226,7.329229063756658
+5,"strict, ladder",na_west,always_on,122.47947260937865,6037,1321,10.785480798182721
+5,"strict, ladder",na_west,desktop_on,114.81865073939089,6767,1561,13.595352235440153
+5,"strict, ladder",na_west,laptop_night,177.9724036040347,7718,1575,8.849686626159013
+5,"strict, ladder",sa_east,always_on,326.5712623848198,13051,2525,7.731849953853658
+5,"strict, ladder",sa_east,desktop_on,267.802691679104,14715,3225,12.042448041800766
+5,"strict, ladder",sa_east,laptop_night,374.3327619208911,17414,3656,9.7667112577569
+5,"strict, ladder",eu_west,always_on,625.4411044358965,24609,4812,7.693769990285628
+5,"strict, ladder",eu_west,desktop_on,506.5549158515565,26620,5899,11.64533166178704
+5,"strict, ladder",eu_west,laptop_night,730.7180966006307,31540,6463,8.844724155685324
+5,"strict, ladder",af,always_on,305.54933675565644,32245,8997,29.445326556852507
+5,"strict, ladder",af,desktop_on,248.7155519492073,33034,9428,37.906757040771566
+5,"strict, ladder",af,laptop_night,371.1831208835871,39125,10941,29.47601705043961
+5,"strict, ladder",as_south,always_on,586.8937185135368,64301,17847,30.409253732008306
+5,"strict, ladder",as_south,desktop_on,480.7857491435324,65846,18741,38.979940718677824
+5,"strict, ladder",as_south,laptop_night,739.332793865331,78692,21786,29.467108967397305
+5,"strict, ladder",as_east,always_on,2054.7266239010673,74847,13979,6.803338136272221
+5,"strict, ladder",as_east,desktop_on,1743.5343919247848,83222,17727,10.167278650827287
+5,"strict, ladder",as_east,laptop_night,2434.6510518982095,96343,19144,7.8631391488624685
+5,"strict, ladder",oc,always_on,32.04422345616632,1281,230,7.177580705446639
+5,"strict, ladder",oc,desktop_on,26.829044499193753,1373,291,10.846454110907487
+5,"strict, ladder",oc,laptop_night,36.11454214287365,1642,349,9.663697205943032
+5,"strict, ladder with yearly reset [P]",na_east,always_on,358.3827448131103,12876,2396,6.685589735213027
+5,"strict, ladder with yearly reset [P]",na_east,desktop_on,304.48539392043443,14550,3106,10.200817714138479
+5,"strict, ladder with yearly reset [P]",na_east,laptop_night,440.1554340759663,16621,3226,7.329229063756658
+5,"strict, ladder with yearly reset [P]",na_west,always_on,122.47947260937865,6037,1321,10.785480798182721
+5,"strict, ladder with yearly reset [P]",na_west,desktop_on,114.81865073939089,6767,1561,13.595352235440153
+5,"strict, ladder with yearly reset [P]",na_west,laptop_night,177.9724036040347,7718,1575,8.849686626159013
+5,"strict, ladder with yearly reset [P]",sa_east,always_on,326.5712623848198,13051,2525,7.731849953853658
+5,"strict, ladder with yearly reset [P]",sa_east,desktop_on,267.802691679104,14715,3225,12.042448041800766
+5,"strict, ladder with yearly reset [P]",sa_east,laptop_night,374.3327619208911,17414,3656,9.7667112577569
+5,"strict, ladder with yearly reset [P]",eu_west,always_on,625.4411044358965,24609,4812,7.693769990285628
+5,"strict, ladder with yearly reset [P]",eu_west,desktop_on,506.5549158515565,26620,5899,11.64533166178704
+5,"strict, ladder with yearly reset [P]",eu_west,laptop_night,730.7180966006307,31540,6463,8.844724155685324
+5,"strict, ladder with yearly reset [P]",af,always_on,305.54933675565644,32245,8997,29.445326556852507
+5,"strict, ladder with yearly reset [P]",af,desktop_on,248.7155519492073,33034,9428,37.906757040771566
+5,"strict, ladder with yearly reset [P]",af,laptop_night,371.1831208835871,39125,10941,29.47601705043961
+5,"strict, ladder with yearly reset [P]",as_south,always_on,586.8937185135368,64301,17847,30.409253732008306
+5,"strict, ladder with yearly reset [P]",as_south,desktop_on,480.7857491435324,65846,18741,38.979940718677824
+5,"strict, ladder with yearly reset [P]",as_south,laptop_night,739.332793865331,78692,21786,29.467108967397305
+5,"strict, ladder with yearly reset [P]",as_east,always_on,2054.7266239010673,74847,13979,6.803338136272221
+5,"strict, ladder with yearly reset [P]",as_east,desktop_on,1743.5343919247848,83222,17727,10.167278650827287
+5,"strict, ladder with yearly reset [P]",as_east,laptop_night,2434.6510518982095,96343,19144,7.8631391488624685
+5,"strict, ladder with yearly reset [P]",oc,always_on,32.04422345616632,1281,230,7.177580705446639
+5,"strict, ladder with yearly reset [P]",oc,desktop_on,26.829044499193753,1373,291,10.846454110907487
+5,"strict, ladder with yearly reset [P]",oc,laptop_night,36.11454214287365,1642,349,9.663697205943032
+5,"strict, immediate ban",na_east,always_on,75.6204147288981,6200,6200,81.98844217169692
+5,"strict, immediate ban",na_east,desktop_on,54.07080115277788,6535,6535,120.86005497745921
+5,"strict, immediate ban",na_east,laptop_night,87.33205799879617,7897,7897,90.42498460426589
+5,"strict, immediate ban",na_west,always_on,20.53181076608119,2674,2674,130.23692992619442
+5,"strict, immediate ban",na_west,desktop_on,18.52491736589171,2918,2918,157.51757173139433
+5,"strict, immediate ban",na_west,laptop_night,30.219215592175832,3544,3544,117.27637301471154
+5,"strict, immediate ban",sa_east,always_on,65.91698874762078,6200,6200,94.05769465195395
+5,"strict, immediate ban",sa_east,desktop_on,42.550097602671165,6491,6491,152.5495913220306
+5,"strict, immediate ban",sa_east,laptop_night,60.93238557307433,7900,7900,129.65190720336682
+5,"strict, immediate ban",eu_west,always_on,126.84907730903925,11587,11587,91.34477164363507
+5,"strict, immediate ban",eu_west,desktop_on,82.04276462320199,11745,11745,143.15704808268336
+5,"strict, immediate ban",eu_west,laptop_night,128.8219828894811,14431,14431,112.02280601735993
+5,"strict, immediate ban",af,always_on,58.48588022211109,12464,12464,213.1112663888382
+5,"strict, immediate ban",af,desktop_on,36.221218698260614,12472,12472,344.32855790683044
+5,"strict, immediate ban",af,laptop_night,60.532014379319115,15106,15106,249.5538956516371
+5,"strict, immediate ban",as_south,always_on,98.94624269991792,24948,24948,252.1369111069914
+5,"strict, immediate ban",as_south,desktop_on,66.5181641575616,24925,24925,374.70967991479955
+5,"strict, immediate ban",as_south,laptop_night,114.66815041598443,30426,30426,265.33958984794697
+5,"strict, immediate ban",as_east,always_on,416.78130489331596,36187,36187,86.82491171062203
+5,"strict, immediate ban",as_east,desktop_on,312.2819375598791,37532,37532,120.18626595335299
+5,"strict, immediate ban",as_east,laptop_night,461.4652777476072,44931,44931,97.36593881842278
+5,"strict, immediate ban",oc,always_on,4.743236036783421,621,621,130.92327583620002
+5,"strict, immediate ban",oc,desktop_on,3.657987429337075,624,624,170.58560535105104
+5,"strict, immediate ban",oc,laptop_night,6.355417823184899,734,734,115.49201333739684
+5,unreachable is not refusal [P],na_east,always_on,552.2601567317848,0,0,0
+5,unreachable is not refusal [P],na_east,desktop_on,551.3598244907155,0,0,0
+5,unreachable is not refusal [P],na_east,laptop_night,700.4276491734802,0,0,0
+5,unreachable is not refusal [P],na_west,always_on,228.09743164994833,0,0,0
+5,unreachable is not refusal [P],na_west,desktop_on,240.49759974068502,0,0,0
+5,unreachable is not refusal [P],na_west,laptop_night,304.92987339585625,0,0,0
+5,unreachable is not refusal [P],sa_east,always_on,528.7044183769038,0,0,0
+5,unreachable is not refusal [P],sa_east,desktop_on,525.2071912902269,0,0,0
+5,unreachable is not refusal [P],sa_east,laptop_night,671.2459469339174,0,0,0
+5,unreachable is not refusal [P],eu_west,always_on,1006.5285922392828,0,0,0
+5,unreachable is not refusal [P],eu_west,desktop_on,981.5230976984171,0,0,0
+5,unreachable is not refusal [P],eu_west,laptop_night,1250.2039077075049,0,0,0
+5,unreachable is not refusal [P],af,always_on,993.3721190640127,0,0,0
+5,unreachable is not refusal [P],af,desktop_on,969.4859477684006,0,0,0
+5,unreachable is not refusal [P],af,laptop_night,1229.5653455788688,0,0,0
+5,unreachable is not refusal [P],as_south,always_on,1976.167760618582,0,0,0
+5,unreachable is not refusal [P],as_south,desktop_on,1935.7186066667703,0,0,0
+5,unreachable is not refusal [P],as_south,laptop_night,2466.68773390425,0,0,0
+5,unreachable is not refusal [P],as_east,always_on,3174.2267315778786,0,0,0
+5,unreachable is not refusal [P],as_east,desktop_on,3163.5427042154174,0,0,0
+5,unreachable is not refusal [P],as_east,laptop_night,3981.206747480473,0,0,0
+5,unreachable is not refusal [P],oc,always_on,50.679334973235434,0,0,0
+5,unreachable is not refusal [P],oc,desktop_on,50.48828646391899,0,0,0
+5,unreachable is not refusal [P],oc,laptop_night,64.12223670281645,0,0,0

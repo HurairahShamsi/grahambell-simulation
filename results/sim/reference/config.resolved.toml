@@ -31,10 +31,15 @@ value = 4.0
 status = "D"
 
 [issuance.count_based_correction]
-status = "P"
+status = "D"
+
+[issuance.count_based_correction.value]
+form = "accumulated"
+window_blocks = 144
+bound = 0.5
 
 [issuance.count_based_correction.sweep]
-note = "P1, P2 and B-exact, proposed and compared in M3"
+note = "P2 x1.5 is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E1/E2); no correction, P1 and P2 at other bounds and B-exact are comparisons"
 
 [[issuance.count_based_correction.sweep.values]]
 form = "recent_interval_ratio"
@@ -42,20 +47,35 @@ window_blocks = 144
 bound = 0.1
 
 [[issuance.count_based_correction.sweep.values]]
+form = "recent_interval_ratio"
+window_blocks = 144
+bound = 0.25
+
+[[issuance.count_based_correction.sweep.values]]
+form = "recent_interval_ratio"
+window_blocks = 144
+bound = 0.5
+
+[[issuance.count_based_correction.sweep.values]]
 form = "accumulated"
 window_blocks = 144
 bound = 0.1
 
 [[issuance.count_based_correction.sweep.values]]
+form = "accumulated"
+window_blocks = 144
+bound = 0.25
+
+[[issuance.count_based_correction.sweep.values]]
 form = "discrete_exact"
 
 [issuance.difficulty_count_rule]
-value = "after_post_admission_wait"
+value = "issued_entropy"
 status = "D"
 
 [issuance.difficulty_count_rule.sweep]
-values = ["after_post_admission_wait", "all_globally_active"]
-note = "all Globally Active miners is the comparison (architect, 2026-10-12)"
+values = ["issued_entropy", "after_post_admission_wait", "all_globally_active", "issued_entropy_lagged"]
+note = "issued entropy is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E1/E2); the count after the post-admission wait (the default until v0.6), all Globally Active miners and the lagged count are comparisons"
 
 [issuance.min_attack_time_floor_years]
 value = 2.0
@@ -86,19 +106,20 @@ status = "O"
 range = [3, 12]
 
 [issuance.start_rule]
-value = "a"
+value = "r"
 status = "D"
 
 [issuance.start_rule.sweep]
-values = ["a", "b"]
-note = "rule (b) is the rejected alternative, kept for S13"
+values = ["r", "a", "b"]
+note = "rule (r) is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E1); rule (a) (the default until v0.6) is the comparison, rule (b) the rejected alternative kept for S13"
 
 [issuance.same_height_tie_break]
-value = "lower_block_hash"
-status = "P"
+value = "first_seen"
+status = "D"
 
 [issuance.same_height_tie_break.sweep]
-values = ["lower_block_hash", "first_seen"]
+values = ["first_seen", "lower_block_hash"]
+note = "first seen is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E1); the v0.6 order is the comparison"
 
 [transactions.pow_tx_interval_s]
 value = 10.0
@@ -167,8 +188,12 @@ value = 20
 status = "D"
 
 [entropy.signers]
-value = "all_online_members"
-status = "D"
+value = "threshold_two_thirds"
+status = "P"
+
+[entropy.signers.sweep]
+values = ["threshold_two_thirds", "threshold_majority", "all_online_members"]
+note = "t = ⌈2n/3⌉ of the seated members is the [P] default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E3); t = 21 of 40 is [P]; every online member (the rule until v0.6) is the comparison"
 
 [entropy.equivocation_scope]
 value = "same_height"
@@ -217,18 +242,19 @@ status = "O"
 values = [1, 2, 5]
 
 [timing.powit_deadline_s]
-status = "O"
+status = "D"
 
 [timing.powit_deadline_s.sweep]
-values = [5.0, 10.0, 30.0, 60.0]
+values = [10.0, 5.0, 30.0, 60.0]
+note = "no deadline is the default since SPEC v0.7 (architect, 2026-10-21; the E1 criteria as written); 10 s with the soft scope is [P], kept for M3b's adversarial withholding"
 
 [timing.powit_deadline_scope]
-value = "permanent"
+value = "not_extended_only"
 status = "D"
 
 [timing.powit_deadline_scope.sweep]
-values = ["permanent", "not_extended_only"]
-note = "not extended only is the comparison (architect, 2026-10-12)"
+values = ["not_extended_only", "permanent"]
+note = "permanent is the comparison (architect, 2026-10-14)"
 
 [timing.early_block]
 value = "permanent"
@@ -266,6 +292,13 @@ status = "D"
 
 [admission.peer_bootstrap_count.sweep]
 range = [4, 8]
+
+[admission.failover_after_rounds]
+status = "P"
+
+[admission.failover_after_rounds.sweep]
+values = [2]
+note = "off by default; the M3a.1 experiment (architect, 2026-10-14)"
 
 [cac.size]
 value = 600
@@ -343,12 +376,12 @@ status = "O"
 values = [259200.0, 604800.0, 2592000.0, 7776000.0, 31536000.0]
 
 [offline.unreachable_rule]
-value = "strict"
-status = "O"
+value = "unreachable_is_not_refusal"
+status = "D"
 
 [offline.unreachable_rule.sweep]
-values = ["strict", "unreachable_is_not_refusal"]
-note = "strict is the interim default; unreachable is not refusal is [P] (SPEC §4.6, §12)"
+values = ["unreachable_is_not_refusal", "strict"]
+note = "strict is the comparison (architect, 2026-10-14)"
 
 [penalties.suspension_ladder_s]
 value = [86400, 2592000]
@@ -365,6 +398,38 @@ status = "D"
 [penalties.strict_offence.sweep]
 values = ["ladder", "ladder_yearly_reset", "immediate_ban"]
 note = "yearly reset is [P]; immediate ban is §4.6 read literally (architect, 2026-10-12)"
+
+[penalties.offline_points_after_s]
+value = 86400.0
+status = "D"
+
+[penalties.offline_points_after_s.sweep]
+values = [86400.0, 3600.0, 21600.0]
+note = "24 h is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E4: 1 h and 6 h fail H7); unset turns the ladder off"
+
+[penalties.offline_points_steps]
+value = [1, 1, 2, 3, 4, 5]
+status = "O"
+
+[penalties.offline_points_cap]
+value = 20
+status = "O"
+
+[penalties.offline_points_reset_s]
+value = 31536000.0
+status = "O"
+
+[penalties.offline_points_outcome]
+value = "seat_loss"
+status = "D"
+
+[penalties.offline_points_outcome.sweep]
+values = ["seat_loss", "blacklist"]
+note = "seat loss is the default since SPEC v0.7 (architect, 2026-10-21); blacklist is the comparison"
+
+[penalties.offline_points_seat_cooldown_s]
+value = 2592000.0
+status = "D"
 
 [crypto.signature_scheme]
 value = "bls12_381_aggregate_bitfield_pop"
@@ -558,6 +623,7 @@ stylised_per_hop_ms = 5.0
 skew_sd_s = 0.05
 skew_tail_fraction = 0.01
 skew_tail_sd_s = 2.0
+partition_cuts_witnesses = true
 
 [sim.households]
 device_mix = [0.3, 0.3, 0.4]
