@@ -24,6 +24,7 @@ A round runs from one identity-issuance (PoW-ID) block to the next, 30 seconds o
 
 ## Witness chains and penalties
 
+- **Hardware:** witness nodes are meant to run at home on an always-on device; mining runs on anything. Measured hardware and bandwidth requirements will be published after the M5 household benchmarks.
 - **Seats:** every registered ID is a witness in one Witness Chain (WC) of 10; a KWC is a leading WC and three subordinate WCs, with no two WCs watching each other. Seats come from a deterministic shuffle seeded by a later block, so nobody chooses where an ID lands. [D] ([§4.1](SPEC.md#41-duty-d), [§4.2](SPEC.md#42-allocation-d))
 - **One Chance:** a member that does not sign is asked again; one that cannot be reached is recorded offline, never banned ("unreachable is not refusal"). Bans need verifiable evidence, such as two conflicting signatures. [D] ([§4.5](SPEC.md#45-one-chance-d), [§4.6](SPEC.md#46-ban-principle-d))
 - **Offline:** a long absence leads to deactivation, never a ban. Every offline period of 24 hours or more earns points, and at 20 points a member loses its seat for 30 days [D]. ([§4.7](SPEC.md#47-offline-handling-d-rules-o-values), [§4.8](SPEC.md#48-penalties-d))
