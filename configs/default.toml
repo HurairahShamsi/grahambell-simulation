@@ -22,8 +22,8 @@ rate_mode = { value = "fixed", status = "P", sweep = { values = ["fixed", "adapt
 difficulty_variant = { value = "count_based", status = "D", sweep = { values = ["count_based", "bitcoin_retarget"], note = "Variant A (Bitcoin-style retarget) is the comparison (SPEC §3.8)" } }
 retarget_window_blocks = { value = 144, status = "D" }
 retarget_clamp_factor = { value = 4.0, status = "D" }
-# Variant B correction [P]: none by default; M3 compares P1, P2 and B-exact.
-count_based_correction = { value = { form = "accumulated", window_blocks = 144, bound = 0.5 }, status = "D", sweep = { values = [{ form = "recent_interval_ratio", window_blocks = 144, bound = 0.1 }, { form = "recent_interval_ratio", window_blocks = 144, bound = 0.25 }, { form = "recent_interval_ratio", window_blocks = 144, bound = 0.5 }, { form = "accumulated", window_blocks = 144, bound = 0.1 }, { form = "accumulated", window_blocks = 144, bound = 0.25 }, { form = "discrete_exact" }], note = "P2 x1.5 is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E1/E2); no correction, P1 and P2 at other bounds and B-exact are comparisons" } }
+# Variant B correction [D]: P2 x1.1 (architect, 2026-10-22); none, P1, P2 x1.25 and x1.5 and B-exact are comparisons.
+count_based_correction = { value = { form = "accumulated", window_blocks = 144, bound = 0.1 }, status = "D", sweep = { values = [{ form = "recent_interval_ratio", window_blocks = 144, bound = 0.1 }, { form = "recent_interval_ratio", window_blocks = 144, bound = 0.25 }, { form = "recent_interval_ratio", window_blocks = 144, bound = 0.5 }, { form = "accumulated", window_blocks = 144, bound = 0.25 }, { form = "accumulated", window_blocks = 144, bound = 0.5 }, { form = "discrete_exact" }], note = "P2 x1.1 is the default since SPEC v0.7 (architect, 2026-10-22; M3a.1 reference run: P2 x1.5 misses H5, 1.0208 > 1.02); no correction, P1, P2 x1.25 and x1.5 and B-exact are comparisons" } }
 difficulty_count_rule = { value = "issued_entropy", status = "D", sweep = { values = ["issued_entropy", "after_post_admission_wait", "all_globally_active", "issued_entropy_lagged"], note = "issued entropy is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E1/E2); the count after the post-admission wait (the default until v0.6), all Globally Active miners and the lagged count are comparisons" } }
 min_attack_time_floor_years = { value = 2.0, status = "P", sweep = { range = [1.0, 10.0] } }
 cap_checkpoint_interval_fraction_of_t_min = { value = 1.0, status = "D", sweep = { values = [0.25, 0.5, 1.0] } }
@@ -76,8 +76,8 @@ grace_epoch_rounds = { value = 5, status = "D" }
 clock_tolerance_s = { value = 2.0, status = "O", sweep = { range = [0.5, 10.0] } }
 # One Chance wait: one grace epoch (5 rounds) by default.
 one_chance_wait_rounds = { value = 5, status = "O", sweep = { values = [1, 2, 5] } }
-# PoWit deadline D: none by default (architect, 2026-10-21); 10 s with the soft scope is [P]. A number sets it.
-powit_deadline_s = { status = "D", sweep = { values = [10.0, 5.0, 30.0, 60.0], note = "no deadline is the default since SPEC v0.7 (architect, 2026-10-21; the E1 criteria as written); 10 s with the soft scope is [P], kept for M3b's adversarial withholding" } }
+# PoWit deadline D: 10 s with the soft scope (architect, 2026-10-22), on each node's own clock; value = "none" removes it.
+powit_deadline_s = { value = 10.0, status = "D", sweep = { values = [10.0, 5.0, 30.0, 60.0], note = "10 s with the soft scope is the default (architect, 2026-10-22; the M3a.1 E1 criteria as written, at the final defaults); no deadline (the value unset) and 5, 30 and 60 s are comparisons" } }
 powit_deadline_scope = { value = "not_extended_only", status = "D", sweep = { values = ["not_extended_only", "permanent"], note = "permanent is the comparison (architect, 2026-10-14)" } }
 early_block = { value = "permanent", status = "D", sweep = { values = ["permanent", "reevaluate_later"], note = "re-evaluation is the comparison (architect, 2026-10-12)" } }
 witness_signing = { value = "on_time", status = "D", sweep = { values = ["on_time", "earliest_within_tolerance"], note = "earliest within δ (the earlier P-4 reading) is the comparison" } }

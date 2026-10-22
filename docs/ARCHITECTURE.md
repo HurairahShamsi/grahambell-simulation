@@ -141,8 +141,9 @@ Each M1 table becomes a check that a later simulator must pass.
 
 - **M3b, adversarial: a sleeper attacker** that accumulates IDs quietly for years and keeps them active, then switches behaviour all at once.
 - **M3b, adversarial: a rotation attack** (architect, 2026-10-21; the idea came from a suggestion on Reddit). The attacker keeps a pool of IDs and deactivates and re-activates them, timed just before committee lotteries, seat beacons and KWC decisions, to inflate its share of the canonical active list at the moments that count. Measure its gain in committee and KWC seats against an always-on attacker of the same size, under the current re-activation delay (placement at the beacon 6 blocks after the re-activation is confirmed) and longer delays.
-- **M3b: adversarial withholding with the PoWit deadline,** D = 10 s with the soft scope ([P] since SPEC v0.7, no deadline being the default): in the corrected E1 it cut a 10 % withholder's amplification to 0.001, against 0.204 without a deadline.
+- **M3b: adversarial withholding with the PoWit deadline,** D = 10 s with the soft scope (the default since 2026-10-22): at the final defaults it cut a 10 % withholder's amplification to 0.001, against 0.148 without a deadline (0.204 in the corrected E1). That withholder sits in as_east (ASSUMPTIONS SIM-51).
 - **M3b, rotation logging:** at every committee lottery, seat beacon and KWC decision, log the share of influence held by IDs active for fewer than N blocks (N swept), honest-only runs against the rotating attacker (architect, 2026-10-21; from a Reddit review).
+- **M3b: the regional win-share deficit** (architect, 2026-10-22; published as a known caveat, SPEC §3.7): under the defaults each region's honest miners win between 0.983 (as_south) and 1.023–1.029 (na_west) of their share of mining time (C1, ASSUMPTIONS SIM-51). Explain it, separating tie losses from literal sit-outs, both correlated by region, and test mitigations.
 - **M3b: the P1 + deadline reorganisations.** In the corrected E1, with the P1 correction and D = 10 s, 6 of 15 reruns reorganised 7–8 blocks below confirmation (with P2 none did, nor did any run without a deadline); explain them.
 - **Admission variants:** caps per /48 and per provider or ASN, against /64-only admission; measure what they cost honest households behind shared ISPs. Include an attacker spread across many small hosting providers (sweep the number of providers and the cost per extra provider), to test whether the caps hold when provider identity is cheap, for admission and for witness seats (architect, 2026-10-21; from a Reddit review).
 - **M5, cost model:**
@@ -195,13 +196,13 @@ Each M1 table becomes a check that a later simulator must pass.
 
 **Typed in M3a** (each with its status and sweep in `gb-config`, and in `configs/default.toml`):
 
-- `issuance.count_based_correction`: Variant B's [P] correction from recent block times (§3.8), P1, P2 or B-exact; off by default;
-- `issuance.difficulty_count_rule`: Variant B counts miners after their post-admission wait (default) or all Globally Active miners;
+- `issuance.count_based_correction`: Variant B's correction from recent block times (§3.8), P1, P2 or B-exact; P2 ×1.1 by default since SPEC v0.7;
+- `issuance.difficulty_count_rule`: Variant B counts the miners whose KWC issued entropy for the round (default since SPEC v0.7), those past their post-admission wait, all Globally Active miners, or the lagged issued count;
 - `entropy.equivocation_scope`: one header per miner per height (default) or per parent [P];
-- `offline.unreachable_rule`: strict One Chance (interim default) or "unreachable is not refusal" [P] (§4.6, S17);
+- `offline.unreachable_rule`: "unreachable is not refusal" (default since 2026-10-14) or strict One Chance (§4.6, S17);
 - `penalties.strict_offence`: the §4.8 ladder without reset (default), with a yearly reset [P], or an immediate ban;
 - `timing.witness_signing`: honest witnesses sign on their own clock at t0 + N (default) or at the earliest time within δ (the P-4 comparison);
-- `timing.powit_deadline_scope`: a late PoWit invalidates the block for good (default) or only stops it being extended;
+- `timing.powit_deadline_scope`: a late PoWit only stops the block being extended (default since 2026-10-14) or invalidates it for good;
 - `timing.early_block`: a block received early is rejected for good (default) or re-evaluated later.
 
 The simulator's own settings (crypto mode, threads, world, network, households, growth and experiment sizes) are in the `[sim]` section.

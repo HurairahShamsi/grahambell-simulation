@@ -404,7 +404,7 @@ impl Default for Issuance {
             retarget_clamp_factor: Param::decided(4.0),
             count_based_correction: Param::decided(Some(CountBasedCorrection::Accumulated {
                 window_blocks: 144,
-                bound: 0.50,
+                bound: 0.10,
             }))
             .swept(
                 Sweep::values(vec![
@@ -422,16 +422,16 @@ impl Default for Issuance {
                     }),
                     Some(CountBasedCorrection::Accumulated {
                         window_blocks: 144,
-                        bound: 0.10,
+                        bound: 0.25,
                     }),
                     Some(CountBasedCorrection::Accumulated {
                         window_blocks: 144,
-                        bound: 0.25,
+                        bound: 0.50,
                     }),
                     Some(CountBasedCorrection::DiscreteExact),
                 ])
                 .with_note(
-                    "P2 x1.5 is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E1/E2); no correction, P1 and P2 at other bounds and B-exact are comparisons",
+                    "P2 x1.1 is the default since SPEC v0.7 (architect, 2026-10-22; M3a.1 reference run: P2 x1.5 misses H5, 1.0208 > 1.02); no correction, P1, P2 x1.25 and x1.5 and B-exact are comparisons",
                 ),
             ),
             difficulty_count_rule: Param::decided(DifficultyCountRule::IssuedEntropy).swept(
@@ -643,8 +643,8 @@ pub struct Timing {
     /// Wait before One Chance is judged to have failed, in rounds (SPEC §4.5; one grace epoch
     /// by default).
     pub one_chance_wait_rounds: Param<u32>,
-    /// PoWit arrival deadline D, in seconds after the block's timestamp (SPEC §3.7; none by
-    /// default).
+    /// PoWit arrival deadline D, in seconds after the block's timestamp, measured by each node
+    /// on its own clock (SPEC §3.7; 10 s by default).
     pub powit_deadline_s: Param<Option<f64>>,
     /// How a node treats a block whose PoWit reached it after D.
     pub powit_deadline_scope: Param<DeadlineScope>,
@@ -682,9 +682,9 @@ impl Default for Timing {
             clock_tolerance_s: Param::with_status(2.0, Status::O).swept(Sweep::range(0.5, 10.0)),
             one_chance_wait_rounds: Param::with_status(5, Status::O)
                 .swept(Sweep::values(vec![1, 2, 5])),
-            powit_deadline_s: Param::decided(None).swept(
+            powit_deadline_s: Param::decided(Some(10.0)).swept(
                 Sweep::values(vec![Some(10.0), Some(5.0), Some(30.0), Some(60.0)]).with_note(
-                    "no deadline is the default since SPEC v0.7 (architect, 2026-10-21; the E1 criteria as written); 10 s with the soft scope is [P], kept for M3b's adversarial withholding",
+                    "10 s with the soft scope is the default (architect, 2026-10-22; the M3a.1 E1 criteria as written, at the final defaults); no deadline (the value unset) and 5, 30 and 60 s are comparisons",
                 ),
             ),
         }

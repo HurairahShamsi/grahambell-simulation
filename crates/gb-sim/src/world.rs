@@ -6,7 +6,7 @@ use crate::household::{self, CauseContext, Device, Household, bit};
 use crate::job::Strategy;
 use crate::network::{
     GossipTable, Latency, LossModel, Network, OverlaySettings, Partition, RIPE_MATRIX,
-    calibrate_gossip, spread_regions,
+    calibrate_gossip, spread_regions, spread_salted,
 };
 use crate::rng::{Keyed, Purpose};
 use crate::samplers::{exponential, lognormal, normal};
@@ -573,7 +573,27 @@ impl<'a> Sim<'a> {
                 .chain(spec.groups.iter().map(|g| g.share))
                 .collect()
         };
-        let miner_groups = spread_regions(spec.miners as usize, &group_shares, &mut self.keyed);
+        let miner_groups = if spec.groups_by_region {
+            // Each region's miners split into the groups by their shares (SIM-51).
+            let mut groups = vec![0usize; spec.miners as usize];
+            for region in 0..shares.len() {
+                let slots: Vec<usize> = (0..miner_regions.len())
+                    .filter(|i| miner_regions[*i] == region)
+                    .collect();
+                let labels = spread_salted(
+                    slots.len(),
+                    &group_shares,
+                    &mut self.keyed,
+                    region as u64 + 1,
+                );
+                for (k, i) in slots.iter().enumerate() {
+                    groups[*i] = labels[k];
+                }
+            }
+            groups
+        } else {
+            spread_regions(spec.miners as usize, &group_shares, &mut self.keyed)
+        };
         for (i, region) in miner_regions.iter().enumerate() {
             let group = miner_groups[i];
             let always = group > 0 && spec.groups[group - 1].always_online;
@@ -2952,6 +2972,56 @@ mod tests {
         sim.register_winner(2 * SECOND, b);
         assert_eq!((sim.res.first_ids, sim.res.dropouts), (1, 0));
         assert!(sim.miners[m as usize].first_id);
+    }
+
+    #[test]
+    fn tagged_groups_take_each_regions_miners_in_proportion_when_spread_by_region() {
+        // SIM-51: regions and groups were spread with the same shuffle, so a 10 % group sat
+        // in one region; with `groups_by_region` every region holds its share of each group.
+        let cfg = gb_config::Config::default();
+        let mut spec = small_sim(&cfg);
+        spec.miners = 1_000;
+        spec.groups = [0.1, 0.5]
+            .iter()
+            .map(|share| crate::job::GroupSpec {
+                label: format!("x={share}"),
+                share: *share,
+                strategy: Strategy::Honest,
+                always_online: false,
+            })
+            .collect();
+        let count = |sim: &Sim<'_>, region: usize, group: u8| {
+            sim.miners
+                .iter()
+                .filter(|m| {
+                    m.group == group && sim.hh[m.household as usize].region as usize == region
+                })
+                .count()
+        };
+        let regions = cfg.sim.network.regions.len();
+        let old = Sim::build(&spec, &cfg).unwrap();
+        let holding_x01 = (0..regions).filter(|r| count(&old, *r, 1) > 0).count();
+        assert!(
+            holding_x01 <= 2,
+            "the old placement put x=0.1 in {holding_x01} regions"
+        );
+        let mut by_region = spec.clone();
+        by_region.groups_by_region = true;
+        let sim = Sim::build(&by_region, &cfg).unwrap();
+        for region in 0..regions {
+            let n: usize = (0..3).map(|g| count(&sim, region, g)).sum();
+            assert_eq!(
+                n,
+                count(&old, region, 0) + count(&old, region, 1) + count(&old, region, 2)
+            );
+            for (g, share) in [(1u8, 0.1), (2, 0.5)] {
+                let c = count(&sim, region, g) as f64;
+                assert!(
+                    (c - share * n as f64).abs() <= 1.0,
+                    "region {region} group {g}: {c} of {n}"
+                );
+            }
+        }
     }
 
     #[test]

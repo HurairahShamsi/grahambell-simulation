@@ -88,6 +88,7 @@ pub(crate) fn c1_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
                 days,
             );
             j.groups = tags();
+            j.groups_by_region = true;
             jobs.push(j);
         }
     }
@@ -103,6 +104,7 @@ pub(crate) fn c1_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
             days,
         );
         j.groups = tags();
+        j.groups_by_region = true;
         j.equivocation = EquivocationScope::SameParent;
         jobs.push(j);
     }
@@ -111,6 +113,7 @@ pub(crate) fn c1_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
     ideal.registered_ids = ctx.pick(2_900, 1_300);
     ideal.days = ctx.days(10.0, 0.5);
     ideal.groups = tags();
+    ideal.groups_by_region = true;
     jobs.push(ideal);
     jobs
 }
@@ -240,6 +243,7 @@ pub(crate) fn c1_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
         ],
     );
     let mut summary = Vec::new();
+    let mut region_lines = Vec::new();
     let mut chart_points: Vec<(String, Vec<(f64, f64)>)> = vec![
         ("x = 0.1".to_string(), Vec::new()),
         ("x = 0.5".to_string(), Vec::new()),
@@ -309,6 +313,7 @@ pub(crate) fn c1_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
         );
         group_breakdown(&runs, *m, &regions, &mut breakdown);
         // By region, pooled over seeds.
+        let mut parts = Vec::new();
         for (rg, name) in regions.iter().enumerate() {
             let mut daily = Vec::new();
             let (mut ids, mut all_ids, mut slot, mut all_slot) = (0.0, 0.0, 0.0, 0.0);
@@ -348,7 +353,9 @@ pub(crate) fn c1_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
                 f(lo),
                 f(hi),
             ]);
+            parts.push(format!("{name} {} ({}–{})", r(amp, 3), r(lo, 3), r(hi, 3)));
         }
+        region_lines.push(format!("{m} miners: {}", parts.join(", ")));
     }
     let runs: Vec<&JobResult> = results[i..i + seeds].iter().collect();
     i += seeds;
@@ -392,8 +399,13 @@ pub(crate) fn c1_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
         }],
     });
     out.summary = format!(
-        "## C1 — S1 honest baseline (H1 control)\n\nA tagged group of honest slots wins IDs in proportion to its mining slot-time (`C1_amplification.csv`, by region in `C1_amplification_by_region.csv`):\n\n{}\n",
+        "## C1 — S1 honest baseline (H1 control)\n\nA tagged group of honest slots, spread over the regions in proportion to their miners (SIM-51), wins IDs in proportion to its mining slot-time (`C1_amplification.csv`):\n\n{}\n\nEach region's miners as one group, which measures the region effect apart from group placement (amplification and 95 % CI, `C1_amplification_by_region.csv`):\n\n{}\n",
         summary
+            .iter()
+            .map(|s| format!("- {s}"))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        region_lines
             .iter()
             .map(|s| format!("- {s}"))
             .collect::<Vec<_>>()
@@ -412,6 +424,15 @@ fn c2_rules() -> [(ForkRule, &'static str); 3] {
         (ForkRule::FirstSeen, "first-seen"),
         (ForkRule::LowerHashOnly, "lower-hash-only"),
     ]
+}
+
+/// The label of the default fork-choice rule, for the rows that run at the defaults.
+fn default_rule_name(ctx: &Ctx<'_>) -> &'static str {
+    let rule = ctx.job("C2-default", C2, 0).fork_rule;
+    c2_rules()
+        .iter()
+        .find(|(r, _)| *r == rule)
+        .map_or("other", |(_, name)| *name)
 }
 
 pub(crate) fn c2_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
@@ -441,12 +462,23 @@ pub(crate) fn c2_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
             }
         }
     }
-    let mut stylised = realistic(ctx, "C2-v0.6-literal-stylised", C2, 0, m, registered, days);
+    // These two run at the default fork-choice rule; until 2026-10-22 their ids and rows said
+    // v0.6 whatever the default was.
+    let default = default_rule_name(ctx);
+    let mut stylised = realistic(
+        ctx,
+        &format!("C2-{default}-literal-stylised"),
+        C2,
+        0,
+        m,
+        registered,
+        days,
+    );
     stylised.latency = LatencySource::Stylised;
     jobs.push(stylised);
     let mut part = realistic(
         ctx,
-        "C2-v0.6-literal-partitions",
+        &format!("C2-{default}-literal-partitions"),
         C2,
         0,
         m,
@@ -456,11 +488,20 @@ pub(crate) fn c2_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
     part.partition_rate_per_region_per_day = 1.0;
     part.partition_length_s = 600.0;
     jobs.push(part);
-    let mut ideal = ctx.job("C2-idealised", C2, 0).idealised();
+    // Zero latency in the configuration the E[H_K − 1] reference models (the v0.6 order, start
+    // rule (a), the exact count), whatever the defaults, like V0–V3 (architect, 2026-10-22).
+    let mut ideal = super::v::m1_job(ctx, "C2-idealised", C2, 0).idealised();
     ideal.miners = ctx.pick(1_000, 200);
     ideal.registered_ids = ctx.pick(2_900, 1_300);
     ideal.days = ctx.days(10.0, 0.5);
     jobs.push(ideal);
+    // First-seen at zero latency, otherwise at the defaults.
+    let mut first_seen = ctx.job("C2-idealised-first-seen", C2, 0).idealised();
+    first_seen.fork_rule = ForkRule::FirstSeen;
+    first_seen.miners = ctx.pick(1_000, 200);
+    first_seen.registered_ids = ctx.pick(2_900, 1_300);
+    first_seen.days = ctx.days(10.0, 0.5);
+    jobs.push(first_seen);
     jobs
 }
 
@@ -549,10 +590,11 @@ pub(crate) fn c2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             }
         }
     }
+    let default = default_rule_name(ctx);
     let stylised = &results[i];
     table.push(fork_row(
         &[
-            "v0.6".to_string(),
+            default.to_string(),
             "literal".to_string(),
             "0".to_string(),
             "stylised".to_string(),
@@ -563,7 +605,7 @@ pub(crate) fn c2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
     let part = &results[i + 1];
     table.push(fork_row(
         &[
-            "v0.6".to_string(),
+            default.to_string(),
             "literal".to_string(),
             "0".to_string(),
             "ripe_atlas".to_string(),
@@ -582,12 +624,23 @@ pub(crate) fn c2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
         ],
         ideal,
     ));
+    let first_seen = &results[i + 3];
+    table.push(fork_row(
+        &[
+            "first-seen".to_string(),
+            "literal".to_string(),
+            "0".to_string(),
+            "idealised".to_string(),
+            "none".to_string(),
+        ],
+        first_seen,
+    ));
     // Zero latency: the K winners tied at the earliest step decide one after another, and a
     // miner that already holds a better block does not broadcast, so the blocks broadcast are
     // the records (successive minima) of the hash order: H_K of them in expectation, H_K the
     // harmonic number. Orphans per round are E[H_K − 1]. Until 2026-10-14 this check used
     // E[K − 1], which assumes every tied winner broadcasts; it failed in the M3a reference run
-    // (ASSUMPTIONS SIM-30).
+    // (ASSUMPTIONS SIM-30). The job is pinned to the v0.6 order, which this models.
     let m = u64::from(ctx.pick(1_000u32, 200));
     let expected: f64 = (2..=12u64)
         .map(|k| {
@@ -599,13 +652,22 @@ pub(crate) fn c2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
     out.checks.push(mc_check(
         C2,
         "C2-idealised-orphans",
-        &format!("zero latency: orphans per final-chain block vs E[H_K − 1] (K tied winners, M1 F1; H_K the harmonic number; {m} slots)"),
+        &format!("zero latency, the v0.6 order: orphans per final-chain block vs E[H_K − 1] (K tied winners, M1 F1; H_K the harmonic number; {m} slots)"),
         expected,
         per_round,
         (expected / ideal.canonical.max(1) as f64).sqrt(),
         ideal.canonical,
         ctx.k,
         0.0,
+    ));
+    // Under first-seen, a tied winner already holds the block it received first, which it
+    // prefers to its own, so it never broadcasts and no block is orphaned.
+    out.checks.push(count_check(
+        C2,
+        "C2-idealised-first-seen-orphans",
+        &format!("zero latency, first-seen at the defaults: orphans (a tied winner keeps the block it received first and does not broadcast its own; {m} slots)"),
+        0,
+        first_seen.orphans,
     ));
     out.tables.push(table);
     out.charts.push(Chart {
@@ -1301,8 +1363,17 @@ pub(crate) fn c6_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             "blocks",
             "orphan_rate",
             "mean_interval_s",
+            "blocks_late_at_majority",
+            "late_share",
+            "panel_nodes_split_for_good",
+            "panel_nodes_off_final_chain",
         ],
     );
+    // The PoWit deadline these runs use (the default): each node judges it on its own clock.
+    let probe = ctx.job("C6-deadline", C6, 0);
+    let deadline = probe.deadline.map_or("no deadline".to_string(), |d| {
+        format!("D = {d} s ({})", scope_name(probe.deadline_scope))
+    });
     let mut series: Vec<ChartSeries> = Vec::new();
     let mut summary = Vec::new();
     for (i, (s, d, sign, early)) in grid.iter().enumerate() {
@@ -1320,6 +1391,10 @@ pub(crate) fn c6_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             n(res.blocks),
             f(div(res.orphans as f64, res.canonical as f64)),
             f(div(res.interval_sum_s, res.interval_count as f64)),
+            n(res.late_majority),
+            f(div(res.late_majority as f64, res.blocks as f64)),
+            n(res.permanent_split_panel_nodes),
+            n(res.split_panel_nodes),
         ]);
         if *early == EarlyBlockRule::Permanent && *d == 2.0 {
             let label = match sign {
@@ -1334,7 +1409,7 @@ pub(crate) fn c6_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
                 }),
             }
             if *s == 1.0 || *s == 2.0 {
-                summary.push(format!("skew σ = {s} s, δ = 2 s, {label}: {} % of panel receptions early, {} blocks early at the panel majority", r(100.0 * share, 3), res.early_majority));
+                summary.push(format!("skew σ = {s} s, δ = 2 s, {label}: {} % of panel receptions early, {} blocks early at the panel majority; {deadline}: {} % of blocks late at the panel majority, {} panel nodes split for good ({} off the final chain at the end)", r(100.0 * share, 3), res.early_majority, r(100.0 * div(res.late_majority as f64, res.blocks as f64), 3), res.permanent_split_panel_nodes, res.split_panel_nodes));
             }
         }
     }

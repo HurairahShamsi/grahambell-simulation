@@ -1,6 +1,6 @@
 # GrahamBell — Stage 1 Simulation Specification
 
-**Version:** 0.7 (compiled from the protocol architect's papers and design decisions; amended 2026-10-05, 2026-10-06, 2026-10-07, 2026-10-08 and 2026-10-09, and in v0.7 with the decisions of 2026-10-12, 2026-10-14, 2026-10-19 and 2026-10-21; see the Changelog at the end)
+**Version:** 0.7 (compiled from the protocol architect's papers and design decisions; amended 2026-10-05, 2026-10-06, 2026-10-07, 2026-10-08 and 2026-10-09, and in v0.7 with the decisions of 2026-10-12, 2026-10-14, 2026-10-19, 2026-10-21 and 2026-10-22; see the Changelog at the end)
 **Owner:** Hurairah Shamsi, Protocol Architect
 **Purpose of this file:** single source of truth for building and running the Stage 1 simulation. Where this file and older papers disagree, **this file wins**. Where this file is silent or ambiguous, the implementer must **stop and ask**, not guess.
 
@@ -68,7 +68,7 @@ PoIE bounds how fast IDs can accumulate. It does not prove that one person holds
 | PoW-ID target interval | 30 s (≈1.05M IDs/yr) | adaptive variant (§3.9) | D / P |
 | Difficulty rule (§3.8) | Variant B: count-based, from the miners whose KWC issued entropy for the round | Variant A (Bitcoin-style retarget), for comparison; counts: the miners past their post-admission wait (the default until v0.6), all Globally Active miners, the lagged issued-entropy count | D |
 | Variant A comparison settings (§3.8) | window K = 144 blocks, 4× clamp per retarget | — | D |
-| Variant B correction from recent block times (§3.8) | P2: every 144 blocks the factor is multiplied by the last 144 intervals' mean ÷ the target, kept within ×0.5 to ×1.5 | none; P1 within ×0.9–×1.1, ×0.75–×1.25 and ×0.5–×1.5; P2 within ×0.9–×1.1 and ×0.75–×1.25; B-exact | D |
+| Variant B correction from recent block times (§3.8) | P2: every 144 blocks the factor is multiplied by the last 144 intervals' mean ÷ the target, kept within ×0.9 to ×1.1 | none; P1 within ×0.9–×1.1, ×0.75–×1.25 and ×0.5–×1.5; P2 within ×0.75–×1.25 and ×0.5–×1.5 (both miss H5 at the final defaults); B-exact | D |
 | PoW-Tx interval | 10 s | 1–10 s | O |
 | WC size | 10 | 10 | D |
 | KWC composition | 1 leader + 3 subordinate WCs (40 nodes) | 1 + 2 (30 nodes) for comparison | D |
@@ -98,7 +98,7 @@ PoIE bounds how fast IDs can accumulate. It does not prove that one person holds
 | Re-activation wait after return | — | 1 d, 7 d, 14 d, 30 d | O |
 | Long-absence threshold L (§4.7) | 30 days (86,400 PoW-ID blocks at 30 s), the primary value | 3 d (8,640 blocks), 7 d (20,160), 30 d (86,400), 90 d (259,200), 365 d (1,051,200) | O |
 | One Chance wait (§4.5) | 1 grace epoch | 1, 2, 5 rounds | O |
-| PoWit arrival deadline D (§3.7) | none | 10 s with the soft scope (a node that got the PoWit late does not extend the block, but accepts a longer chain through it) [P], kept for M3b's adversarial withholding; 5, 30, 60 s; the permanent scope, for comparison | D |
+| PoWit arrival deadline D (§3.7) | 10 s with the soft scope (a node that got the PoWit late does not extend the block, but accepts a longer chain through it), judged on each node's own clock | none; 5, 30, 60 s; the permanent scope, for comparison | D |
 | Penalty ladder (lesser offences) | 24 h, then 30 days, then permanent | — | D |
 | Minimum attack time floor (adaptive issuance) | 2 years | 1–10 years | P |
 | Adaptive-cap checkpoint interval (§3.9) | T_min | T_min/4, T_min/2, T_min | D |
@@ -191,9 +191,11 @@ Every member recomputes the chain independently. An honest member signs the PoWi
 
 Validators check: quorum signatures with bitfield and proof of possession; full chain recomputation from inputs; `timestamp = t0 + N`; the block was not received before its own timestamp (local clock, tolerance δ); serialization of issuance; uniqueness. A new ID becomes active only after confirmation depth.
 
-**PoWit arrival deadline: none by default [D]** (architect, 2026-10-21, applying M3a.1 E1's criteria as written). Start rule (r) removes catch-up, which was the deadline's main purpose: under rule (a) a miner whose entropy came late computed the missed steps at once, and after a stall bursts of blocks with old timestamps went out (M3a).
+**PoWit arrival deadline [D]: D = 10 s with the soft scope** (architect, 2026-10-22, applying M3a.1 E1's criteria as written). A node that receives a PoW-ID block's PoWit (the quorum signatures) more than D seconds after the block's timestamp does not extend that block, but still accepts a longer chain through it. **D is measured by each node on its own local clock against the block's attested timestamp (`t0 + N`); no global clock is assumed.**
 
-**[P] D = 10 s with the soft scope,** kept for M3b's adversarial withholding. A node that receives a PoW-ID block's PoWit (the quorum signatures) more than D seconds after the block's timestamp does not extend that block, but still accepts a longer chain through it. In the corrected E1 (after the late-block fix, ASSUMPTIONS SIM-25), the configuration with D = 10 s and the P2 correction was clean: no run reorganised below confirmation. It also cut a 10 % withholder's amplification to 0.001, against 0.204 without a deadline. With the P1 correction, 6 of its 15 reruns reorganised 7–8 blocks below confirmation, which failed criterion 1 as written; M3b explains these reorganisations. In the reference run at the final defaults (0b711f5) every rerun of the D = 10 s configuration was clean, and the criteria as written select it again; the architect reviews D with the M3a.1 report. The permanent scope, in which the block and every chain through it stay invalid at that node for good, is a comparison only: in M3a it split 63 of 101 validators off the network chain.
+E1's criteria, fixed in advance, picked no deadline in the corrected M3a.1 run and D = 10 s at the final defaults. In the corrected run (after the late-block fix, ASSUMPTIONS SIM-25), 6 of the 15 criterion-4 reruns of the D = 10 s configuration, those with the P1 correction, reorganised 7–8 blocks below confirmation, which failed criterion 1; its P2 reruns were clean. In the reference run at the final defaults (0b711f5) every run and rerun of both finalists, (r) first-seen literal with D = 10 s soft and without a deadline, was clean. The two tie on interval (30.22 s each; 0.32 and 0.34 s from 30 s with their best H5-passing variant, P2 ×1.1) and on orphans (1.86 % and 1.84 %), and the simplicity order fixed in advance puts D = 10 s first. D = 10 s cuts a 10 % withholder's amplification from 0.148 to 0.001. Start rule (r) had already removed catch-up, the deadline's first purpose (M3a); M3b tests adversarial withholding under D = 10 s and explains the corrected run's P1 reorganisations.
+
+**Unsynchronised clocks are tolerated.** In C6 (clock skew σ = 1–2 s, δ = 2 s, honest witnesses signing on time) no block was early at the panel majority (0.000 % of panel receptions early at σ = 1 s, 2.106 % at σ = 2 s). Under the soft scope a node whose clock disagrees with the others' only declines to extend a block it judged late, and follows a longer chain through it: no validator was split off the chain for good in C3 at D = 5, 10, 30 and 60 s, nor in any E1 run of the selected configuration. The permanent scope, in which the block and every chain through it stay invalid at that node for good, is a comparison only: it split 63 of the 101 panel validators off the network chain in M3a, and again at every D in C3 of the reference run.
 
 **Early blocks [D].** A node that receives a block before its own timestamp (local clock, tolerance δ) rejects it for good. Re-evaluating it once the node's clock passes timestamp − δ is a comparison.
 
@@ -211,11 +213,13 @@ Validators check: quorum signatures with bitfield and proof of possession; full 
 
 The confirmation depth stays as in §2. M1 finds that same-step ties end about 1.66% of rounds at the 30 s target.
 
+**Known caveat** (architect, 2026-10-22): under the defaults the honest win share differs by region. In the reference run at the final defaults (0b711f5, C1), each region's miners won between 0.983 (as_south, 95 % CI 0.974–0.993) and 1.023 (na_west) of their share of mining time at 1,000 miners, and between 0.983 and 1.029 at 100,000. The deficit is accepted for now; M3b explains it (tie losses against literal sit-outs, correlated by region) and tests mitigations (ASSUMPTIONS SIM-51).
+
 ### 3.8 Difficulty [D]
 
 - **Variant B (default): count-based.** Per-hash success probability `p = factor / (N × target interval)`.
 - **The count N [D], issued entropy** (architect, 2026-10-21; selected by M3a.1 E1/E2): the miners whose KWC issued entropy for the round, that is mining, online and with a header on the round's parent. Each KWC commits the number it issued in its entropy attestations; the block carries the sum over KWCs with Merkle roots of the headers, validators recompute it, and an inflated count is attributable to the members who signed it (ASSUMPTIONS SIM-36). The block mined in a round sets the next round's difficulty, a lag of one round. Comparisons: the miners past their post-admission wait (the default until v0.6), all Globally Active miners, and the count committed a confirmation depth before the parent (lagged; it removes the fork storms of the unlagged count but fails H5, with a hopping gain of 1.036 at m = 4).
-- **The correction [D], P2 ×1.5:** every 144 blocks the factor is multiplied by the last 144 intervals' mean ÷ the target interval, and kept within ×0.5 to ×1.5. Comparisons: no correction, P1 (the factor set to that ratio each block) and P2 at bounds ×1.1 and ×1.25, and B-exact. In the corrected E1 the selected configuration's closest variant was P2 ×1.25, 0.003 s nearer 30 s than P2 ×1.5 (mean deviations 0.217 and 0.220 s over 5 seeds), a tie within noise. In the reference run at the final defaults (0b711f5) P2 ×1.5's worst hopping gain is 1.0208, just above H5's 1.02 (P2 ×1.1: 1.017, which passes); the architect reviews the correction with the M3a.1 report. P2 ×1.5 never reached its bound there (0.0 % of window samples).
+- **The correction [D], P2 ×1.1** (architect, 2026-10-22): every 144 blocks the factor is multiplied by the last 144 intervals' mean ÷ the target interval, and kept within ×0.9 to ×1.1. In the reference run at the final defaults (0b711f5) its worst hopping gain is 1.017, within H5's locked 1.02, and it is the best H5-passing variant of E1's selected configuration (0.32 s from 30 s). P2 ×1.5, the default set on 2026-10-21, misses H5 there (1.0208 > 1.02) and is recorded as failing; it is reported as a comparison only, with no correction, P1 (the factor set to that ratio each block), P2 ×1.25 (1.022, also failing H5) and B-exact (1.021, failing). In the corrected M3a.1 run all three P2 bounds had passed H5 (1.012–1.016).
 - **Variant A (comparison): Bitcoin-style retarget** from recent block times over a window of K = 144 PoW-ID blocks, each retarget clamped to a factor of 4 in either direction.
 
 ### 3.9 Issuance rate [D default, P variant]
@@ -566,15 +570,16 @@ Byte layouts that `gb-protocol` and its test vectors follow. They are proposed, 
 
 ## Changelog
 
-### v0.7 — 2026-10-21
+### v0.7 — 2026-10-22
 
-Incorporates the architect's M3a decisions (2026-10-12), the M3a.1 decisions (2026-10-14), the share refresh (2026-10-19) and the M3a.1 defaults (2026-10-21), with the M3a.1 evidence. §10 (H1–H9) is unchanged.
+Incorporates the architect's M3a decisions (2026-10-12), the M3a.1 decisions (2026-10-14), the share refresh (2026-10-19), the M3a.1 defaults (2026-10-21) and the decisions on the M3a.1 reference run (2026-10-22), with the M3a.1 evidence. §10 (H1–H9) is unchanged.
 
 - **Start rule (r) [D]** (§3.5): a miner's chain starts at its KWC's attested entropy issue time; no missed step is computed. Rule (a), the default until v0.6, is the comparison. Known risk: t or more colluding members could backdate `t0`, tested in M4 as S30 (§8). Appendix A records the start attestation [P] for protocol version 2; `vectors/protocol_v1.json` is unchanged.
 - **Fork choice [D]** (§3.7): at the same height, the block a node received first, then the lower block hash. v0.6's earlier timestamp then lower hash is the comparison. M3a.1 found that under v0.6's order, two blocks at the same timestamp whose later one has the lower hash leave nearly every miner sitting out under one header per height, which stalls the chain for up to tens of minutes (ASSUMPTIONS SIM-47).
 - **One header per height [D]** (§3.4, M3a decision 5) stays the default; re-signing on a new parent is the [P] comparison (identical under first-seen in E1).
-- **PoWit deadline** (§2, §3.7): none by default [D], applying E1's criteria as written (2026-10-21, after the report); D = 10 s with the soft scope is [P], kept for M3b's adversarial withholding. This supersedes M3a decision 9 (the permanent scope) and the 10 s default of M3a.1 decision 2.
-- **Difficulty [D]** (§3.8): the issued-entropy count with the P2 ×1.5 correction (supersedes M3a decision 6, the count after the post-admission wait). P1, other P2 bounds and B-exact (M3a decision 13) are comparisons.
+- **PoWit deadline [D]** (§2, §3.7): D = 10 s with the soft scope, measured by each node on its own clock against the block's attested timestamp (2026-10-22). E1's criteria as written picked no deadline in the corrected M3a.1 run, the default from 2026-10-21 until then, and D = 10 s at the final defaults. This supersedes M3a decision 9 (the permanent scope).
+- **Difficulty [D]** (§3.8): the issued-entropy count with the P2 ×1.1 correction (2026-10-22; P2 ×1.5, the default from 2026-10-21, misses H5 at the final defaults and is a comparison). This supersedes M3a decision 6, the count after the post-admission wait. P1, P2 ×1.25 and ×1.5, and B-exact (M3a decision 13) are comparisons.
+- **Known caveat** (§3.7): the honest win share differs by region under the defaults (C1); accepted for now, explained and mitigated in M3b (2026-10-22).
 - **Entropy quorum** (§3.4): at least 27 of 40 members must actually sign (a clarification; the simulator had issued entropy with fewer, ASSUMPTIONS SIM-43).
 - **Unreachable is not refusal [D]** (§4.6; M3a.1 decision 1): bans only on verifiable evidence; a member cut off by a partition counts as unreachable. This supersedes M3a decision 11 (the strict ladder) and the interim default in M3a decision 15.
 - **IDs in replaced blocks are void [D]**, and confirmation depth k means k blocks built on top (§3.7; M3a.1 decision 3).

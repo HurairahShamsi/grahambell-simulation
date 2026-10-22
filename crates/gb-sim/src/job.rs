@@ -230,6 +230,11 @@ pub struct JobSpec {
     pub post_wait_rounds: Option<u32>,
     /// Record every regional blackout and provider outage (`JobResult::outages`).
     pub track_outages: bool,
+    /// Tagged groups take each region's miners in proportion to their shares (C1), instead of
+    /// a spread over all slots that follows the same order as the regions (SIM-51). Left out
+    /// of the specification when false, so other jobs keep their specifications.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub groups_by_region: bool,
 }
 
 /// One traced event: when it was processed, what it was, and the entities it names.
@@ -692,6 +697,7 @@ impl JobSpec {
             scripted_blackouts: Vec::new(),
             post_wait_rounds: None,
             track_outages: false,
+            groups_by_region: false,
             warmup_days: 1.0,
             trace_every: if sim.trace_sample > 0.0 {
                 (1.0 / sim.trace_sample).round().max(1.0) as u64

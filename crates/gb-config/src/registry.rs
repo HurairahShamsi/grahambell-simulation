@@ -79,7 +79,7 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "issuance.count_based_correction",
         "§2, §3.8",
         "",
-        "Variant B's correction from recent block times: P2 with bound ×1.5 by default since SPEC v0.7; none, P1, P2 at other bounds and B-exact are comparisons.",
+        "Variant B's correction from recent block times: P2 with bound ×1.1 by default since SPEC v0.7; none, P1, P2 at ×1.25 and ×1.5 (which fails H5) and B-exact are comparisons.",
     ),
     doc(
         "issuance.difficulty_count_rule",
@@ -265,7 +265,7 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "timing.powit_deadline_s",
         "§2, §3.7",
         "s",
-        "PoWit arrival deadline D after the block's timestamp; none by default since SPEC v0.7 (10 s with the soft scope is [P]).",
+        "PoWit arrival deadline D after the block's attested timestamp, on each node's own clock; 10 s with the soft scope by default (none is a comparison).",
     ),
     doc(
         "timing.powit_deadline_scope",

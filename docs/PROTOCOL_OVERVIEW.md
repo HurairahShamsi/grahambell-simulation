@@ -14,13 +14,13 @@ A round runs from one identity-issuance (PoW-ID) block to the next, 30 seconds o
 2. **Witness entropy.** Its witness group, a King Witness Chain (KWC) of 40 registered IDs, signs the header with a threshold key: any 27 members give the same group signature, which becomes an unpredictable entropy, so no work can be done in advance and no member can steer it by withholding. [P] ([§3.4](SPEC.md#34-entropy-lock-d)); the comparison is every online member signing.
 3. **Sequential chain.** The miner hashes one step per second from the moment its KWC issued the entropy (start rule (r)), each step depending on the last. [D] ([§3.5](SPEC.md#35-hash-chain-d))
 4. **PoWit.** When a step's hash is below the target, the members recompute the chain and sign a Proof of Witness (PoWit) when their own clocks reach that step. [D] ([§3.6](SPEC.md#36-witnessing-and-signing-d))
-5. **Block.** Validators recompute the chain and check signatures, timestamp and timing; there is no PoWit arrival deadline by default [D] (a 10 s deadline is [P], for M3b). The ID becomes active once 6 blocks are built on it; IDs in replaced blocks are void, not penalised. [D] ([§3.7](SPEC.md#37-global-validation-d))
+5. **Block.** Validators recompute the chain and check signatures, timestamp and timing; a node that gets the PoWit more than 10 s after the block's timestamp, on its own clock, does not extend the block but follows a longer chain through it [D]. The ID becomes active once 6 blocks are built on it; IDs in replaced blocks are void, not penalised. [D] ([§3.7](SPEC.md#37-global-validation-d))
 
 ## Issuance, fork choice and difficulty
 
 - **Pacing:** one hash per second per admitted /64 (per ID for registered miners), one session per /64, one PoW-ID block per 30 s (about 1.05M IDs a year). [D] ([§2](SPEC.md#2-parameters), [§3.1](SPEC.md#31-admission-lifecycle-d), [§3.9](SPEC.md#39-issuance-rate-d-default-p-variant))
 - **Fork choice:** the longest valid chain; at the same height, the block a node saw first, then the lower hash. [D] ([§3.7](SPEC.md#37-global-validation-d))
-- **Difficulty:** each hash wins with probability factor ÷ (N × 30 s), where N counts the miners whose KWC issued entropy for the round and the factor (P2, bounded ×0.5–×1.5) corrects from the last 144 block times. [D] ([§3.8](SPEC.md#38-difficulty-d))
+- **Difficulty:** each hash wins with probability factor ÷ (N × 30 s), where N counts the miners whose KWC issued entropy for the round and the factor (P2, bounded ×0.9–×1.1) corrects from the last 144 block times. [D] ([§3.8](SPEC.md#38-difficulty-d))
 
 ## Witness chains and penalties
 
@@ -46,4 +46,5 @@ PoIE does not prove that one person holds one ID; it bounds how fast IDs can acc
 - **Threshold entropy, both sides:** 14 members refusing or unreachable stop a KWC's entropy at the default threshold of 27, and 27 colluding members produce it alone; M4 measures both (scenario S31), and backdated starts at both thresholds.
 - **Rotation of IDs:** an attacker that deactivates and re-activates a pool of IDs around committee lotteries and seat beacons, to inflate its share at the moments that count (M3b).
 - **Threshold-BLS share theft over time:** a 30-day share refresh is proposed [P] and costed in M4 ([§12](SPEC.md#12-open-questions)).
+- **Regional win share:** under the defaults, honest miners in some regions win slightly less than their share of mining time and others slightly more (as_south about 1.7 % less, na_west 2–3 % more, C1); accepted for now as a known caveat, explained and mitigated in M3b ([§3.7](SPEC.md#37-global-validation-d)).
 - **Backdated starts under rule (r):** t colluding members could attest an earlier start; M4 scenario S30 ([§3.5](SPEC.md#35-hash-chain-d)).

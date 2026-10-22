@@ -352,6 +352,16 @@ pub fn calibrate_gossip(
 
 /// Assigns `n` items to regions in proportion to `shares` (largest remainders), shuffled.
 pub fn spread_regions(n: usize, shares: &[f64], keyed: &mut Keyed) -> Vec<usize> {
+    spread_keyed(n, shares, keyed, 7_000_000 + n as u64)
+}
+
+/// Like [`spread_regions`], with its own shuffle for each `salt`, so that two spreads of the
+/// same number of items are independent of each other (SIM-51).
+pub fn spread_salted(n: usize, shares: &[f64], keyed: &mut Keyed, salt: u64) -> Vec<usize> {
+    spread_keyed(n, shares, keyed, (1 << 40) | (salt << 24) | n as u64)
+}
+
+fn spread_keyed(n: usize, shares: &[f64], keyed: &mut Keyed, key: u64) -> Vec<usize> {
     let mut counts: Vec<usize> = shares
         .iter()
         .map(|s| (s * n as f64).floor() as usize)
@@ -373,7 +383,7 @@ pub fn spread_regions(n: usize, shares: &[f64], keyed: &mut Keyed) -> Vec<usize>
         .collect();
     // Fisher–Yates with keyed draws.
     for i in (1..out.len()).rev() {
-        let w = keyed.words(Purpose::Setup, 7_000_000 + n as u64, i as u64)[0];
+        let w = keyed.words(Purpose::Setup, key, i as u64)[0];
         let j = (unit(w) * (i + 1) as f64) as usize % (i + 1);
         out.swap(i, j);
     }

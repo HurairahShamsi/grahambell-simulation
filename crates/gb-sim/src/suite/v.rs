@@ -36,7 +36,7 @@ fn min_p(ctx: &Ctx<'_>) -> f64 {
 /// points ladder, which those references do not model, stay at the values V0–V3 ran with
 /// before SPEC v0.7 changed them (10 s with the soft scope, every online member, no ladder),
 /// so V0–V3's tables stay byte-identical; V2's restart runs depend slightly on them.
-fn m1_job(ctx: &Ctx<'_>, id: &str, section: &'static str, rep: u64) -> JobSpec {
+pub(crate) fn m1_job(ctx: &Ctx<'_>, id: &str, section: &'static str, rep: u64) -> JobSpec {
     let mut j = ctx.job(id, section, rep);
     j.start_rule = StartRule::A;
     j.fork_rule = ForkRule::V06;
@@ -642,7 +642,7 @@ pub(crate) fn v1_analyse(ctx: &Ctx<'_>, all: &[JobResult]) -> SectionOut {
     out.tables.push(table);
     out.tables.push(t2);
     // A reported comparison, not a check: the same runs at the configured defaults (SPEC v0.7:
-    // start rule (r), first seen, the issued-entropy count, P2 ×1.5; architect, 2026-10-21).
+    // start rule (r), first seen, the issued-entropy count, P2 ×1.1; architect, 2026-10-22).
     let interval_of = |runs: &[JobResult]| {
         let (sum, count) = runs.iter().fold((0.0, 0u64), |a, r| {
             (a.0 + r.interval_sum_s, a.1 + r.interval_count)
