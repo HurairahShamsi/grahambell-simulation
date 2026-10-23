@@ -36,10 +36,10 @@ status = "D"
 [issuance.count_based_correction.value]
 form = "accumulated"
 window_blocks = 144
-bound = 0.5
+bound = 0.1
 
 [issuance.count_based_correction.sweep]
-note = "P2 x1.5 is the default since SPEC v0.7 (architect, 2026-10-21; M3a.1 E1/E2); no correction, P1 and P2 at other bounds and B-exact are comparisons"
+note = "P2 x1.1 is the default since SPEC v0.7 (architect, 2026-10-22; M3a.1 reference run: P2 x1.5 misses H5, 1.0208 > 1.02); no correction, P1, P2 x1.25 and x1.5 and B-exact are comparisons"
 
 [[issuance.count_based_correction.sweep.values]]
 form = "recent_interval_ratio"
@@ -59,12 +59,12 @@ bound = 0.5
 [[issuance.count_based_correction.sweep.values]]
 form = "accumulated"
 window_blocks = 144
-bound = 0.1
+bound = 0.25
 
 [[issuance.count_based_correction.sweep.values]]
 form = "accumulated"
 window_blocks = 144
-bound = 0.25
+bound = 0.5
 
 [[issuance.count_based_correction.sweep.values]]
 form = "discrete_exact"
@@ -242,11 +242,12 @@ status = "O"
 values = [1, 2, 5]
 
 [timing.powit_deadline_s]
+value = 10.0
 status = "D"
 
 [timing.powit_deadline_s.sweep]
 values = [10.0, 5.0, 30.0, 60.0]
-note = "no deadline is the default since SPEC v0.7 (architect, 2026-10-21; the E1 criteria as written); 10 s with the soft scope is [P], kept for M3b's adversarial withholding"
+note = "10 s with the soft scope is the default (architect, 2026-10-22; the M3a.1 E1 criteria as written, at the final defaults); no deadline (the value unset) and 5, 30 and 60 s are comparisons"
 
 [timing.powit_deadline_scope]
 value = "not_extended_only"

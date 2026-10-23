@@ -1,7 +1,7 @@
 config,blackouts,with_a_gap_over_10_min,worst_gap_s,event_919_gap_s,no_gap_over_10_min
-"all-online (One Chance), no failover",41,3,1171.692406,1171.692406,false
-"all-online (One Chance), failover",41,2,1120.176356,1120.176356,false
-"threshold 2n/3, no failover",41,2,979.992475,721.696248,false
-"threshold 2n/3, failover",41,1,885.083685,885.083685,false
-"threshold 21/40, no failover",41,0,368.98269,197.963778,true
-"threshold 21/40, failover",41,0,367.964561,252.031628,true
+"all-online (One Chance), no failover",41,1,755.631322,755.631322,false
+"all-online (One Chance), failover",41,1,905.152529,482.092323,false
+"threshold 2n/3, no failover",41,3,782.035866,724.658844,false
+"threshold 2n/3, failover",41,2,995.057063,995.057063,false
+"threshold 21/40, no failover",41,0,371.985371,246.92616,true
+"threshold 21/40, failover",41,0,371.982553,238.042833,true

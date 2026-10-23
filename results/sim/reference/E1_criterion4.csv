@@ -9,6 +9,16 @@ config,variant,mean_interval_s,ci95,abs_deviation_s,reorgs_below_confirmation,re
 (a) v0.6 literal no-deadline,issued_entropy / P1 ×1.5,32.005073089936836,0.45044158901458914,2.005073089936836,0,0,true
 (a) v0.6 literal no-deadline,issued_entropy / P2 ×1.1,32.47788905617243,0.5821330497761994,2.4778890561724296,0,0,true
 (a) v0.6 literal no-deadline,issued_entropy_lagged / none,33.441383458337796,0.3152562717003675,3.4413834583377962,0,0,false
+(a) first_seen literal D10-soft,after_wait / none,32.1682185635653,0.16946453756477495,2.168218563565297,0,0,true
+(a) first_seen literal D10-soft,after_wait / B-exact,31.67352211426528,0.15892671686312568,1.6735221142652783,0,0,true
+(a) first_seen literal D10-soft,all_globally_active / none,32.30021227836375,0.205901321668566,2.3002122783637518,0,0,true
+(a) first_seen literal D10-soft,all_globally_active / B-exact,31.737362493012235,0.13972858558954343,1.7373624930122347,0,0,true
+(a) first_seen literal D10-soft,issued_entropy / none,30.587074792532547,0.06345872170747095,0.5870747925325475,0,0,true
+(a) first_seen literal D10-soft,issued_entropy / P1 ×1.1,30.361954032447688,0.041659481107668504,0.361954032447688,0,0,true
+(a) first_seen literal D10-soft,issued_entropy / P1 ×1.25,30.332511421597843,0.047261695154877124,0.3325114215978431,0,0,true
+(a) first_seen literal D10-soft,issued_entropy / P1 ×1.5,30.326123597377933,0.042905349721067715,0.32612359737793284,0,0,true
+(a) first_seen literal D10-soft,issued_entropy / P2 ×1.1,30.317847294228926,0.07657346885740479,0.3178472942289261,0,0,true
+(a) first_seen literal D10-soft,issued_entropy_lagged / none,30.613977193537345,0.08349714604477017,0.6139771935373446,0,0,false
 (a) first_seen literal no-deadline,after_wait / none,32.14154658016605,0.16415888580545718,2.1415465801660503,0,0,true
 (a) first_seen literal no-deadline,after_wait / B-exact,31.592158579385835,0.08822500204360366,1.5921585793858348,0,0,true
 (a) first_seen literal no-deadline,all_globally_active / none,32.233462509623884,0.2419064680136235,2.233462509623884,0,0,true
@@ -19,6 +29,16 @@ config,variant,mean_interval_s,ci95,abs_deviation_s,reorgs_below_confirmation,re
 (a) first_seen literal no-deadline,issued_entropy / P1 ×1.5,30.29841509301766,0.05461149360027049,0.29841509301765967,0,0,true
 (a) first_seen literal no-deadline,issued_entropy / P2 ×1.1,30.329805002989637,0.08635838211555227,0.32980500298963733,0,0,true
 (a) first_seen literal no-deadline,issued_entropy_lagged / none,30.584008223333534,0.04665841330313759,0.5840082233335337,0,0,false
+(a) first_seen [P]same-parent D10-soft,after_wait / none,32.1682185635653,0.16946453756477495,2.168218563565297,0,0,true
+(a) first_seen [P]same-parent D10-soft,after_wait / B-exact,31.67352211426528,0.15892671686312568,1.6735221142652783,0,0,true
+(a) first_seen [P]same-parent D10-soft,all_globally_active / none,32.30021227836375,0.205901321668566,2.3002122783637518,0,0,true
+(a) first_seen [P]same-parent D10-soft,all_globally_active / B-exact,31.737362493012235,0.13972858558954343,1.7373624930122347,0,0,true
+(a) first_seen [P]same-parent D10-soft,issued_entropy / none,30.587074792532547,0.06345872170747095,0.5870747925325475,0,0,true
+(a) first_seen [P]same-parent D10-soft,issued_entropy / P1 ×1.1,30.361954032447688,0.041659481107668504,0.361954032447688,0,0,true
+(a) first_seen [P]same-parent D10-soft,issued_entropy / P1 ×1.25,30.332511421597843,0.047261695154877124,0.3325114215978431,0,0,true
+(a) first_seen [P]same-parent D10-soft,issued_entropy / P1 ×1.5,30.326123597377933,0.042905349721067715,0.32612359737793284,0,0,true
+(a) first_seen [P]same-parent D10-soft,issued_entropy / P2 ×1.1,30.317847294228926,0.07657346885740479,0.3178472942289261,0,0,true
+(a) first_seen [P]same-parent D10-soft,issued_entropy_lagged / none,30.613977193537345,0.08349714604477017,0.6139771935373446,0,0,false
 (a) first_seen [P]same-parent no-deadline,after_wait / none,32.14154658016605,0.16415888580545718,2.1415465801660503,0,0,true
 (a) first_seen [P]same-parent no-deadline,after_wait / B-exact,31.592158579385835,0.08822500204360366,1.5921585793858348,0,0,true
 (a) first_seen [P]same-parent no-deadline,all_globally_active / none,32.233462509623884,0.2419064680136235,2.233462509623884,0,0,true

@@ -1,79 +1,79 @@
 n_hours,outcome,cause,awards
-1,seat_loss,night shutdown,86930903
-1,seat_loss,other announced shutdown,25995557
-1,seat_loss,crash,302465
-1,seat_loss,network glitch,88491
-1,seat_loss,long absence,2620773
+1,seat_loss,night shutdown,86928655
+1,seat_loss,other announced shutdown,25982051
+1,seat_loss,crash,302123
+1,seat_loss,network glitch,88505
+1,seat_loss,long absence,2618466
 1,seat_loss,departure,0
-1,seat_loss,feeder fault,1978275
-1,seat_loss,provider outage,441130
-1,seat_loss,regional blackout,266516
+1,seat_loss,feeder fault,1977495
+1,seat_loss,provider outage,441189
+1,seat_loss,regional blackout,265976
 1,seat_loss,scripted,0
-1,seat_loss,load-shedding,65357068
+1,seat_loss,load-shedding,65511209
 1,seat_loss,scripted regional blackout,0
 1,seat_loss,partition cut,0
-1,blacklist,night shutdown,2372291
-1,blacklist,other announced shutdown,2681556
-1,blacklist,crash,81711
-1,blacklist,network glitch,8164
-1,blacklist,long absence,1093687
+1,blacklist,night shutdown,2371119
+1,blacklist,other announced shutdown,2676305
+1,blacklist,crash,81410
+1,blacklist,network glitch,8075
+1,blacklist,long absence,1092184
 1,blacklist,departure,0
-1,blacklist,feeder fault,502749
-1,blacklist,provider outage,163119
-1,blacklist,regional blackout,60190
+1,blacklist,feeder fault,502351
+1,blacklist,provider outage,163029
+1,blacklist,regional blackout,60194
 1,blacklist,scripted,0
-1,blacklist,load-shedding,747030
+1,blacklist,load-shedding,747529
 1,blacklist,scripted regional blackout,0
 1,blacklist,partition cut,0
-6,seat_loss,night shutdown,80261998
-6,seat_loss,other announced shutdown,5261696
-6,seat_loss,crash,37789
-6,seat_loss,network glitch,40799
-6,seat_loss,long absence,2279294
+6,seat_loss,night shutdown,80246449
+6,seat_loss,other announced shutdown,5260479
+6,seat_loss,crash,37656
+6,seat_loss,network glitch,40826
+6,seat_loss,long absence,2277775
 6,seat_loss,departure,0
-6,seat_loss,feeder fault,299412
-6,seat_loss,provider outage,27525
-6,seat_loss,regional blackout,7590
+6,seat_loss,feeder fault,299392
+6,seat_loss,provider outage,27491
+6,seat_loss,regional blackout,7528
 6,seat_loss,scripted,0
-6,seat_loss,load-shedding,1669725
+6,seat_loss,load-shedding,1670509
 6,seat_loss,scripted regional blackout,0
 6,seat_loss,partition cut,0
-6,blacklist,night shutdown,2805096
-6,blacklist,other announced shutdown,1506538
-6,blacklist,crash,3219
-6,blacklist,network glitch,2282
-6,blacklist,long absence,1522186
+6,blacklist,night shutdown,2804500
+6,blacklist,other announced shutdown,1505595
+6,blacklist,crash,3211
+6,blacklist,network glitch,2291
+6,blacklist,long absence,1520491
 6,blacklist,departure,0
-6,blacklist,feeder fault,155726
-6,blacklist,provider outage,10451
-6,blacklist,regional blackout,282
+6,blacklist,feeder fault,155739
+6,blacklist,provider outage,10426
+6,blacklist,regional blackout,287
 6,blacklist,scripted,0
-6,blacklist,load-shedding,134627
+6,blacklist,load-shedding,134574
 6,blacklist,scripted regional blackout,0
 6,blacklist,partition cut,0
-24,seat_loss,night shutdown,217713
-24,seat_loss,other announced shutdown,139174
-24,seat_loss,crash,697
-24,seat_loss,network glitch,603
-24,seat_loss,long absence,1465888
+24,seat_loss,night shutdown,217589
+24,seat_loss,other announced shutdown,139024
+24,seat_loss,crash,706
+24,seat_loss,network glitch,617
+24,seat_loss,long absence,1464612
 24,seat_loss,departure,0
-24,seat_loss,feeder fault,2701
-24,seat_loss,provider outage,604
+24,seat_loss,feeder fault,2666
+24,seat_loss,provider outage,592
 24,seat_loss,regional blackout,26
 24,seat_loss,scripted,0
-24,seat_loss,load-shedding,40214
+24,seat_loss,load-shedding,40354
 24,seat_loss,scripted regional blackout,0
 24,seat_loss,partition cut,0
-24,blacklist,night shutdown,217282
-24,blacklist,other announced shutdown,139105
-24,blacklist,crash,689
-24,blacklist,network glitch,610
-24,blacklist,long absence,1465243
+24,blacklist,night shutdown,217418
+24,blacklist,other announced shutdown,139018
+24,blacklist,crash,714
+24,blacklist,network glitch,623
+24,blacklist,long absence,1463534
 24,blacklist,departure,0
-24,blacklist,feeder fault,2715
-24,blacklist,provider outage,597
+24,blacklist,feeder fault,2666
+24,blacklist,provider outage,593
 24,blacklist,regional blackout,26
 24,blacklist,scripted,0
-24,blacklist,load-shedding,40243
+24,blacklist,load-shedding,40287
 24,blacklist,scripted regional blackout,0
 24,blacklist,partition cut,0
