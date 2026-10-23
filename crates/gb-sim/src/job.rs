@@ -240,6 +240,11 @@ pub struct JobSpec {
     /// specification when unset.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub groups_in_region: Option<u8>,
+    /// Record the final-chain blocks around each scripted blackout with their difficulty
+    /// and entropy state, and the blackouts' samples (W2). It only observes: the run is
+    /// otherwise the same. Left out of the specification when false.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub trace_blocks: bool,
 }
 
 /// One traced event: when it was processed, what it was, and the entities it names.
@@ -330,6 +335,48 @@ pub struct OutageRecord {
     pub spare_capacity_min: u64,
     /// Every gap of over 10 minutes between final-chain blocks that overlaps it.
     pub gaps: Vec<GapDiagnosis>,
+}
+
+/// One final-chain block of a traced run (W2), with the state when it was broadcast.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct BlockTraceRow {
+    /// Height.
+    pub height: u64,
+    /// Timestamp (`t0 + N`), simulated seconds.
+    pub timestamp_s: u64,
+    /// When it was broadcast, simulated seconds.
+    pub broadcast_s: f64,
+    /// Seconds since the previous final-chain block was broadcast.
+    pub gap_s: f64,
+    /// The difficulty count its target was set from: the count of its parent's round.
+    pub count: u64,
+    /// That target's per-step success probability.
+    pub p_step: f64,
+    /// That target's correction factor.
+    pub factor: f64,
+    /// Active KWCs.
+    pub kwcs: u32,
+    /// Of those, the KWCs able to issue entropy.
+    pub kwcs_able: u32,
+    /// Miners mining with their household online.
+    pub miners_active: u32,
+    /// Of those, the miners whose KWC could issue entropy.
+    pub miners_able: u32,
+}
+
+/// One round's sample of a scripted blackout in a traced run (W2).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct OutageSampleRow {
+    /// The outage record it belongs to.
+    pub outage: u32,
+    /// Simulated seconds.
+    pub time_s: f64,
+    /// Miners mining with their household online.
+    pub miners_active: u32,
+    /// Of those, the miners whose KWC could issue entropy.
+    pub miners_able: u32,
+    /// The network tip's per-step success probability.
+    pub p_step: f64,
 }
 
 /// Counts and sums a run produces. Everything a table needs is here, so tables never rerun a
@@ -570,6 +617,13 @@ pub struct JobResult {
     pub failover_s: Vec<f64>,
     /// Regional blackouts and provider outages (only with `track_outages`).
     pub outages: Vec<OutageRecord>,
+    /// Traced runs (W2): the final-chain blocks from an hour before each scripted blackout to
+    /// the end of its diagnosis tail.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub block_trace: Vec<BlockTraceRow>,
+    /// Traced runs (W2): every round's sample of each scripted blackout.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub outage_samples: Vec<OutageSampleRow>,
     /// Offline points: awards, by region and device.
     pub point_awards: Vec<Vec<u64>>,
     /// Offline points: awards by cause (household cause bits in order, then partition cuts).
@@ -704,6 +758,7 @@ impl JobSpec {
             track_outages: false,
             groups_by_region: false,
             groups_in_region: None,
+            trace_blocks: false,
             warmup_days: 1.0,
             trace_every: if sim.trace_sample > 0.0 {
                 (1.0 / sim.trace_sample).round().max(1.0) as u64

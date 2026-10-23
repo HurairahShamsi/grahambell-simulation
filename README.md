@@ -83,6 +83,7 @@ cargo run --release -p gb-cli -- vectors       # rewrite crates/gb-protocol/vect
 cargo run --release -p gb-cli -- sim                    # every section, in results/sim/<run-id>/
 cargo run --release -p gb-cli -- sim --only C2,C3       # V0 (always) and the named sections
 cargo run --release -p gb-cli -- sim --only W1          # the supplementary withholder placements
+cargo run --release -p gb-cli -- sim --only W2          # traces of E3's longest blackout pauses
 cargo run --release -p gb-cli -- sim --profile quick    # tiny sizes, for tests; not results
 ```
 
@@ -92,7 +93,7 @@ cargo run --release -p gb-cli -- sim --profile quick    # tiny sizes, for tests;
 |---|---|
 | `--profile full\|quick` | Experiment sizes (default `full`) |
 | `--threads N` | Worker threads (default `sim.threads`, 4); results do not depend on it |
-| `--only V1,C2,…` | Run only these sections; V0 always runs. W1, a supplementary set (E1's finalists and C3 with the withholder placed three ways), runs only when named |
+| `--only V1,C2,…` | Run only these sections; V0 always runs. Two supplementary sets run only when named: W1 (E1's finalists and C3 with the withholder placed three ways) and W2 (E3's blackout runs at the defaults, traced around their three longest pauses, in `traces/`) |
 | `--trace F` | Also write a sampled trace of a fraction F of every run's events to `trace/` |
 | `--resume DIR` | Continue an interrupted run in its run directory (same commit; its own configuration and sections) |
 | `--quiet` | Do not print a line per finished job |

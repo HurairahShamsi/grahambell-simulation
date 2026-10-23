@@ -122,7 +122,7 @@ fn the_quick_profile_writes_every_output_and_its_checks_pass() {
 }
 
 #[test]
-fn the_supplementary_w1_section_runs_when_named_and_writes_its_tables() {
+fn the_supplementary_sections_run_when_named_and_write_their_tables() {
     let dir = tempfile::tempdir().unwrap();
     let out = produce(
         dir.path(),
@@ -131,13 +131,13 @@ fn the_supplementary_w1_section_runs_when_named_and_writes_its_tables() {
         &SuiteOptions {
             profile: Profile::Quick,
             threads: 2,
-            only: vec!["W1".to_string()],
+            only: vec!["W1".to_string(), "W2".to_string()],
             control: RunControl::default(),
         },
     )
     .unwrap();
     assert!(out.gate_passed, "the V0 gate failed");
-    // Three placements, each with E1's two finalists and C3's two deadlines.
+    // W1: three placements, each with E1's two finalists and C3's two deadlines.
     let table = std::fs::read_to_string(dir.path().join("W1_withholder_placement.csv")).unwrap();
     assert_eq!(table.lines().count(), 1 + 3 * 4, "{table}");
     let regions = std::fs::read_to_string(dir.path().join("W1_withholder_regions.csv")).unwrap();
@@ -145,8 +145,21 @@ fn the_supplementary_w1_section_runs_when_named_and_writes_its_tables() {
         regions.lines().any(|l| l.starts_with("oc,oc,1")),
         "{regions}"
     );
+    // W2: the longest pauses, and a trace of each in traces/.
+    let pauses = std::fs::read_to_string(dir.path().join("W2_pauses.csv")).unwrap();
+    let ranks = pauses.lines().count() - 1;
+    assert!((1..=3).contains(&ranks), "{pauses}");
+    for k in 1..=ranks {
+        for kind in ["blocks", "samples"] {
+            let path = dir.path().join(format!("traces/E3_pause{k}_{kind}.csv"));
+            assert!(path.exists(), "missing {}", path.display());
+        }
+    }
     let summary = std::fs::read_to_string(dir.path().join("SUMMARY.md")).unwrap();
-    assert!(summary.contains("## W1"), "{summary}");
+    assert!(
+        summary.contains("## W1") && summary.contains("## W2"),
+        "{summary}"
+    );
 }
 
 fn options(repo: &Path, out: &Path, allow_dirty: bool, only: &[&str]) -> SimOptions {

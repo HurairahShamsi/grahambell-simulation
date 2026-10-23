@@ -438,6 +438,7 @@ impl<'a> Sim<'a> {
             outage_of_process: Vec::new(),
             outage_of_script: Vec::new(),
             outage_diag: Vec::new(),
+            trace_state: Vec::new(),
         };
         if spec.start_rule == gb_config::protocol::StartRule::B
             || (spec.start_rule == gb_config::protocol::StartRule::R
@@ -2601,6 +2602,31 @@ impl<'a> Sim<'a> {
         if seconds(next) <= start + duration + tail {
             self.q.push(next, Ev::OutageSample { index });
         }
+    }
+
+    /// The entropy state the W2 trace records with each block: active KWCs, those able to
+    /// issue entropy, miners mining with their household online, and those of them whose KWC
+    /// can issue (as the E3 diagnosis counts them).
+    pub(crate) fn entropy_state(&self) -> [u32; 4] {
+        let kwcs = self.alloc.active_wcs() as usize;
+        let able: Vec<bool> = (0..kwcs as u32).map(|k| self.kwc_can_issue(k)).collect();
+        let (mut active, mut with_entropy) = (0u32, 0u32);
+        for miner in &self.miners {
+            if miner.phase != Phase::Mining
+                || miner.idle
+                || miner.kwc == NONE
+                || miner.kwc as usize >= kwcs
+                || !self.hh[miner.household as usize].online()
+            {
+                continue;
+            }
+            active += 1;
+            if able[miner.kwc as usize] {
+                with_entropy += 1;
+            }
+        }
+        let able_kwcs = able.iter().filter(|x| **x).count() as u32;
+        [kwcs as u32, able_kwcs, active, with_entropy]
     }
 
     /// KWCs that cannot issue entropy, and the free miner places in those that can (the E3

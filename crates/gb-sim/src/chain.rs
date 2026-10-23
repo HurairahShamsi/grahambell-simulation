@@ -10,12 +10,13 @@
 //!   (SPEC §4.2).
 //! - **Fork choice** at every node uses the gb-protocol comparator of the run's rule.
 
-use crate::engine::{Micros, SECOND, micros};
-use crate::job::ForkRule;
+use crate::engine::{Micros, SECOND, micros, seconds};
+use crate::job::{BlockTraceRow, ForkRule, OutageSampleRow};
 use crate::rng::Purpose;
 use crate::sim::{Ev, Sim};
 use crate::world::{NONE, Phase};
 use gb_config::protocol::{DifficultyCountRule, DifficultyVariant, EquivocationScope};
+use gb_protocol::chain::step_win_probability;
 use gb_protocol::encoding::Header;
 use gb_protocol::hash::{Hash, tagged};
 use gb_protocol::issuance::{
@@ -163,6 +164,9 @@ pub(crate) struct Block {
     /// Under the lagged issued-entropy count: the count of its own round that the block
     /// commits (0 before it is set, and for genesis).
     pub committed: u64,
+    /// The difficulty count its children's target was set from (0 under a frozen target and
+    /// at Variant A's retargets).
+    pub child_count: u64,
 }
 
 /// A view: the node whose acceptance is computed.
@@ -279,6 +283,11 @@ impl Sim<'_> {
             registered: NONE,
             round: NONE,
             committed: 0,
+            child_count: if self.spec.frozen_target.is_some() {
+                0
+            } else {
+                n
+            },
         });
         self.settled_ids.push(0);
         self.network_tip = 0;
@@ -607,8 +616,13 @@ impl Sim<'_> {
             registered: NONE,
             round: cand.group,
             committed: 0,
+            child_count: 0,
         });
         self.unsettled.push(id);
+        if self.spec.trace_blocks {
+            let state = self.entropy_state();
+            self.trace_state.push((id, state));
+        }
         self.watch_fork_storm(now, height);
         self.set_difficulty(id);
         self.panel_accept(id);
@@ -658,6 +672,71 @@ impl Sim<'_> {
         self.blocks[id as usize].timestamp
     }
 
+    /// The W2 trace of a run: every final-chain block from an hour before each scripted
+    /// blackout to the end of its diagnosis tail, with the difficulty it was mined under and
+    /// the entropy state when it was broadcast, and every sample of the blackouts.
+    fn trace_blocks(&mut self, chain: &[u32], last: u64) {
+        let windows: Vec<(Micros, Micros)> = self
+            .res
+            .outages
+            .iter()
+            .filter(|r| r.kind == 2)
+            .map(|r| {
+                (
+                    micros((r.start_s - 3_600.0).max(0.0)),
+                    micros(r.start_s + r.duration_s + crate::world::DIAGNOSIS_TAIL_S),
+                )
+            })
+            .collect();
+        let state: std::collections::HashMap<u32, [u32; 4]> =
+            self.trace_state.iter().copied().collect();
+        let mut rows = Vec::new();
+        let mut previous: Option<Micros> = None;
+        for height in 1..=last {
+            let id = chain[height as usize];
+            if id == NONE {
+                continue;
+            }
+            let block = &self.blocks[id as usize];
+            let b = block.broadcast;
+            if windows.iter().any(|(from, to)| b >= *from && b <= *to) {
+                let parent = &self.blocks[block.parent as usize];
+                let s = state.get(&id).copied().unwrap_or_default();
+                rows.push(BlockTraceRow {
+                    height,
+                    timestamp_s: block.timestamp,
+                    broadcast_s: seconds(b),
+                    gap_s: previous.map_or(0.0, |p| seconds(b.saturating_sub(p))),
+                    count: parent.child_count,
+                    p_step: step_win_probability(&parent.child_target),
+                    factor: parent.factor_ppm as f64 / PPM as f64,
+                    kwcs: s[0],
+                    kwcs_able: s[1],
+                    miners_active: s[2],
+                    miners_able: s[3],
+                });
+            }
+            previous = Some(b);
+        }
+        self.res.block_trace = rows;
+        self.res.outage_samples = self
+            .outage_diag
+            .iter()
+            .enumerate()
+            .flat_map(|(i, d)| {
+                d.samples
+                    .iter()
+                    .map(move |(t, active, able, p)| OutageSampleRow {
+                        outage: i as u32,
+                        time_s: seconds(*t),
+                        miners_active: *active,
+                        miners_able: *able,
+                        p_step: *p,
+                    })
+            })
+            .collect();
+    }
+
     /// The ancestor of `b` at `height` (or `b` itself).
     pub(crate) fn ancestor(&self, b: u32, height: u64) -> u32 {
         let mut x = b;
@@ -683,8 +762,8 @@ impl Sim<'_> {
             (height >= k).then(|| block.timestamp - self.ancestor_timestamp(b, height - k));
         let parent_factor = parent.factor_ppm;
         let parent_target = parent.child_target;
-        let (target, factor) = if let Some(t) = self.spec.frozen_target {
-            (t, PPM)
+        let (target, factor, count) = if let Some(t) = self.spec.frozen_target {
+            (t, PPM, 0)
         } else {
             match self.spec.difficulty {
                 DifficultyVariant::CountBased => {
@@ -732,6 +811,7 @@ impl Sim<'_> {
                             factor,
                         ),
                         factor,
+                        n,
                     )
                 }
                 DifficultyVariant::BitcoinRetarget => {
@@ -744,9 +824,10 @@ impl Sim<'_> {
                         (
                             variant_a_retarget(&parent_target, w, k, self.p.interval_s, clamp),
                             PPM,
+                            0,
                         )
                     } else {
-                        (parent_target, PPM)
+                        (parent_target, PPM, 0)
                     }
                 }
             }
@@ -754,6 +835,7 @@ impl Sim<'_> {
         let block = &mut self.blocks[b as usize];
         block.child_target = target;
         block.factor_ppm = factor;
+        block.child_count = count;
         if self.spec.correction.is_some() && height % k == 0 && self.res.factor_ppm.len() < 100_000
         {
             self.res.factor_ppm.push(factor);
@@ -1285,6 +1367,9 @@ impl Sim<'_> {
                 record.gaps.push(diagnose_gap(*p, *b, samples, interval));
             }
         }
+        if self.spec.trace_blocks {
+            self.trace_blocks(&chain, last);
+        }
         self.res.permanent_split_panel_nodes =
             self.panel_split.iter().filter(|x| **x).count() as u64;
         let split = &self.panel_split;
@@ -1382,6 +1467,7 @@ mod tests {
             registered: NONE,
             round: NONE,
             committed: 0,
+            child_count: 0,
         });
         let id = (sim.blocks.len() - 1) as u32;
         sim.unsettled.push(id);

@@ -426,9 +426,11 @@ pub fn run_suite(config: &Config, options: &SuiteOptions) -> Result<SuiteOutput,
     let e2_range = stage1(run_e2, e::e2_jobs);
     let e1_range = stage1(run_e1, e::e1_stage1_jobs);
     let e3_range = stage1(run_e3, e::e3_jobs);
-    // W1 is supplementary (not part of the reference run): it runs only when named.
+    // W1 and W2 are supplementary (not part of the reference run): each runs only when named.
     let run_w1 = options.only.iter().any(|s| s == "W1");
     let w1_range = stage1(run_w1, w::w1_jobs);
+    let run_w2 = options.only.iter().any(|s| s == "W2");
+    let w2_range = stage1(run_w2, w::w2_jobs);
     let results = run_jobs(config, &all, options.threads, &options.control, "main")?;
     for (job, result) in all.iter().zip(&results) {
         out.perf.push(perf_row(job, result));
@@ -447,6 +449,7 @@ pub fn run_suite(config: &Config, options: &SuiteOptions) -> Result<SuiteOutput,
     };
     let e3_out = e3_range.map(|(a, b)| e::e3_analyse(&ctx, &results[a..b]));
     let w1_out = w1_range.map(|(a, b)| w::w1_analyse(&ctx, &results[a..b]));
+    let w2_out = w2_range.map(|(a, b)| w::w2_analyse(&ctx, &results[a..b]));
     // Stage 2: E1's criterion-4 reruns and E4.
     let e1_reruns = match (e1_range, &h5) {
         (Some((a, b)), Some(h)) => e::e1_stage2_jobs(&ctx, &results[a..b], h),
@@ -503,6 +506,9 @@ pub fn run_suite(config: &Config, options: &SuiteOptions) -> Result<SuiteOutput,
         );
     }
     if let Some(o) = w1_out {
+        absorb(&mut out, o);
+    }
+    if let Some(o) = w2_out {
         absorb(&mut out, o);
     }
     let specs: Vec<JobSpec> = v0_specs.into_iter().chain(all).chain(stage2).collect();
@@ -1065,6 +1071,7 @@ mod tests {
             "E2" => e::e2_jobs(&ctx),
             "E3" => e::e3_jobs(&ctx),
             "W1" => w::w1_jobs(&ctx),
+            "W2" => w::w2_jobs(&ctx),
             "E4" => e::e4_jobs(
                 &ctx,
                 &e::E4Setting {

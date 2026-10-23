@@ -1,17 +1,23 @@
-//! W1, where the withholder sits (architect, 2026-10-23): a supplementary job set, not part of
-//! the reference run. It runs only when named (`gb sim --only W1`).
+//! Supplementary job sets, not part of the reference run: each runs only when named
+//! (`gb sim --only W1`, `--only W2`).
 //!
-//! E1's two finalists ((r), first seen, literal, with D = 10 s soft and without a deadline) and
-//! C3's withholder runs at D = none and D = 10 s soft, at the final defaults, with the 10 %
-//! withholder placed three ways: as in the reference (by the slot order that places the
-//! regions, mostly as_east; ASSUMPTIONS SIM-51), spread over the regions in proportion to their
-//! miners, and all in one small, distant region. The jobs placed as in the reference are those
-//! of the reference run under other names, so they reproduce its figures.
+//! W1, where the withholder sits (architect, 2026-10-23): E1's two finalists ((r), first seen,
+//! literal, with D = 10 s soft and without a deadline) and C3's withholder runs at D = none and
+//! D = 10 s soft, at the final defaults, with the 10 % withholder placed three ways: as in the
+//! reference (by the slot order that places the regions, mostly as_east; ASSUMPTIONS SIM-51),
+//! spread over the regions in proportion to their miners, and all in one small, distant
+//! region. The jobs placed as in the reference are those of the reference run under other
+//! names, so they reproduce its figures.
+//!
+//! W2, E3's blackout traces (architect, 2026-10-23): E3's scripted blackout runs at the final
+//! defaults, traced, and every final-chain block and every round's sample from an hour before
+//! the blackout to an hour after each of the three longest pauses, with what held each pause
+//! up. The runs are the reference run's under other names: the trace only observes.
 
 use super::c::{c3_job, region_names};
-use super::e::{ForkConfig, e1_job, e1_seeds};
+use super::e::{ForkConfig, e1_job, e1_seeds, e3_jobs};
 use super::{Ctx, SectionOut, Table, amplification, div, f, n, r};
-use crate::job::{ForkRule, JobResult, JobSpec};
+use crate::job::{ForkRule, JobResult, JobSpec, OutageSampleRow};
 use crate::network::{Latency, RIPE_MATRIX};
 use gb_config::protocol::{DeadlineScope, EquivocationScope, StartRule};
 
@@ -258,6 +264,305 @@ pub(crate) fn w1_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
     out
 }
 
+// ---------------------------------------------------------------------- W2
+
+const W2: &str = "W2";
+
+/// The traces start this long before a blackout and end this long after the pause.
+const MARGIN_S: f64 = 3_600.0;
+
+/// The pauses W2 traces, longest first.
+const PAUSES: usize = 3;
+
+/// E3's scripted blackout runs (the day-9.19 event and one blackout per region over the
+/// seeds) under the configured entropy rule and failover, traced (W2).
+pub(crate) fn w2_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
+    let signers = ctx.cfg.entropy.signers.value;
+    let failover = ctx.cfg.admission.failover_after_rounds.value;
+    e3_jobs(ctx)
+        .into_iter()
+        .filter(|j| {
+            !j.scripted_blackouts.is_empty()
+                && j.entropy_signers == signers
+                && j.failover_after_rounds == failover
+        })
+        .map(|mut j| {
+            j.id = format!("{}-W2", j.id);
+            j.section = W2.to_string();
+            j.trace_blocks = true;
+            j
+        })
+        .collect()
+}
+
+/// A pause between consecutive final-chain blocks that overlaps a scripted blackout: the run,
+/// the outage record, and the trace row of the block that ended it.
+struct Pause {
+    run: usize,
+    outage: usize,
+    row: usize,
+    length_s: f64,
+}
+
+/// What held a sample up, as E3's gap diagnosis classes it, and the expected wait for a block
+/// with the miners holding entropy at the tip's difficulty (NaN when no miner holds it).
+fn sample_state(s: &OutageSampleRow, interval_s: f64) -> (&'static str, f64) {
+    if s.miners_active == 0 {
+        return ("no miners", f64::NAN);
+    }
+    if s.miners_able == 0 {
+        return ("no entropy", f64::NAN);
+    }
+    // 1 − (1 − p)^n, accurately for small p.
+    let win = -((-s.p_step).ln_1p() * f64::from(s.miners_able)).exp_m1();
+    let wait = if win > 0.0 { 1.0 / win } else { f64::INFINITY };
+    let state = if wait > 4.0 * interval_s {
+        "difficulty too high"
+    } else {
+        "other"
+    };
+    (state, wait)
+}
+
+const STATES: [&str; 4] = ["no miners", "no entropy", "difficulty too high", "other"];
+
+pub(crate) fn w2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
+    let mut out = SectionOut::default();
+    let names = region_names(ctx);
+    let interval = ctx.cfg.issuance.pow_id_target_interval_s.value;
+    let mut pauses = Vec::new();
+    for (run, res) in results.iter().enumerate() {
+        for (outage, o) in res.outages.iter().enumerate() {
+            if o.kind != 2 {
+                continue;
+            }
+            let end = o.start_s + o.duration_s;
+            for (row, b) in res.block_trace.iter().enumerate() {
+                if b.gap_s > 0.0 && b.broadcast_s > o.start_s && b.broadcast_s - b.gap_s < end {
+                    pauses.push(Pause {
+                        run,
+                        outage,
+                        row,
+                        length_s: b.gap_s,
+                    });
+                }
+            }
+        }
+    }
+    pauses.sort_by(|a, b| b.length_s.total_cmp(&a.length_s));
+    pauses.truncate(PAUSES);
+    let mut gaps = Table::new(
+        "W2_pauses.csv",
+        &[
+            "rank",
+            "run",
+            "region",
+            "blackout_start_s",
+            "blackout_s",
+            "pause_start_since_blackout_start_s",
+            "pause_s",
+            "count_before",
+            "count_during",
+            "count_after",
+            "miners_able_before",
+            "miners_able_during_min",
+            "miners_able_during_mean",
+            "miners_able_after",
+            "expected_wait_during_s",
+            "pause_over_expected_wait",
+            "mean_interval_next_10_s",
+            "share_no_miners",
+            "share_no_entropy",
+            "share_difficulty_too_high",
+            "share_other",
+            "samples",
+            "cause",
+        ],
+    );
+    let mut lines = Vec::new();
+    for (k, p) in pauses.iter().enumerate() {
+        let rank = k + 1;
+        let res = &results[p.run];
+        let o = &res.outages[p.outage];
+        let start = o.start_s;
+        let end_row = &res.block_trace[p.row];
+        let (pause_from, pause_to) = (end_row.broadcast_s - end_row.gap_s, end_row.broadcast_s);
+        let (from, to) = (start - MARGIN_S, pause_to + MARGIN_S);
+        let mut blocks = Table::new(
+            &format!("traces/E3_pause{rank}_blocks.csv"),
+            &[
+                "height",
+                "timestamp_s",
+                "broadcast_s",
+                "since_blackout_start_s",
+                "gap_s",
+                "count",
+                "p_step",
+                "factor",
+                "kwcs",
+                "kwcs_able",
+                "miners_active",
+                "miners_able",
+            ],
+        );
+        for b in res
+            .block_trace
+            .iter()
+            .filter(|b| b.broadcast_s >= from && b.broadcast_s <= to)
+        {
+            blocks.push(vec![
+                n(b.height),
+                n(b.timestamp_s),
+                f(b.broadcast_s),
+                f(b.broadcast_s - start),
+                f(b.gap_s),
+                n(b.count),
+                f(b.p_step),
+                f(b.factor),
+                n(u64::from(b.kwcs)),
+                n(u64::from(b.kwcs_able)),
+                n(u64::from(b.miners_active)),
+                n(u64::from(b.miners_able)),
+            ]);
+        }
+        let mut samples = Table::new(
+            &format!("traces/E3_pause{rank}_samples.csv"),
+            &[
+                "time_s",
+                "since_blackout_start_s",
+                "in_pause",
+                "miners_active",
+                "miners_able",
+                "p_step",
+                "expected_wait_s",
+                "state",
+            ],
+        );
+        let mut counts = [0u64; 4];
+        let (mut able_min, mut able_sum, mut wait_sum, mut waits) = (u32::MAX, 0u64, 0.0, 0u64);
+        for s in res
+            .outage_samples
+            .iter()
+            .filter(|s| s.outage as usize == p.outage && s.time_s >= from && s.time_s <= to)
+        {
+            let (state, wait) = sample_state(s, interval);
+            let inside = s.time_s >= pause_from && s.time_s <= pause_to;
+            if inside {
+                if let Some(i) = STATES.iter().position(|x| *x == state) {
+                    counts[i] += 1;
+                }
+                able_min = able_min.min(s.miners_able);
+                able_sum += u64::from(s.miners_able);
+                if wait.is_finite() {
+                    wait_sum += wait;
+                    waits += 1;
+                }
+            }
+            samples.push(vec![
+                f(s.time_s),
+                f(s.time_s - start),
+                n(u64::from(inside)),
+                n(u64::from(s.miners_active)),
+                n(u64::from(s.miners_able)),
+                f(s.p_step),
+                f(wait),
+                state.to_string(),
+            ]);
+        }
+        let inside: u64 = counts.iter().sum();
+        let before = p.row.checked_sub(1).map(|i| &res.block_trace[i]);
+        let after = res.block_trace.get(p.row + 1);
+        let next: Vec<f64> = res.block_trace[p.row + 1..]
+            .iter()
+            .take(10)
+            .map(|b| b.gap_s)
+            .collect();
+        let next_mean = div(next.iter().sum(), next.len() as f64);
+        let wait = div(wait_sum, waits as f64);
+        let able_mean = div(able_sum as f64, inside as f64);
+        let share = |i: usize| div(counts[i] as f64, inside as f64);
+        let cause = (0..4)
+            .max_by_key(|i| counts[*i])
+            .map_or("none", |i| STATES[i]);
+        let region = names
+            .get(usize::from(o.region))
+            .cloned()
+            .unwrap_or_default();
+        gaps.push(vec![
+            n(rank as u64),
+            res.id.clone(),
+            region.clone(),
+            f(start),
+            f(o.duration_s),
+            f(pause_from - start),
+            f(p.length_s),
+            before.map_or(String::new(), |b| n(b.count)),
+            n(end_row.count),
+            after.map_or(String::new(), |b| n(b.count)),
+            before.map_or(String::new(), |b| n(u64::from(b.miners_able))),
+            if inside > 0 {
+                n(u64::from(able_min))
+            } else {
+                String::new()
+            },
+            f(able_mean),
+            n(u64::from(end_row.miners_able)),
+            f(wait),
+            f(div(p.length_s, wait)),
+            f(next_mean),
+            f(share(0)),
+            f(share(1)),
+            f(share(2)),
+            f(share(3)),
+            n(inside),
+            cause.to_string(),
+        ]);
+        lines.push(format!(
+            "{rank}. `{}` ({region}): a pause of {} s {}. The round's difficulty was set from a count of {} miners{}; during the pause {}–{} miners could get entropy (mean {}), so that difficulty implied an expected wait of {} s ({} target intervals) and the pause lasted {} times that. The block that ended it counted {} miners, and the next 10 blocks came {} s apart on average. Samples during the pause ({inside}): no miners {} %, no entropy {} %, difficulty too high {} %, other {} % (most: {cause}).",
+            res.id,
+            r(p.length_s, 0),
+            if pause_from < start {
+                format!("that began {} s before the blackout", r(start - pause_from, 0))
+            } else {
+                format!("from {} s after the blackout began", r(pause_from - start, 0))
+            },
+            end_row.count,
+            before.map_or(String::new(), |b| format!(
+                " (the block before the pause had {} miners able to get entropy)",
+                b.miners_able
+            )),
+            if inside > 0 { able_min } else { 0 },
+            res.outage_samples
+                .iter()
+                .filter(|s| s.outage as usize == p.outage
+                    && s.time_s >= pause_from
+                    && s.time_s <= pause_to)
+                .map(|s| s.miners_able)
+                .max()
+                .unwrap_or(0),
+            r(able_mean, 0),
+            r(wait, 0),
+            r(wait / interval, 1),
+            r(div(p.length_s, wait), 2),
+            after.map_or("–".to_string(), |b| b.count.to_string()),
+            r(next_mean, 1),
+            r(100.0 * share(0), 0),
+            r(100.0 * share(1), 0),
+            r(100.0 * share(2), 0),
+            r(100.0 * share(3), 0),
+        ));
+        out.tables.push(blocks);
+        out.tables.push(samples);
+    }
+    out.tables.push(gaps);
+    out.summary = format!(
+        "## W2 — E3's blackout traces (supplementary)\n\nNot part of the reference run (architect, 2026-10-23); run with `gb sim --only W2`. E3's {} scripted blackout runs under the configured entropy rule and failover, traced: the reference run's runs under other names (the trace only observes). For each of the {PAUSES} longest pauses between final-chain blocks during a blackout, every final-chain block (`traces/E3_pause<k>_blocks.csv`: its difficulty count, per-step success probability and correction factor, and the KWCs and miners able to issue and get entropy when it was broadcast) and every round's sample (`traces/E3_pause<k>_samples.csv`, from the blackout's start: miners mining and those able to get entropy, the tip's difficulty, the expected wait, and E3's diagnosis of what held it up) from an hour before the blackout to an hour after the pause; the pauses in `W2_pauses.csv`. A round's difficulty is set from the count taken when the previous round's block arrived (SPEC §3.8), so a round open when a blackout begins keeps the difficulty of the miners counted before it. Miners able to get entropy are those whose KWC can issue it now; a miner skipped when its round opened, because its KWC could not issue then, mines again when the round runs out of draws or at the next round (SIM-48), so \"other\" includes waits for those miners.\n\n{}\n",
+        results.len(),
+        lines.join("\n")
+    );
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -309,5 +614,55 @@ mod tests {
                 j.id
             );
         }
+    }
+
+    #[test]
+    fn w2_traces_e3s_blackout_runs_at_the_defaults_under_other_names() {
+        let cfg = gb_config::Config::default();
+        let ctx = ctx(&cfg);
+        let reference: Vec<String> = e3_jobs(&ctx).iter().map(unnamed).collect();
+        let jobs = w2_jobs(&ctx);
+        // The day-9.19 event and a blackout of each of the 8 regions over 5 seeds.
+        assert_eq!(jobs.len(), 41);
+        for j in &jobs {
+            assert!(j.trace_blocks, "{}", j.id);
+            let mut plain = j.clone();
+            plain.trace_blocks = false;
+            assert!(
+                reference.contains(&unnamed(&plain)),
+                "{} is not an E3 run",
+                j.id
+            );
+        }
+    }
+
+    #[test]
+    fn tracing_blocks_only_observes_the_run() {
+        let cfg = gb_config::Config::default();
+        let ctx = Ctx {
+            quick: true,
+            ..ctx(&cfg)
+        };
+        let mut traced_spec = w2_jobs(&ctx).pop().unwrap();
+        traced_spec.miners = 100;
+        let mut plain_spec = traced_spec.clone();
+        plain_spec.trace_blocks = false;
+        let traced = crate::run_job(&traced_spec, &cfg).unwrap();
+        let plain = crate::run_job(&plain_spec, &cfg).unwrap();
+        assert!(!traced.block_trace.is_empty());
+        assert!(!traced.outage_samples.is_empty());
+        assert!(plain.block_trace.is_empty() && plain.outage_samples.is_empty());
+        let mut stripped = traced.clone();
+        stripped.block_trace.clear();
+        stripped.outage_samples.clear();
+        assert_eq!(
+            serde_json::to_string(&stripped).unwrap(),
+            serde_json::to_string(&plain).unwrap()
+        );
+        let out = w2_analyse(&ctx, &[traced]);
+        let names: Vec<&str> = out.tables.iter().map(|t| t.name.as_str()).collect();
+        assert!(names.contains(&"traces/E3_pause1_blocks.csv"), "{names:?}");
+        assert!(names.contains(&"traces/E3_pause1_samples.csv"), "{names:?}");
+        assert!(names.contains(&"W2_pauses.csv"), "{names:?}");
     }
 }

@@ -238,6 +238,9 @@ pub(crate) struct Sim<'a> {
     pub outage_of_script: Vec<u32>,
     /// E3 diagnosis samples of each outage record (scripted blackouts only).
     pub outage_diag: Vec<crate::world::OutageDiag>,
+    /// Traced runs (W2): each block's entropy state when it was broadcast
+    /// ([`Sim::entropy_state`]).
+    pub trace_state: Vec<(u32, [u32; 4])>,
 }
 
 impl<'a> Sim<'a> {
