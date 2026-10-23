@@ -225,6 +225,11 @@ pub(crate) fn e2_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
                 j.difficulty = DifficultyVariant::CountBased;
                 j.count_rule = v.count_rule;
                 j.correction = v.correction;
+                // The configured defaults' runs also sample the daily curves.
+                let issuance = &ctx.cfg.issuance;
+                j.availability_curve = *start == issuance.start_rule.value
+                    && v.count_rule == issuance.difficulty_count_rule.value
+                    && v.correction == issuance.count_based_correction.value;
                 jobs.push(j);
             }
         }
@@ -286,6 +291,21 @@ pub(crate) fn e2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, H
             "max_gap_s",
         ],
     );
+    let mut curves = Table::new(
+        "E2_daily_curves.csv",
+        &[
+            "start_rule",
+            "churn",
+            "variant",
+            "utc_hour",
+            "samples",
+            "miners_mining",
+            "witnesses_reachable",
+            "kwcs_able_to_issue_entropy",
+            "miners_able_to_get_entropy",
+        ],
+    );
+    let mut curve_lines = Vec::new();
     let mut i = 0;
     let mut interval_err: std::collections::BTreeMap<(String, String), f64> = Default::default();
     for start in &starts {
@@ -331,6 +351,33 @@ pub(crate) fn e2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, H
                         (start_name(*start).to_string(), label.clone()),
                         (mean - 30.0).abs(),
                     );
+                }
+                if !res.availability_by_hour.is_empty() {
+                    let mut low: Option<(usize, f64, f64)> = None;
+                    for (hour, row) in res.availability_by_hour.iter().enumerate() {
+                        let mean_of = |c: usize| div(row[c], row[0]);
+                        curves.push(vec![
+                            start_name(*start).to_string(),
+                            churn.to_string(),
+                            label.clone(),
+                            n(hour as u64),
+                            n(row[0] as u64),
+                            f(mean_of(1)),
+                            f(mean_of(2)),
+                            f(mean_of(3)),
+                            f(mean_of(4)),
+                        ]);
+                        if row[0] > 0.0 && low.is_none_or(|(_, _, m)| mean_of(4) < m) {
+                            low = Some((hour, mean_of(3), mean_of(4)));
+                        }
+                    }
+                    if let Some((hour, kwcs, miners)) = low {
+                        curve_lines.push(format!(
+                            "{churn} churn ({label}): lowest at {hour:02} UTC, with {} % of KWCs able to issue entropy and {} % of miners able to get it",
+                            r(100.0 * kwcs, 1),
+                            r(100.0 * miners, 1)
+                        ));
+                    }
                 }
             }
         }
@@ -427,6 +474,7 @@ pub(crate) fn e2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, H
     out.tables.push(issuance);
     out.tables.push(hopping);
     out.tables.push(h5);
+    out.tables.push(curves);
     out.charts.push(Chart {
         file: "E2_tradeoff.png".to_string(),
         title: "E2 — interval error against hopping gain".to_string(),
@@ -458,7 +506,7 @@ pub(crate) fn e2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, H
             .join("; ")
     };
     out.summary = format!(
-        "## E2 — the issuance count rule\n\nVariant B under three count rules, without a correction and with P1 and P2 at clamps 1.1, 1.25 and 1.5 and B-exact; Variant A is the reference. Intervals in the C4 setup under both churns and start rules (`E2_issuance.csv`); hopping gains in the V3 setup at m ∈ {{0.1, 0.5, 1, 4}} and one idle-but-counted cycle at m = 1 (`E2_hopping.csv`, `E2_h5.csv`). The chart shows the trade-off between interval error and the worst hopping gain.\n\n{}\n",
+        "## E2 — the issuance count rule\n\nVariant B under three count rules, without a correction and with P1 and P2 at clamps 1.1, 1.25 and 1.5 and B-exact; Variant A is the reference. Intervals in the C4 setup under both churns and start rules (`E2_issuance.csv`); hopping gains in the V3 setup at m ∈ {{0.1, 0.5, 1, 4}} and one idle-but-counted cycle at m = 1 (`E2_hopping.csv`, `E2_h5.csv`). The chart shows the trade-off between interval error and the worst hopping gain.\n\n{}\n\nDaily curves at the configured defaults (`E2_daily_curves.csv`: for each UTC hour, the shares of miners mining, witnesses reachable, KWCs able to issue entropy and miners able to get it, sampled every 10 minutes after the first day): {}.\n",
         if outcome.passed {
             format!(
                 "Variants passing H5 (gain ≤ 1.02 at every m), used by E1's criterion 4: {}.",
@@ -469,6 +517,11 @@ pub(crate) fn e2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> (SectionOut, H
                 "**No variant passes H5** (gain ≤ 1.02 at every m). Ranked on the smallest worst-case gain, E1's criterion 4 uses {}.",
                 list(&outcome)
             )
+        },
+        if curve_lines.is_empty() {
+            "none sampled".to_string()
+        } else {
+            curve_lines.join("; ")
         }
     );
     (out, outcome)
@@ -1525,10 +1578,10 @@ pub(crate) fn e3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             .collect::<Vec<_>>()
             .join("\n"),
         if p_candidates.is_empty() {
-            "No threshold configuration removes the global stall: threshold entropy is not marked [P].".to_string()
+            "No configuration passes the test fixed in advance (no gap over 10 minutes in any blackout).".to_string()
         } else {
             format!(
-                "**[P] candidate for SPEC v0.7:** {} (no gap over 10 minutes in any blackout).",
+                "**Passes the test fixed in advance** (no gap over 10 minutes in any blackout): {}.",
                 p_candidates.join("; ")
             )
         }

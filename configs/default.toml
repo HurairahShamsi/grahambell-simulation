@@ -76,10 +76,10 @@ grace_epoch_rounds = { value = 5, status = "D" }
 clock_tolerance_s = { value = 2.0, status = "O", sweep = { range = [0.5, 10.0] } }
 # One Chance wait: one grace epoch (5 rounds) by default.
 one_chance_wait_rounds = { value = 5, status = "O", sweep = { values = [1, 2, 5] } }
-# PoWit deadline D: 10 s with the soft scope (architect, 2026-10-22), on each node's own clock; value = "none" removes it.
-powit_deadline_s = { value = 10.0, status = "D", sweep = { values = [10.0, 5.0, 30.0, 60.0], note = "10 s with the soft scope is the default (architect, 2026-10-22; the M3a.1 E1 criteria as written, at the final defaults); no deadline (the value unset) and 5, 30 and 60 s are comparisons" } }
+# PoWit deadline D: none by default (architect, 2026-10-24); 10 s with the soft scope is [P]. A number sets it, judged on each node's own clock.
+powit_deadline_s = { status = "D", sweep = { values = [10.0, 5.0, 30.0, 60.0], note = "no deadline is the default (architect, 2026-10-24; the M3a.1 E1 criteria as written, at the final defaults); 10 s with the soft scope is [P], for M3b's adversarial withholding; 5, 30 and 60 s are comparisons" } }
 powit_deadline_scope = { value = "not_extended_only", status = "D", sweep = { values = ["not_extended_only", "permanent"], note = "permanent is the comparison (architect, 2026-10-14)" } }
-early_block = { value = "permanent", status = "D", sweep = { values = ["permanent", "reevaluate_later"], note = "re-evaluation is the comparison (architect, 2026-10-12)" } }
+early_block = { value = "reevaluate_later", status = "D", sweep = { values = ["reevaluate_later", "permanent"], note = "re-evaluation is the default (architect, 2026-10-24; M3a.1 C6: no validator split under clock skew); permanent rejection is the comparison" } }
 witness_signing = { value = "on_time", status = "D", sweep = { values = ["on_time", "earliest_within_tolerance"], note = "earliest within δ (the earlier P-4 reading) is the comparison" } }
 
 # ---------------------------------------------------------------- SPEC §2, §3.1: admission

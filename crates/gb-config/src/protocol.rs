@@ -196,14 +196,17 @@ pub enum DeadlineScope {
 }
 
 /// How a node treats a block it received before the block's timestamp minus δ (SPEC §3.7;
-/// architect, 2026-10-12).
+/// architect, 2026-10-12 and 2026-10-24).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum EarlyBlockRule {
-    /// Literal: rejected at that node for good, because its receipt time is a fact.
-    #[default]
+    /// Comparison (the literal reading): rejected at that node for good, because its receipt
+    /// time is a fact. With every clock skewed at σ = 2 s and δ = 2 s it split 16 of 101
+    /// validators for good (M3a.1 C6).
     Permanent,
-    /// Comparison: re-evaluated if it arrives again after its timestamp minus δ.
+    /// The default (architect, 2026-10-24): declined until the node's clock passes the
+    /// block's timestamp minus δ, then requested again and reconsidered.
+    #[default]
     ReevaluateLater,
 }
 
@@ -644,7 +647,7 @@ pub struct Timing {
     /// by default).
     pub one_chance_wait_rounds: Param<u32>,
     /// PoWit arrival deadline D, in seconds after the block's timestamp, measured by each node
-    /// on its own clock (SPEC §3.7; 10 s by default).
+    /// on its own clock (SPEC §3.7; none by default).
     pub powit_deadline_s: Param<Option<f64>>,
     /// How a node treats a block whose PoWit reached it after D.
     pub powit_deadline_scope: Param<DeadlineScope>,
@@ -664,12 +667,14 @@ impl Default for Timing {
                 ])
                 .with_note("permanent is the comparison (architect, 2026-10-14)"),
             ),
-            early_block: Param::decided(EarlyBlockRule::Permanent).swept(
+            early_block: Param::decided(EarlyBlockRule::ReevaluateLater).swept(
                 Sweep::values(vec![
-                    EarlyBlockRule::Permanent,
                     EarlyBlockRule::ReevaluateLater,
+                    EarlyBlockRule::Permanent,
                 ])
-                .with_note("re-evaluation is the comparison (architect, 2026-10-12)"),
+                .with_note(
+                    "re-evaluation is the default (architect, 2026-10-24; M3a.1 C6: no validator split under clock skew); permanent rejection is the comparison",
+                ),
             ),
             witness_signing: Param::decided(WitnessSigning::OnTime).swept(
                 Sweep::values(vec![
@@ -682,9 +687,9 @@ impl Default for Timing {
             clock_tolerance_s: Param::with_status(2.0, Status::O).swept(Sweep::range(0.5, 10.0)),
             one_chance_wait_rounds: Param::with_status(5, Status::O)
                 .swept(Sweep::values(vec![1, 2, 5])),
-            powit_deadline_s: Param::decided(Some(10.0)).swept(
+            powit_deadline_s: Param::decided(None).swept(
                 Sweep::values(vec![Some(10.0), Some(5.0), Some(30.0), Some(60.0)]).with_note(
-                    "10 s with the soft scope is the default (architect, 2026-10-22; the M3a.1 E1 criteria as written, at the final defaults); no deadline (the value unset) and 5, 30 and 60 s are comparisons",
+                    "no deadline is the default (architect, 2026-10-24; the M3a.1 E1 criteria as written, at the final defaults); 10 s with the soft scope is [P], for M3b's adversarial withholding; 5, 30 and 60 s are comparisons",
                 ),
             ),
         }

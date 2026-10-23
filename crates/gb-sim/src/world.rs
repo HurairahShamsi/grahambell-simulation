@@ -156,6 +156,10 @@ pub(crate) struct OutageDiag {
     /// (time, miners mining with their household online, those of them whose KWC can issue
     /// entropy, the network tip's per-step success probability).
     pub samples: Vec<(Micros, u32, u32, f64)>,
+    /// Traced runs (W2), with each sample: the round on the network tip's slots not yet drawn
+    /// and those of them whose miner can mine, and its skipped slots and those of them whose
+    /// miner can mine ([`Sim::tip_round_skips`]).
+    pub skip_samples: Vec<(u32, u32, u32, u32)>,
     /// Failover moves before it started.
     pub moves_before: u64,
 }
@@ -430,6 +434,7 @@ impl<'a> Sim<'a> {
             pending: std::collections::BTreeMap::new(),
             panel_split: Vec::new(),
             invariants_due: 0,
+            availability_due: 86_400 * SECOND,
             own_entries: 0,
             deferred: Vec::new(),
             deferred_free: Vec::new(),
@@ -2513,6 +2518,7 @@ impl<'a> Sim<'a> {
         self.res.outages.push(record);
         self.outage_diag.push(OutageDiag {
             samples: Vec::new(),
+            skip_samples: Vec::new(),
             moves_before: self.res.failover_moves,
         });
         self.q.push(
@@ -2586,9 +2592,13 @@ impl<'a> Sim<'a> {
             let p = step_win_probability(&self.blocks[self.network_tip as usize].child_target);
             let (below, spare) = self.kwcs_unable_and_spare();
             let moves = self.res.failover_moves;
+            let skips = self.spec.trace_blocks.then(|| self.tip_round_skips(now));
             if let Some(d) = self.outage_diag.get_mut(index as usize) {
                 d.samples
                     .push((now, mining as u32, mining.saturating_sub(lost) as u32, p));
+                if let Some(s) = skips {
+                    d.skip_samples.push(s);
+                }
                 let before = d.moves_before;
                 let r = &mut self.res.outages[index as usize];
                 r.failover_moves = moves.saturating_sub(before);
@@ -2602,6 +2612,55 @@ impl<'a> Sim<'a> {
         if seconds(next) <= start + duration + tail {
             self.q.push(next, Ev::OutageSample { index });
         }
+    }
+
+    /// One daily-curve sample (E2, `availability_curve`): the shares of miners mining (admitted,
+    /// past their wait, not idle, household online), of seated witnesses reachable, of KWCs
+    /// able to issue entropy and of miners able to get it, added to its UTC hour.
+    pub(crate) fn sample_availability(&mut self, now: Micros) {
+        let kwcs = self.alloc.active_wcs() as u32;
+        let able: Vec<bool> = (0..kwcs).map(|k| self.kwc_can_issue(k)).collect();
+        let (mut mining, mut with_entropy) = (0usize, 0usize);
+        for m in &self.miners {
+            if m.phase == Phase::Mining
+                && !m.idle
+                && m.kwc != NONE
+                && m.mine_at <= now
+                && self.hh[m.household as usize].online()
+            {
+                mining += 1;
+                if able.get(m.kwc as usize).copied().unwrap_or(false) {
+                    with_entropy += 1;
+                }
+            }
+        }
+        let reachable = (0..self.witnesses.len() as u32)
+            .filter(|w| !self.witnesses[*w as usize].removed() && self.witness_reachable(*w))
+            .count();
+        let n = self.miners.len().max(1) as f64;
+        let hour = ((now / (3_600 * SECOND)) % 24) as usize;
+        if self.res.availability_by_hour.len() < 24 {
+            self.res.availability_by_hour = vec![[0.0; 5]; 24];
+        }
+        let row = &mut self.res.availability_by_hour[hour];
+        row[0] += 1.0;
+        row[1] += mining as f64 / n;
+        row[2] += reachable as f64 / self.witnesses.len().max(1) as f64;
+        row[3] += able.iter().filter(|x| **x).count() as f64 / f64::from(kwcs.max(1));
+        row[4] += with_entropy as f64 / n;
+    }
+
+    /// Whether miner `m` could mine at `now` (W2): admitted and past its wait, not idle, with a
+    /// KWC that can issue entropy and its household online.
+    pub(crate) fn can_mine_now(&self, m: u32, now: Micros) -> bool {
+        let miner = &self.miners[m as usize];
+        matches!(miner.phase, Phase::Mining | Phase::Waiting)
+            && miner.mine_at <= now
+            && !miner.idle
+            && miner.kwc != NONE
+            && miner.kwc < self.alloc.active_wcs() as u32
+            && self.hh[miner.household as usize].online()
+            && self.kwc_can_issue(miner.kwc)
     }
 
     /// The entropy state the W2 trace records with each block: active KWCs, those able to

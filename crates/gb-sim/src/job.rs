@@ -245,6 +245,11 @@ pub struct JobSpec {
     /// otherwise the same. Left out of the specification when false.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub trace_blocks: bool,
+    /// Sample, every 10 minutes after the first day, the shares of miners mining, witnesses
+    /// reachable, KWCs able to issue entropy and miners able to get it, by UTC hour (E2's
+    /// daily curves). It only observes. Left out of the specification when false.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub availability_curve: bool,
 }
 
 /// One traced event: when it was processed, what it was, and the entities it names.
@@ -377,6 +382,39 @@ pub struct OutageSampleRow {
     pub miners_able: u32,
     /// The network tip's per-step success probability.
     pub p_step: f64,
+    /// The round on the network tip: slots not yet drawn.
+    #[serde(default)]
+    pub tip_pool: u32,
+    /// Of those, the slots whose miner could mine now.
+    #[serde(default)]
+    pub tip_pool_able: u32,
+    /// The round on the network tip: slots skipped since its last refresh (SIM-48).
+    #[serde(default)]
+    pub tip_skipped: u32,
+    /// Of those, the slots whose miner could mine now: held only by the skip rule.
+    #[serde(default)]
+    pub tip_skipped_able: u32,
+}
+
+/// A slot skipped while its miner could not mine whose miner could mine again before the slot
+/// left the skipped state, in a traced run (W2; SIM-48).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct SkipRow {
+    /// The height its round mined.
+    pub round_height: u64,
+    /// The miner slot.
+    pub miner: u32,
+    /// Why it was skipped: 0 not mining, 1 offline, 2 no entropy.
+    pub reason: u8,
+    /// When it was skipped, simulated seconds.
+    pub skipped_s: f64,
+    /// When its miner could first mine again (the first blackout sample that found it so).
+    pub able_s: f64,
+    /// When it left the skipped state, simulated seconds.
+    pub left_s: f64,
+    /// How: 0 drawn again at a refresh, 1 dropped because a block at its height was held on
+    /// time, 2 its round's height settled, its parent lost or the round closed, 3 the run ended.
+    pub how: u8,
 }
 
 /// Counts and sums a run produces. Everything a table needs is here, so tables never rerun a
@@ -624,6 +662,15 @@ pub struct JobResult {
     /// Traced runs (W2): every round's sample of each scripted blackout.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub outage_samples: Vec<OutageSampleRow>,
+    /// Traced runs (W2): skipped slots whose miner could mine again before they left the
+    /// skipped state.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub skip_rows: Vec<SkipRow>,
+    /// With `availability_curve`: for each UTC hour, the samples and the sums of the shares
+    /// of miners mining, witnesses reachable, KWCs able to issue entropy and miners able to
+    /// get it.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub availability_by_hour: Vec<[f64; 5]>,
     /// Offline points: awards, by region and device.
     pub point_awards: Vec<Vec<u64>>,
     /// Offline points: awards by cause (household cause bits in order, then partition cuts).
@@ -759,6 +806,7 @@ impl JobSpec {
             groups_by_region: false,
             groups_in_region: None,
             trace_blocks: false,
+            availability_curve: false,
             warmup_days: 1.0,
             trace_every: if sim.trace_sample > 0.0 {
                 (1.0 / sim.trace_sample).round().max(1.0) as u64

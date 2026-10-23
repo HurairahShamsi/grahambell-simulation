@@ -208,6 +208,10 @@ pub(crate) struct Group {
     /// household's scheduled return when offline, the skip itself otherwise). A round left
     /// without draws can draw them again; its first block scores them (`score_skips`).
     pub transient: Vec<(u32, u8, Micros)>,
+    /// Traced runs (W2): the slots skipped since the round's last refresh, with when each was
+    /// skipped and when its miner could first mine again (`INF` until a blackout sample finds
+    /// it able).
+    pub skip_log: Vec<SkipLog>,
     /// Whether the round's skipped slots have been scored, at its first block.
     pub skips_scored: bool,
     /// The step from which slots drawn again after a refresh count their chains under rule (r).
@@ -215,6 +219,15 @@ pub(crate) struct Group {
     /// When the round was last refreshed (0 if never): the earliest time its slots request
     /// entropy again.
     pub refresh_at: Micros,
+}
+
+/// One skipped slot of a traced run's round (W2).
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct SkipLog {
+    pub miner: u32,
+    pub reason: u8,
+    pub skipped_at: Micros,
+    pub able_at: Micros,
 }
 
 /// A miner's candidate block, between its winning step and its decision to broadcast.
@@ -726,12 +739,21 @@ impl Sim<'_> {
             .flat_map(|(i, d)| {
                 d.samples
                     .iter()
-                    .map(move |(t, active, able, p)| OutageSampleRow {
-                        outage: i as u32,
-                        time_s: seconds(*t),
-                        miners_active: *active,
-                        miners_able: *able,
-                        p_step: *p,
+                    .enumerate()
+                    .map(move |(k, (t, active, able, p))| {
+                        let (pool, pool_able, skipped, skipped_able) =
+                            d.skip_samples.get(k).copied().unwrap_or_default();
+                        OutageSampleRow {
+                            outage: i as u32,
+                            time_s: seconds(*t),
+                            miners_active: *active,
+                            miners_able: *able,
+                            p_step: *p,
+                            tip_pool: pool,
+                            tip_pool_able: pool_able,
+                            tip_skipped: skipped,
+                            tip_skipped_able: skipped_able,
+                        }
                     })
             })
             .collect();
@@ -987,6 +1009,12 @@ impl Sim<'_> {
         if now >= self.invariants_due {
             self.check_invariants();
             self.invariants_due = now + 86_400 * SECOND;
+        }
+        if self.spec.availability_curve && now >= self.availability_due {
+            self.sample_availability(now);
+            while self.availability_due <= now {
+                self.availability_due += 600 * SECOND;
+            }
         }
         if self.panel_update_at <= now || self.panel_update_at == u64::MAX {
             self.panel_update_at = now + micros(self.p.interval_s as f64);
@@ -1368,6 +1396,11 @@ impl Sim<'_> {
             }
         }
         if self.spec.trace_blocks {
+            for g in 0..self.groups.len() as u32 {
+                if !self.groups[g as usize].skip_log.is_empty() {
+                    self.close_skips(g, now, 3);
+                }
+            }
             self.trace_blocks(&chain, last);
         }
         self.res.permanent_split_panel_nodes =

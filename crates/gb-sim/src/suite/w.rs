@@ -326,6 +326,84 @@ fn sample_state(s: &OutageSampleRow, interval_s: f64) -> (&'static str, f64) {
 
 const STATES: [&str; 4] = ["no miners", "no entropy", "difficulty too high", "other"];
 
+/// The expected time to the first block over `[from, to]` (truncated at `to`), each sample's
+/// state holding from its time to the next sample's (the first's from `from`), with
+/// `slots(sample)` slots each succeeding with the sample's per-step probability every second.
+fn expected_wait(
+    inside: &[&OutageSampleRow],
+    from: f64,
+    to: f64,
+    slots: impl Fn(&OutageSampleRow) -> u32,
+) -> f64 {
+    if inside.is_empty() {
+        return to - from;
+    }
+    let (mut expected, mut log_survival) = (0.0, 0.0f64);
+    for (i, s) in inside.iter().enumerate() {
+        let a = if i == 0 { from } else { s.time_s };
+        let b = inside.get(i + 1).map_or(to, |x| x.time_s).min(to);
+        if b <= a {
+            continue;
+        }
+        let rate = f64::from(slots(s)) * -(-s.p_step).ln_1p();
+        let dt = b - a;
+        let survival = log_survival.exp();
+        expected += if rate > 0.0 {
+            survival * -(-rate * dt).exp_m1() / rate
+        } else {
+            survival * dt
+        };
+        log_survival -= rate * dt;
+    }
+    expected
+}
+
+/// What each part of a pause was (seconds), by the sample in force: no miner able to get
+/// entropy (or none mining), every able miner's slot held by the skip rule (SIM-48), able
+/// miners out of the round for protocol reasons (sitting out under one header per height,
+/// without the parent, or with a candidate in flight), and able miners still to be drawn.
+fn pause_split(inside: &[&OutageSampleRow], from: f64, to: f64) -> [f64; 4] {
+    let mut split = [0.0; 4];
+    for (i, s) in inside.iter().enumerate() {
+        let a = if i == 0 { from } else { s.time_s };
+        let b = inside.get(i + 1).map_or(to, |x| x.time_s).min(to);
+        if b <= a {
+            continue;
+        }
+        let k = if s.miners_active == 0 || s.miners_able == 0 {
+            0
+        } else if s.tip_pool_able > 0 {
+            3
+        } else if s.tip_skipped_able > 0 {
+            1
+        } else {
+            2
+        };
+        split[k] += b - a;
+    }
+    split
+}
+
+fn reason_name(reason: u8) -> &'static str {
+    match reason {
+        0 => "not mining",
+        1 => "offline",
+        _ => "no entropy",
+    }
+}
+
+fn how_name(how: u8, left_s: f64, pause_to: f64) -> &'static str {
+    if left_s >= pause_to {
+        return "the pause's block (next round)";
+    }
+    match how {
+        0 => "refresh",
+        1 => "dropped: a block at its height held on time",
+        2 => "round settled or closed",
+        _ => "run ended",
+    }
+}
+
 pub(crate) fn w2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
     let mut out = SectionOut::default();
     let names = region_names(ctx);
@@ -377,6 +455,16 @@ pub(crate) fn w2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             "share_other",
             "samples",
             "cause",
+            "no_entropy_s",
+            "all_able_held_by_skip_rule_s",
+            "able_out_for_protocol_reasons_s",
+            "able_still_to_draw_s",
+            "skipped_slots_able_again",
+            "held_slot_s",
+            "expected_blocks_held",
+            "expected_length_s",
+            "expected_length_without_skip_rule_s",
+            "skip_rule_share",
         ],
     );
     let mut lines = Vec::new();
@@ -436,10 +524,16 @@ pub(crate) fn w2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
                 "p_step",
                 "expected_wait_s",
                 "state",
+                "tip_pool",
+                "tip_pool_able",
+                "tip_skipped",
+                "tip_skipped_able",
             ],
         );
         let mut counts = [0u64; 4];
-        let (mut able_min, mut able_sum, mut wait_sum, mut waits) = (u32::MAX, 0u64, 0.0, 0u64);
+        let (mut able_min, mut able_max, mut able_sum, mut wait_sum, mut waits) =
+            (u32::MAX, 0u32, 0u64, 0.0, 0u64);
+        let mut within: Vec<&OutageSampleRow> = Vec::new();
         for s in res
             .outage_samples
             .iter()
@@ -452,11 +546,13 @@ pub(crate) fn w2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
                     counts[i] += 1;
                 }
                 able_min = able_min.min(s.miners_able);
+                able_max = able_max.max(s.miners_able);
                 able_sum += u64::from(s.miners_able);
                 if wait.is_finite() {
                     wait_sum += wait;
                     waits += 1;
                 }
+                within.push(s);
             }
             samples.push(vec![
                 f(s.time_s),
@@ -467,8 +563,67 @@ pub(crate) fn w2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
                 f(s.p_step),
                 f(wait),
                 state.to_string(),
+                n(u64::from(s.tip_pool)),
+                n(u64::from(s.tip_pool_able)),
+                n(u64::from(s.tip_skipped)),
+                n(u64::from(s.tip_skipped_able)),
             ]);
         }
+        // The skipped slots of the pause's round whose miner could mine again during it.
+        let mut skipped = Table::new(
+            &format!("traces/E3_pause{rank}_skipped.csv"),
+            &[
+                "miner",
+                "reason",
+                "skipped_since_blackout_start_s",
+                "able_since_blackout_start_s",
+                "left_since_blackout_start_s",
+                "rejoined_by",
+                "held_in_pause_s",
+            ],
+        );
+        let (mut held_slot_s, mut held_slots) = (0.0, 0u64);
+        for row in res.skip_rows.iter().filter(|x| {
+            x.round_height == end_row.height && x.able_s < pause_to && x.left_s > pause_from
+        }) {
+            let held = (row.left_s.min(pause_to) - row.able_s.max(pause_from)).max(0.0);
+            held_slot_s += held;
+            held_slots += 1;
+            skipped.push(vec![
+                n(u64::from(row.miner)),
+                reason_name(row.reason).to_string(),
+                f(row.skipped_s - start),
+                f(row.able_s - start),
+                f(row.left_s - start),
+                how_name(row.how, row.left_s, pause_to).to_string(),
+                f(held),
+            ]);
+        }
+        let p_mean = div(
+            within.iter().map(|s| s.p_step).sum::<f64>(),
+            within.len() as f64,
+        );
+        let blocks_held: f64 = {
+            // Each sample's held slots for the time its state holds.
+            let mut e = 0.0;
+            for (i, s) in within.iter().enumerate() {
+                let a = if i == 0 { pause_from } else { s.time_s };
+                let b = within
+                    .get(i + 1)
+                    .map_or(pause_to, |x| x.time_s)
+                    .min(pause_to);
+                if b > a {
+                    e += f64::from(s.tip_skipped_able) * -(-s.p_step).ln_1p() * (b - a);
+                }
+            }
+            e
+        };
+        let split = pause_split(&within, pause_from, pause_to);
+        let expected = expected_wait(&within, pause_from, pause_to, |s| s.tip_pool_able);
+        let without = expected_wait(&within, pause_from, pause_to, |s| {
+            s.tip_pool_able + s.tip_skipped_able
+        });
+        let skip_share = div(expected - without, expected);
         let inside: u64 = counts.iter().sum();
         let before = p.row.checked_sub(1).map(|i| &res.block_trace[i]);
         let after = res.block_trace.get(p.row + 1);
@@ -516,9 +671,19 @@ pub(crate) fn w2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             f(share(3)),
             n(inside),
             cause.to_string(),
+            f(split[0]),
+            f(split[1]),
+            f(split[2]),
+            f(split[3]),
+            n(held_slots),
+            f(held_slot_s),
+            f(blocks_held),
+            f(expected),
+            f(without),
+            f(skip_share),
         ]);
         lines.push(format!(
-            "{rank}. `{}` ({region}): a pause of {} s {}. The round's difficulty was set from a count of {} miners{}; during the pause {}–{} miners could get entropy (mean {}), so that difficulty implied an expected wait of {} s ({} target intervals) and the pause lasted {} times that. The block that ended it counted {} miners, and the next 10 blocks came {} s apart on average. Samples during the pause ({inside}): no miners {} %, no entropy {} %, difficulty too high {} %, other {} % (most: {cause}).",
+            "{rank}. `{}` ({region}): a pause of {} s {}. The round's difficulty was set from a count of {} miners{}; during the pause {}–{able_max} miners could get entropy (mean {}), so that difficulty implied an expected wait of {} s ({} target intervals) and the pause lasted {} times that. The block that ended it counted {} miners, and the next 10 blocks came {} s apart on average. Samples during the pause ({inside}): no miners {} %, no entropy {} %, difficulty too high {} %, other {} % (most: {cause}). Of the pause, {} s had no miner able to get entropy, {} s had every able miner's slot held by the skip rule (SIM-48), {} s had able miners out of the round for protocol reasons, and {} s had able miners still to be drawn. {held_slots} skipped slots' miners could mine again during it, holding back {} slot-seconds ({} expected blocks at the tip's difficulty, per-step probability {}): with the skip rule the expected pause on this path is {} s, without it {} s, so the skip rule accounts for {} % of it and protocol behaviour for the rest.",
             res.id,
             r(p.length_s, 0),
             if pause_from < start {
@@ -532,14 +697,6 @@ pub(crate) fn w2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
                 b.miners_able
             )),
             if inside > 0 { able_min } else { 0 },
-            res.outage_samples
-                .iter()
-                .filter(|s| s.outage as usize == p.outage
-                    && s.time_s >= pause_from
-                    && s.time_s <= pause_to)
-                .map(|s| s.miners_able)
-                .max()
-                .unwrap_or(0),
             r(able_mean, 0),
             r(wait, 0),
             r(wait / interval, 1),
@@ -550,13 +707,24 @@ pub(crate) fn w2_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             r(100.0 * share(1), 0),
             r(100.0 * share(2), 0),
             r(100.0 * share(3), 0),
+            r(split[0], 0),
+            r(split[1], 0),
+            r(split[2], 0),
+            r(split[3], 0),
+            r(held_slot_s, 0),
+            r(blocks_held, 2),
+            r(p_mean, 4),
+            r(expected, 0),
+            r(without, 0),
+            r(100.0 * skip_share, 0),
         ));
         out.tables.push(blocks);
         out.tables.push(samples);
+        out.tables.push(skipped);
     }
     out.tables.push(gaps);
     out.summary = format!(
-        "## W2 — E3's blackout traces (supplementary)\n\nNot part of the reference run (architect, 2026-10-23); run with `gb sim --only W2`. E3's {} scripted blackout runs under the configured entropy rule and failover, traced: the reference run's runs under other names (the trace only observes). For each of the {PAUSES} longest pauses between final-chain blocks during a blackout, every final-chain block (`traces/E3_pause<k>_blocks.csv`: its difficulty count, per-step success probability and correction factor, and the KWCs and miners able to issue and get entropy when it was broadcast) and every round's sample (`traces/E3_pause<k>_samples.csv`, from the blackout's start: miners mining and those able to get entropy, the tip's difficulty, the expected wait, and E3's diagnosis of what held it up) from an hour before the blackout to an hour after the pause; the pauses in `W2_pauses.csv`. A round's difficulty is set from the count taken when the previous round's block arrived (SPEC §3.8), so a round open when a blackout begins keeps the difficulty of the miners counted before it. Miners able to get entropy are those whose KWC can issue it now; a miner skipped when its round opened, because its KWC could not issue then, mines again when the round runs out of draws or at the next round (SIM-48), so \"other\" includes waits for those miners.\n\n{}\n",
+        "## W2 — E3's blackout traces (supplementary)\n\nNot part of the reference run (architect, 2026-10-23); run with `gb sim --only W2`. E3's {} scripted blackout runs under the configured entropy rule and failover, traced: the reference run's runs under other names (the trace only observes). For each of the {PAUSES} longest pauses between final-chain blocks during a blackout, every final-chain block (`traces/E3_pause<k>_blocks.csv`: its difficulty count, per-step success probability and correction factor, and the KWCs and miners able to issue and get entropy when it was broadcast), every round's sample (`traces/E3_pause<k>_samples.csv`, from the blackout's start: miners mining and those able to get entropy, the tip's difficulty, the expected wait, E3's diagnosis of what held it up, and the slots of the round on the tip still to be drawn and skipped, with those whose miner could mine) from an hour before the blackout to an hour after the pause, and the skipped slots of the pause's round whose miner could mine again during it (`traces/E3_pause<k>_skipped.csv`: when each was skipped, when its miner could mine again, and when it rejoined); the pauses in `W2_pauses.csv`. A round's difficulty is set from the count taken when the previous round's block arrived (SPEC §3.8), so a round open when a blackout begins keeps the difficulty of the miners counted before it. A slot drawn while its miner cannot mine is skipped, and is drawn again only when the round runs out of draws (a refresh, SIM-48) or at the next round: that skip rule is the simulator's, whereas under the protocol a miner whose KWC can issue entropy again asks for it. The expected pause without the skip rule counts those miners as mining from when they could.\n\n{}\n",
         results.len(),
         lines.join("\n")
     );
@@ -652,9 +820,11 @@ mod tests {
         assert!(!traced.block_trace.is_empty());
         assert!(!traced.outage_samples.is_empty());
         assert!(plain.block_trace.is_empty() && plain.outage_samples.is_empty());
+        assert!(plain.skip_rows.is_empty());
         let mut stripped = traced.clone();
         stripped.block_trace.clear();
         stripped.outage_samples.clear();
+        stripped.skip_rows.clear();
         assert_eq!(
             serde_json::to_string(&stripped).unwrap(),
             serde_json::to_string(&plain).unwrap()
@@ -663,6 +833,34 @@ mod tests {
         let names: Vec<&str> = out.tables.iter().map(|t| t.name.as_str()).collect();
         assert!(names.contains(&"traces/E3_pause1_blocks.csv"), "{names:?}");
         assert!(names.contains(&"traces/E3_pause1_samples.csv"), "{names:?}");
+        assert!(names.contains(&"traces/E3_pause1_skipped.csv"), "{names:?}");
         assert!(names.contains(&"W2_pauses.csv"), "{names:?}");
+    }
+
+    #[test]
+    fn the_daily_curves_only_observe_the_run() {
+        let cfg = gb_config::Config::default();
+        let ctx = ctx(&cfg);
+        let mut sampled = super::super::e::e2_jobs(&ctx)
+            .into_iter()
+            .find(|j| j.availability_curve)
+            .unwrap();
+        sampled.miners = 100;
+        sampled.registered_ids = 1_300;
+        sampled.days = 1.5;
+        let mut plain_spec = sampled.clone();
+        plain_spec.availability_curve = false;
+        let with = crate::run_job(&sampled, &cfg).unwrap();
+        let plain = crate::run_job(&plain_spec, &cfg).unwrap();
+        // Every 10 minutes for the half day after the first.
+        let samples: f64 = with.availability_by_hour.iter().map(|h| h[0]).sum();
+        assert!((60.0..=80.0).contains(&samples), "{samples}");
+        assert!(plain.availability_by_hour.is_empty());
+        let mut stripped = with.clone();
+        stripped.availability_by_hour.clear();
+        assert_eq!(
+            serde_json::to_string(&stripped).unwrap(),
+            serde_json::to_string(&plain).unwrap()
+        );
     }
 }

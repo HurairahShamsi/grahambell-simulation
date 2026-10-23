@@ -1113,7 +1113,7 @@ fn c5_rules() -> Vec<(&'static str, UnreachableRule, StrictOffencePenalty)> {
             StrictOffencePenalty::ImmediateBan,
         ),
         (
-            "unreachable is not refusal [P]",
+            "unreachable is not refusal [D]",
             UnreachableRule::UnreachableIsNotRefusal,
             StrictOffencePenalty::Ladder,
         ),
@@ -1617,7 +1617,7 @@ pub(crate) fn c7_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
     }
     out.tables.push(table);
     out.summary = format!(
-        "## C7 — quorum liveness under household profiles\n\nThe share of KWCs unable to meet a quorum at a sampled instant (`C7_quorum_liveness.csv`), under the [P] \"unreachable is not refusal\" rule so that downtime alone is measured (under the strict rule honest witnesses are also banned: C5):\n\n{}\n",
+        "## C7 — quorum liveness under household profiles\n\nThe share of KWCs unable to meet a quorum at a sampled instant (`C7_quorum_liveness.csv`), under the default \"unreachable is not refusal\" rule [D] so that downtime alone is measured (under the strict rule honest witnesses are also banned: C5):\n\n{}\n",
         summary
             .iter()
             .map(|s| format!("- {s}"))

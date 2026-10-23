@@ -11,8 +11,8 @@ use crate::samplers::any_success;
 use crate::stats::{binned, chi_square_p, chi_square_two_sample, geometric_pit, ks_uniform};
 use gb_analytic::validation::Check;
 use gb_config::protocol::{
-    CountBasedCorrection, DeadlineScope, DifficultyCountRule, DifficultyVariant, EntropySigners,
-    StartRule,
+    CountBasedCorrection, DeadlineScope, DifficultyCountRule, DifficultyVariant, EarlyBlockRule,
+    EntropySigners, StartRule,
 };
 use gb_config::sim::CryptoMode;
 use gb_protocol::issuance::variant_b_target;
@@ -32,10 +32,11 @@ fn min_p(ctx: &Ctx<'_>) -> f64 {
 
 /// A job in the configuration that M1's and M2's references model, whatever the defaults:
 /// start rule (a), the v0.6 tie-break, the count after the post-admission wait and no
-/// correction (architect, 2026-10-21). The PoWit deadline, the entropy rule and the offline
-/// points ladder, which those references do not model, stay at the values V0–V3 ran with
-/// before SPEC v0.7 changed them (10 s with the soft scope, every online member, no ladder),
-/// so V0–V3's tables stay byte-identical; V2's restart runs depend slightly on them.
+/// correction (architect, 2026-10-21). The PoWit deadline, the early-block rule, the entropy
+/// rule and the offline points ladder, which those references do not model, stay at the
+/// values V0–V3 ran with before SPEC v0.7 changed them (10 s with the soft scope, permanent
+/// rejection, every online member, no ladder), so V0–V3's tables stay byte-identical; V2's
+/// restart runs depend slightly on them.
 pub(crate) fn m1_job(ctx: &Ctx<'_>, id: &str, section: &'static str, rep: u64) -> JobSpec {
     let mut j = ctx.job(id, section, rep);
     j.start_rule = StartRule::A;
@@ -44,6 +45,7 @@ pub(crate) fn m1_job(ctx: &Ctx<'_>, id: &str, section: &'static str, rep: u64) -
     j.correction = None;
     j.deadline = Some(10.0);
     j.deadline_scope = DeadlineScope::NotExtendedOnly;
+    j.early_block = EarlyBlockRule::Permanent;
     j.entropy_signers = EntropySigners::AllOnlineMembers;
     j.offline_points = None;
     j
@@ -1289,7 +1291,7 @@ pub(crate) fn v3_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
                 references: vec![references[1].clone()],
             },
             ChartPanel {
-                title: "Variant B (default) and its [P] corrections".to_string(),
+                title: "Variant B (default) and its corrections".to_string(),
                 x_label: "hopping slots ÷ honest slots (m)".to_string(),
                 y_label: "gain".to_string(),
                 log_x: true,

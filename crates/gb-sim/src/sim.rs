@@ -222,6 +222,8 @@ pub(crate) struct Sim<'a> {
     pub pending: std::collections::BTreeMap<u32, (u64, Vec<u32>)>,
     pub panel_split: Vec<bool>,
     pub invariants_due: Micros,
+    /// With `availability_curve`: when the next daily-curve sample is due.
+    pub availability_due: Micros,
     /// Entries in the unsettled blocks' acceptance caches.
     pub own_entries: usize,
     /// Start rule (r): candidates waiting for their own found time (`Ev::Found`).

@@ -44,6 +44,9 @@ type ChainList = (
 /// Steps searched at most by the chain generators of the stand-in and real modes.
 const CHAIN_CAP: u64 = 600;
 
+/// Traced runs (W2): at most this many skipped slots are kept (`JobResult::skip_rows`).
+const MAX_SKIP_ROWS: usize = 500_000;
+
 /// What a drawn slot's checks found up to its entropy (`Sim::prepare`); under start rule (r)
 /// a candidate whose step comes later than its draw keeps it until its own found time.
 #[derive(Debug, Clone)]
@@ -127,6 +130,7 @@ impl Sim<'_> {
             kwc_members: Vec::new(),
             issued: None,
             transient: Vec::new(),
+            skip_log: Vec::new(),
             skips_scored: false,
             origin: 0,
             refresh_at: 0,
@@ -485,6 +489,7 @@ impl Sim<'_> {
             // Candidates keep their own member lists; the round needs none any more.
             group.kwc_members = Vec::new();
             group.transient = Vec::new();
+            self.close_skips(g, now, 2);
             return;
         }
         if !self.groups[g as usize].first_recorded {
@@ -542,6 +547,94 @@ impl Sim<'_> {
             .collect()
     }
 
+    /// Traced runs (W2): records a slot skipped at `now` because its miner could not mine.
+    fn log_skip(&mut self, g: u32, m: u32, reason: u8, now: Micros) {
+        if self.spec.trace_blocks {
+            self.groups[g as usize]
+                .skip_log
+                .push(crate::chain::SkipLog {
+                    miner: m,
+                    reason,
+                    skipped_at: now,
+                    able_at: INF,
+                });
+        }
+    }
+
+    /// Traced runs (W2): the round's skipped slots leave the skipped state at `now`, `how` as
+    /// in [`crate::job::SkipRow`]; those whose miner could mine again before then are kept.
+    pub(crate) fn close_skips(&mut self, g: u32, now: Micros, how: u8) {
+        if !self.spec.trace_blocks {
+            return;
+        }
+        let height = self.groups[g as usize].height;
+        for e in std::mem::take(&mut self.groups[g as usize].skip_log) {
+            if e.able_at != INF && e.able_at <= now && self.res.skip_rows.len() < MAX_SKIP_ROWS {
+                self.res.skip_rows.push(crate::job::SkipRow {
+                    round_height: height,
+                    miner: e.miner,
+                    reason: e.reason,
+                    skipped_s: seconds(e.skipped_at),
+                    able_s: seconds(e.able_at),
+                    left_s: seconds(now),
+                    how,
+                });
+            }
+        }
+    }
+
+    /// Traced runs (W2): the round on the network tip, its slots not yet drawn and those of
+    /// them whose miner can mine now, and its skipped slots and those of them whose miner can
+    /// mine now (marking when each was first found able).
+    pub(crate) fn tip_round_skips(&mut self, now: Micros) -> (u32, u32, u32, u32) {
+        let tip = self.network_tip;
+        let Some(g) = (0..self.groups.len())
+            .rev()
+            .find(|g| self.groups[*g].parent == tip && !self.groups[*g].closed)
+        else {
+            return (0, 0, 0, 0);
+        };
+        let able: Vec<bool> = (0..self.miners.len() as u32)
+            .map(|m| self.can_mine_now(m, now))
+            .collect();
+        let (pool, pool_able) = match &self.groups[g].generator {
+            Generator::Gap { picked, .. } => {
+                let mut taken = vec![false; self.miners.len()];
+                for m in picked {
+                    taken[*m as usize] = true;
+                }
+                let pool = taken.iter().filter(|t| !**t).count();
+                let pool_able = (0..self.miners.len())
+                    .filter(|m| !taken[*m] && able[*m])
+                    .count();
+                (pool, pool_able)
+            }
+            Generator::List { items, pos } => {
+                let rest = &items[(*pos).min(items.len())..];
+                (
+                    rest.len(),
+                    rest.iter().filter(|(_, m)| able[*m as usize]).count(),
+                )
+            }
+        };
+        let mut skipped_able = 0u32;
+        let log = &mut self.groups[g].skip_log;
+        for e in log.iter_mut() {
+            if able[e.miner as usize] {
+                skipped_able += 1;
+                if e.able_at == INF {
+                    e.able_at = now;
+                }
+            }
+        }
+        (
+            pool as u32,
+            pool_able as u32,
+            log.len() as u32,
+            skipped_able,
+        )
+    }
+
     /// A round that ran out of draws (SIM-48): if no block at its height or above is held on
     /// time by any validator, so that nobody would extend one, its slots dropped while their
     /// miners could not mine are drawn again, from now. Without this, a round whose every slot
@@ -561,6 +654,7 @@ impl Sim<'_> {
             self.blocks[parent as usize].settled && !self.blocks[parent as usize].canonical;
         if parent_lost || (height as usize) < self.settled_ids.len() {
             self.groups[g as usize].transient = Vec::new();
+            self.close_skips(g, now, 2);
             return;
         }
         let extendable = |b: u32| {
@@ -575,9 +669,11 @@ impl Sim<'_> {
         if self.blocks_from(height).into_iter().any(extendable) {
             // A block someone extends stays so (or settles), so the round never needs a refresh.
             self.groups[g as usize].transient = Vec::new();
+            self.close_skips(g, now, 1);
             return;
         }
         let now_step = (now / SECOND).saturating_sub(t0);
+        self.close_skips(g, now, 0);
         let slots: Vec<u32> = std::mem::take(&mut self.groups[g as usize].transient)
             .into_iter()
             .map(|(m, _, _)| m)
@@ -710,6 +806,7 @@ impl Sim<'_> {
                 self.groups[g as usize]
                     .transient
                     .push((m, crate::chain::SKIP_NOT_MINING, now));
+                self.log_skip(g, m, crate::chain::SKIP_NOT_MINING, now);
             }
             return None;
         }
@@ -771,6 +868,7 @@ impl Sim<'_> {
                     crate::chain::SKIP_OFFLINE,
                     back.max(now),
                 ));
+                self.log_skip(g, m, crate::chain::SKIP_OFFLINE, now);
                 return None;
             }
             start = start.max(back);
@@ -782,6 +880,7 @@ impl Sim<'_> {
             self.groups[g as usize]
                 .transient
                 .push((m, crate::chain::SKIP_NO_ENTROPY, now));
+            self.log_skip(g, m, crate::chain::SKIP_NO_ENTROPY, now);
             return None;
         };
         if timing.stalled {

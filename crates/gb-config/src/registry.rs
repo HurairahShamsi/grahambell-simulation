@@ -265,7 +265,7 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "timing.powit_deadline_s",
         "§2, §3.7",
         "s",
-        "PoWit arrival deadline D after the block's attested timestamp, on each node's own clock; 10 s with the soft scope by default (none is a comparison).",
+        "PoWit arrival deadline D after the block's attested timestamp, on each node's own clock; none by default since 2026-10-24 (10 s with the soft scope is [P]).",
     ),
     doc(
         "timing.powit_deadline_scope",
@@ -277,7 +277,7 @@ pub const PARAM_DOCS: &[ParamDoc] = &[
         "timing.early_block",
         "§3.7",
         "",
-        "How a node treats a block received before its timestamp minus δ: rejected for good, or re-evaluated.",
+        "How a node treats a block received before its timestamp minus δ: declined until its own clock reaches the timestamp and then reconsidered (the default since 2026-10-24), or rejected for good.",
     ),
     doc(
         "timing.witness_signing",
