@@ -10,5 +10,6 @@
 !/results/sim/
 /results/sim/*
 !/results/sim/reference/
+!/results/sim/supplement/
 /.history/
 .DS_Store
