@@ -1358,6 +1358,13 @@ pub(crate) fn c6_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
     jobs
 }
 
+fn early_rule_name(rule: EarlyBlockRule) -> &'static str {
+    match rule {
+        EarlyBlockRule::ReevaluateLater => "re-evaluation",
+        EarlyBlockRule::Permanent => "permanent rejection",
+    }
+}
+
 pub(crate) fn c6_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
     let mut out = SectionOut::default();
     let grid: Vec<_> = if ctx.quick {
@@ -1412,7 +1419,9 @@ pub(crate) fn c6_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
             n(res.permanent_split_panel_nodes),
             n(res.split_panel_nodes),
         ]);
-        if *early == EarlyBlockRule::Permanent && *d == 2.0 {
+        // The summary and chart follow the configured early-block rule; the other one, the
+        // comparison, gives its splits alongside.
+        if *early == probe.early_block && *d == 2.0 {
             let label = match sign {
                 WitnessSigning::OnTime => "on time (default)",
                 WitnessSigning::EarliestWithinTolerance => "earliest within δ (P-4)",
@@ -1425,7 +1434,11 @@ pub(crate) fn c6_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
                 }),
             }
             if *s == 1.0 || *s == 2.0 {
-                summary.push(format!("skew σ = {s} s, δ = 2 s, {label}: {} % of panel receptions early, {} blocks early at the panel majority; {deadline}: {} % of blocks late at the panel majority, {} panel nodes split for good ({} off the final chain at the end)", r(100.0 * share, 3), res.early_majority, r(100.0 * div(res.late_majority as f64, res.blocks as f64), 3), res.permanent_split_panel_nodes, res.split_panel_nodes));
+                let other = grid
+                    .iter()
+                    .position(|(s2, d2, g2, e2)| s2 == s && d2 == d && g2 == sign && e2 != early)
+                    .map(|j| (grid[j].3, &results[j]));
+                summary.push(format!("skew σ = {s} s, δ = 2 s, {label}: {} % of panel receptions early, {} blocks early at the panel majority; {deadline}: {} % of blocks late at the panel majority; under {} (the default) {} panel nodes split for good ({} off the final chain at the end){}", r(100.0 * share, 3), res.early_majority, r(100.0 * div(res.late_majority as f64, res.blocks as f64), 3), early_rule_name(*early), res.permanent_split_panel_nodes, res.split_panel_nodes, other.map_or(String::new(), |(e, o)| format!(", under {} (the comparison) {}", early_rule_name(e), o.permanent_split_panel_nodes))));
             }
         }
     }
@@ -1440,7 +1453,10 @@ pub(crate) fn c6_analyse(ctx: &Ctx<'_>, results: &[JobResult]) -> SectionOut {
     out.tables.push(table);
     out.charts.push(Chart {
         file: "C6_clock_skew.png".to_string(),
-        title: "C6 — honest blocks received early (δ = 2 s, permanent rejection)".to_string(),
+        title: format!(
+            "C6 — honest blocks received early (δ = 2 s, {})",
+            early_rule_name(probe.early_block)
+        ),
         subtitle: "share of panel receptions before timestamp − δ on the receiver's clock"
             .to_string(),
         panels: vec![ChartPanel {
