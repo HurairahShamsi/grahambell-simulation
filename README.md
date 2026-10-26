@@ -87,7 +87,7 @@ cargo run --release -p gb-cli -- sim --only W2          # traces of E3's longest
 cargo run --release -p gb-cli -- sim --profile quick    # tiny sizes, for tests; not results
 ```
 
-`gb sim` takes the options of `gb analytic` and also refuses a dirty working tree. It runs the V0 gate first (the three crypto modes agree, the fast sampler is exact, the horizon audit finds nothing); if the gate fails, it reports no result that relies on the stand-in or fast modes. A full run takes about a day of wall time with 4 threads on a laptop (the M3a.1 reference run: 26.2 hours and 101 CPU-hours; `perf/PERF.md` records the machine and the time of every run). It exits with a non-zero status if any check fails, after writing all outputs.
+`gb sim` takes the options of `gb analytic` and also refuses a dirty working tree. It runs the V0 gate first (the three crypto modes agree, the fast sampler is exact, the horizon audit finds nothing); if the gate fails, it reports no result that relies on the stand-in or fast modes. A full run takes a day or more of wall time with 4 threads on a laptop (the M3a.1 reference run at 1d9ce91: 26.2 hours and 101 CPU-hours; the rerun at 7cf4ff2, which reran 2,122 of its 2,978 jobs on an 8 GB laptop that swapped: 30.6 hours, and 120 CPU-hours in all its jobs; `perf/PERF.md` records the machine and the time of every run). It exits with a non-zero status if any check fails, after writing all outputs.
 
 | Option | Meaning |
 |---|---|
