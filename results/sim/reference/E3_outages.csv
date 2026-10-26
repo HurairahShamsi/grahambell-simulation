@@ -1,427 +1,427 @@
 config,run,kind,region,ups_share,ups_runtime_h,start_day,hours,households,miners_lost_power,miners_lost_witnessing_max,witnessing_lost_miner_rounds,kwcs_unable_max,max_gap_s
-"all-online (One Chance), no failover",C7 departures 0,provider outage,as_east,0.1,1,7.794052995833333,0.8429781156864469,27215,55,602,35230,596,110.09345
-"all-online (One Chance), no failover",C7 departures 0,provider outage,na_east,0.1,1,18.771956361493057,1.2446949563614276,4611,10,365,28535,364,145.04817
-"all-online (One Chance), no failover",C7 departures 0,provider outage,sa_east,0.1,1,21.728286593009262,1.8063224970415914,4495,16,391,34036,390,183.055223
-"all-online (One Chance), no failover",C7 departures 0,provider outage,as_east,0.1,1,22.941738687118054,0.839179444397677,27215,63,591,35580,587,181.966197
-"all-online (One Chance), no failover",C7 departures 0.1,provider outage,af,0.5,3,8.833635913391204,2.065896708518599,8471,18,530,68863,528,206.869464
-"all-online (One Chance), no failover",C7 departures 0.1,provider outage,as_south,0.5,3,24.132994190613424,1.7210952390917462,17075,49,656,14935,651,204.008992
-"all-online (One Chance), no failover",C7 departures 0.1,provider outage,af,0.5,3,27.01530966134259,1.5785154945275872,8507,17,382,9267,381,184.006504
-"all-online (One Chance), no failover",C7 departures 0.25,provider outage,eu_west,0.1,1,8.495717087129629,5.232982801566294,8599,24,588,23585,578,202.00107
-"all-online (One Chance), no failover",C7 departures 0.25,provider outage,sa_east,0.1,1,16.50623497119213,0.13479109009966186,4591,21,432,2271,426,99.024843
-"all-online (One Chance), no failover",C7 departures 0.25,provider outage,na_east,0.1,1,18.180121652337963,0.8080643487004568,4752,13,356,4779,352,120.039727
-"all-online (One Chance), no failover",C7 departures 0.25,provider outage,as_east,0.1,1,21.711787729849537,0.6380725905263804,27136,40,642,15239,634,168.027304
-"all-online (One Chance), no failover",C7 departures 0.25,provider outage,as_south,0.5,3,22.70513289584491,5.033668914004605,16883,56,621,137932,617,233.768159
-"all-online (One Chance), no failover",day-9.19 event,provider outage,af,0.5,3,2.5757364030439818,1.0737242512846785,1150,255,5486,58011,2042,184.968166
-"all-online (One Chance), no failover",day-9.19 event,provider outage,as_south,0.5,3,8.38243266085648,0.3589222696767934,2228,496,7210,51642,3595,83.036609
-"all-online (One Chance), no failover",day-9.19 event,scripted regional blackout,as_east,0.1,1,8.738735,10.879444444444445,14508,2244,5229,4904539,3365,755.631322
-"all-online (One Chance), no failover",blackout na_east seed 0,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,512,7967,2397916,2745,335.94544
-"all-online (One Chance), no failover",blackout na_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,2933,18169,1076,135.012392
-"all-online (One Chance), no failover",blackout na_east seed 1,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,486,8044,2350358,2828,195.118728
-"all-online (One Chance), no failover",blackout na_east seed 2,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,523,7795,2233796,2746,295.062972
-"all-online (One Chance), no failover",blackout na_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,5699,58467,2479,145.923124
-"all-online (One Chance), no failover",blackout na_east seed 3,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,521,7982,2189249,2806,258.051264
-"all-online (One Chance), no failover",blackout na_east seed 4,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,505,7890,2256789,2754,249.105296
-"all-online (One Chance), no failover",blackout na_west seed 0,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,6191,1689094,2056,349.961543
-"all-online (One Chance), no failover",blackout na_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,2933,18169,1076,135.012392
-"all-online (One Chance), no failover",blackout na_west seed 1,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,6449,1627902,2218,275.985258
-"all-online (One Chance), no failover",blackout na_west seed 2,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,178,5823,1502816,2393,328.025555
-"all-online (One Chance), no failover",blackout na_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,5822,48735,2393,199.980275
-"all-online (One Chance), no failover",blackout na_west seed 3,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,171,5866,1479638,1975,195.03063
-"all-online (One Chance), no failover",blackout na_west seed 4,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,176,5624,1554532,1910,220.954
-"all-online (One Chance), no failover",blackout sa_east seed 0,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,601,8097,2336291,2797,317.941458
-"all-online (One Chance), no failover",blackout sa_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,2933,18169,1076,135.012392
-"all-online (One Chance), no failover",blackout sa_east seed 1,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,606,8066,2290613,2884,253.946308
-"all-online (One Chance), no failover",blackout sa_east seed 2,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,594,7926,2182746,2815,290.026447
-"all-online (One Chance), no failover",blackout sa_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,437,5678,57592,2427,95.967148
-"all-online (One Chance), no failover",blackout sa_east seed 3,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,594,8119,2165231,2856,197.038951
-"all-online (One Chance), no failover",blackout sa_east seed 4,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,586,8062,2250379,2823,209.972572
-"all-online (One Chance), no failover",blackout eu_west seed 0,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1128,8043,3341488,2938,324.009211
-"all-online (One Chance), no failover",blackout eu_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,2933,18169,1076,135.012392
-"all-online (One Chance), no failover",blackout eu_west seed 1,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1134,7894,3386817,2965,180.840367
-"all-online (One Chance), no failover",blackout eu_west seed 2,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1131,7884,3203618,2946,269.048201
-"all-online (One Chance), no failover",blackout eu_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,436,5586,71255,2563,218.06832
-"all-online (One Chance), no failover",blackout eu_west seed 3,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1142,7959,3262960,2968,242.994238
-"all-online (One Chance), no failover",blackout eu_west seed 4,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1139,7963,3265458,2954,271.04948
-"all-online (One Chance), no failover",blackout af seed 0,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1113,8079,3136102,2944,289.951237
-"all-online (One Chance), no failover",blackout af seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,2933,18169,1076,135.012392
-"all-online (One Chance), no failover",blackout af seed 1,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1110,7913,3036848,2951,196.95727
-"all-online (One Chance), no failover",blackout af seed 2,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1055,7974,3041330,2961,285.006364
-"all-online (One Chance), no failover",blackout af seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,437,5594,70713,2563,240.88995
-"all-online (One Chance), no failover",blackout af seed 3,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1115,7994,2818154,2950,195.034124
-"all-online (One Chance), no failover",blackout af seed 4,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,995,8075,2968260,2943,229.03133
-"all-online (One Chance), no failover",blackout as_south seed 0,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2154,7133,4786019,2838,212.020741
-"all-online (One Chance), no failover",blackout as_south seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,2933,18169,1076,135.012392
-"all-online (One Chance), no failover",blackout as_south seed 1,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2042,7161,4745403,2895,226.969818
-"all-online (One Chance), no failover",blackout as_south seed 2,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2041,7120,4571636,2877,279.056694
-"all-online (One Chance), no failover",blackout as_south seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,0,4271,63970,2006,122.067101
-"all-online (One Chance), no failover",blackout as_south seed 3,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2050,7177,4504085,2899,195.026304
-"all-online (One Chance), no failover",blackout as_south seed 4,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2186,7038,4715734,2845,271.002633
-"all-online (One Chance), no failover",blackout as_east seed 0,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3598,5620,5705319,2670,362.141689
-"all-online (One Chance), no failover",blackout as_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,2933,18169,1076,135.012392
-"all-online (One Chance), no failover",blackout as_east seed 1,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3606,5461,5690700,2647,451.021239
-"all-online (One Chance), no failover",blackout as_east seed 2,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3588,5511,5668124,2637,279.010248
-"all-online (One Chance), no failover",blackout as_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,420,4766,70121,2436,112.89853
-"all-online (One Chance), no failover",blackout as_east seed 3,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3590,5559,5692005,2650,265.0969
-"all-online (One Chance), no failover",blackout as_east seed 4,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3588,5567,5720880,2626,334.108804
-"all-online (One Chance), no failover",blackout oc seed 0,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,49,4252,1236746,1404,354.966532
-"all-online (One Chance), no failover",blackout oc seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,2933,18169,1076,135.012392
-"all-online (One Chance), no failover",blackout oc seed 1,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,54,4954,1182794,1695,331.873604
-"all-online (One Chance), no failover",blackout oc seed 2,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,5873,1126881,2399,323.081397
-"all-online (One Chance), no failover",blackout oc seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,438,5873,42109,2399,124.968358
-"all-online (One Chance), no failover",blackout oc seed 3,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,3873,1075004,1347,194.976681
-"all-online (One Chance), no failover",blackout oc seed 4,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,54,3970,1175029,1330,226.952148
-"all-online (One Chance), failover",C7 departures 0,provider outage,as_east,0.1,1,7.794052995833333,0.8429781156864469,27215,54,566,2737,558,211.040187
-"all-online (One Chance), failover",C7 departures 0,provider outage,na_east,0.1,1,18.771956361493057,1.2446949563614276,4611,10,311,3197,308,142.946564
-"all-online (One Chance), failover",C7 departures 0,provider outage,sa_east,0.1,1,21.728286593009262,1.8063224970415914,4495,16,352,4933,351,174.919924
-"all-online (One Chance), failover",C7 departures 0,provider outage,as_east,0.1,1,22.941738687118054,0.839179444397677,27215,62,546,2866,533,242.044941
-"all-online (One Chance), failover",C7 departures 0.1,provider outage,af,0.5,3,8.833635913391204,2.065896708518599,8471,19,486,5303,478,182.993428
-"all-online (One Chance), failover",C7 departures 0.1,provider outage,as_south,0.5,3,24.132994190613424,1.7210952390917462,17075,49,656,6486,649,179.934568
-"all-online (One Chance), failover",C7 departures 0.1,provider outage,af,0.5,3,27.01530966134259,1.5785154945275872,8507,17,376,5583,370,189.976126
-"all-online (One Chance), failover",C7 departures 0.25,provider outage,eu_west,0.1,1,8.495717087129629,5.232982801566294,8599,24,600,15985,592,209.991792
-"all-online (One Chance), failover",C7 departures 0.25,provider outage,sa_east,0.1,1,16.50623497119213,0.13479109009966186,4591,21,436,2247,431,119.98857
-"all-online (One Chance), failover",C7 departures 0.25,provider outage,na_east,0.1,1,18.180121652337963,0.8080643487004568,4752,13,383,4399,380,337.981758
-"all-online (One Chance), failover",C7 departures 0.25,provider outage,as_east,0.1,1,21.711787729849537,0.6380725905263804,27136,39,649,3781,642,122.977628
-"all-online (One Chance), failover",C7 departures 0.25,provider outage,as_south,0.5,3,22.70513289584491,5.033668914004605,16883,56,602,10549,594,258.9917
-"all-online (One Chance), failover",day-9.19 event,provider outage,af,0.5,3,2.5757364030439818,1.0737242512846785,1150,255,5485,55472,1930,184.019023
-"all-online (One Chance), failover",day-9.19 event,provider outage,as_south,0.5,3,8.38243266085648,0.3589222696767934,2228,496,7226,50716,3436,229.978647
-"all-online (One Chance), failover",day-9.19 event,scripted regional blackout,as_east,0.1,1,8.738735,10.879444444444445,14508,2240,5208,74766,3157,482.092323
-"all-online (One Chance), failover",blackout na_east seed 0,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,513,8077,289081,2633,262.969302
-"all-online (One Chance), failover",blackout na_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,3147,17389,952,124.979001
-"all-online (One Chance), failover",blackout na_east seed 1,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,485,8021,298768,2627,338.959522
-"all-online (One Chance), failover",blackout na_east seed 2,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,523,7934,293868,2596,302.049615
-"all-online (One Chance), failover",blackout na_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,419,5146,20294,1789,84.956562
-"all-online (One Chance), failover",blackout na_east seed 3,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,521,7919,281472,2628,227.021045
-"all-online (One Chance), failover",blackout na_east seed 4,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,505,7910,289860,2604,226.897637
-"all-online (One Chance), failover",blackout na_west seed 0,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,6251,295369,1940,280.976594
-"all-online (One Chance), failover",blackout na_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,3147,17389,952,124.979001
-"all-online (One Chance), failover",blackout na_west seed 1,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,6525,304713,2103,187.958667
-"all-online (One Chance), failover",blackout na_west seed 2,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,178,5637,297272,2031,316.046534
-"all-online (One Chance), failover",blackout na_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,434,5615,24360,2030,100.968242
-"all-online (One Chance), failover",blackout na_west seed 3,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,171,5784,283096,1844,185.015349
-"all-online (One Chance), failover",blackout na_west seed 4,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,176,5965,293512,1879,220.897637
-"all-online (One Chance), failover",blackout sa_east seed 0,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,601,8115,292260,2666,338.977697
-"all-online (One Chance), failover",blackout sa_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,3147,17389,952,124.979001
-"all-online (One Chance), failover",blackout sa_east seed 1,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,605,8066,296952,2673,298.962692
-"all-online (One Chance), failover",blackout sa_east seed 2,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,595,8044,293552,2632,287.057486
-"all-online (One Chance), failover",blackout sa_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,430,5301,20926,1853,106.635728
-"all-online (One Chance), failover",blackout sa_east seed 3,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,592,8141,283028,2691,197.063184
-"all-online (One Chance), failover",blackout sa_east seed 4,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,586,8114,289242,2675,231.974485
-"all-online (One Chance), failover",blackout eu_west seed 0,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1126,8039,272907,2779,348.017494
-"all-online (One Chance), failover",blackout eu_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,3147,17389,952,124.979001
-"all-online (One Chance), failover",blackout eu_west seed 1,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1134,7900,281128,2741,268.806068
-"all-online (One Chance), failover",blackout eu_west seed 2,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1130,7913,272853,2745,265.042743
-"all-online (One Chance), failover",blackout eu_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,410,4703,15472,1291,192.999908
-"all-online (One Chance), failover",blackout eu_west seed 3,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1140,7944,261010,2771,213.057278
-"all-online (One Chance), failover",blackout eu_west seed 4,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1140,7978,270068,2796,317.002307
-"all-online (One Chance), failover",blackout af seed 0,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1113,8100,238147,2769,327.905555
-"all-online (One Chance), failover",blackout af seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,3147,17389,952,124.979001
-"all-online (One Chance), failover",blackout af seed 1,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1110,7900,213424,2740,253.959785
-"all-online (One Chance), failover",blackout af seed 2,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1053,7955,256220,2725,293.962696
-"all-online (One Chance), failover",blackout af seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,409,4769,15628,1338,263.028774
-"all-online (One Chance), failover",blackout af seed 3,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1115,8010,207181,2750,216.965799
-"all-online (One Chance), failover",blackout af seed 4,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,997,8059,211061,2762,245.996702
-"all-online (One Chance), failover",blackout as_south seed 0,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2157,7124,151023,2665,275.032185
-"all-online (One Chance), failover",blackout as_south seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,3147,17389,952,124.979001
-"all-online (One Chance), failover",blackout as_south seed 1,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2043,7152,171282,2671,272.005983
-"all-online (One Chance), failover",blackout as_south seed 2,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2042,7110,125369,2650,295.074295
-"all-online (One Chance), failover",blackout as_south seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,0,70,395,7,86.95713
-"all-online (One Chance), failover",blackout as_south seed 3,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2050,7172,157020,2673,192.930948
-"all-online (One Chance), failover",blackout as_south seed 4,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2187,7040,163402,2661,221.980003
-"all-online (One Chance), failover",blackout as_east seed 0,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3599,5616,160717,2522,289.056919
-"all-online (One Chance), failover",blackout as_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,3147,17389,952,124.979001
-"all-online (One Chance), failover",blackout as_east seed 1,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3608,5450,172292,2494,274.173522
-"all-online (One Chance), failover",blackout as_east seed 2,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3585,5497,171507,2511,905.152529
-"all-online (One Chance), failover",blackout as_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,387,3842,8201,218,311.038515
-"all-online (One Chance), failover",blackout as_east seed 3,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3586,5553,167169,2533,220.029441
-"all-online (One Chance), failover",blackout as_east seed 4,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3588,5569,175294,2546,225.059216
-"all-online (One Chance), failover",blackout oc seed 0,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,49,4110,291208,1329,286.976869
-"all-online (One Chance), failover",blackout oc seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,3147,17389,952,124.979001
-"all-online (One Chance), failover",blackout oc seed 1,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,55,4939,303032,1606,188.891053
-"all-online (One Chance), failover",blackout oc seed 2,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,5843,292997,2130,305.052309
-"all-online (One Chance), failover",blackout oc seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,436,5843,27072,2128,81.033665
-"all-online (One Chance), failover",blackout oc seed 3,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,3818,280813,1236,218.050909
-"all-online (One Chance), failover",blackout oc seed 4,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,54,3911,286288,1275,229.943907
-"threshold 2n/3, no failover",C7 departures 0,provider outage,as_east,0.1,1,7.794052995833333,0.8429781156864469,27215,55,337,32594,333,201.995759
-"threshold 2n/3, no failover",C7 departures 0,provider outage,na_east,0.1,1,18.771956361493057,1.2446949563614276,4611,10,192,26292,192,142.857591
-"threshold 2n/3, no failover",C7 departures 0,provider outage,sa_east,0.1,1,21.728286593009262,1.8063224970415914,4495,16,192,29861,191,187.976552
-"threshold 2n/3, no failover",C7 departures 0,provider outage,as_east,0.1,1,22.941738687118054,0.839179444397677,27215,62,398,35681,396,173.065009
-"threshold 2n/3, no failover",C7 departures 0.1,provider outage,af,0.5,3,8.833635913391204,2.065896708518599,8471,18,298,63953,297,150.006818
-"threshold 2n/3, no failover",C7 departures 0.1,provider outage,as_south,0.5,3,24.132994190613424,1.7210952390917462,17075,48,54,9059,53,169.980983
-"threshold 2n/3, no failover",C7 departures 0.1,provider outage,af,0.5,3,27.01530966134259,1.5785154945275872,8507,17,43,3831,42,182.013973
-"threshold 2n/3, no failover",C7 departures 0.25,provider outage,eu_west,0.1,1,8.495717087129629,5.232982801566294,8599,24,70,6470,69,198.966687
-"threshold 2n/3, no failover",C7 departures 0.25,provider outage,sa_east,0.1,1,16.50623497119213,0.13479109009966186,4591,21,0,0,0,131.024035
-"threshold 2n/3, no failover",C7 departures 0.25,provider outage,na_east,0.1,1,18.180121652337963,0.8080643487004568,4752,12,6,468,5,135.961882
-"threshold 2n/3, no failover",C7 departures 0.25,provider outage,as_east,0.1,1,21.711787729849537,0.6380725905263804,27136,40,208,13851,204,104.107271
-"threshold 2n/3, no failover",C7 departures 0.25,provider outage,as_south,0.5,3,22.70513289584491,5.033668914004605,16883,56,330,132523,329,256.990454
-"threshold 2n/3, no failover",day-9.19 event,provider outage,af,0.5,3,2.5757364030439818,1.0737242512846785,1150,255,10,300,4,184.950404
-"threshold 2n/3, no failover",day-9.19 event,provider outage,as_south,0.5,3,8.38243266085648,0.3589222696767934,2228,496,30,1003,12,83.98554
-"threshold 2n/3, no failover",day-9.19 event,scripted regional blackout,as_east,0.1,1,8.738735,10.879444444444445,14508,2245,5006,4885503,3175,724.658844
-"threshold 2n/3, no failover",blackout na_east seed 0,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,513,3704,2132609,1684,348.978853
-"threshold 2n/3, no failover",blackout na_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,71,2165,27,124.011661
-"threshold 2n/3, no failover",blackout na_east seed 1,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,486,3489,2110522,1601,260.924168
-"threshold 2n/3, no failover",blackout na_east seed 2,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,523,3325,1964130,1573,305.068983
-"threshold 2n/3, no failover",blackout na_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,438,2996,44448,1316,151.957086
-"threshold 2n/3, no failover",blackout na_east seed 3,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,521,3295,2002446,1527,199.000067
-"threshold 2n/3, no failover",blackout na_east seed 4,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,506,3357,1997762,1528,218.972378
-"threshold 2n/3, no failover",blackout na_west seed 0,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,2922,1442513,1294,365.97605
-"threshold 2n/3, no failover",blackout na_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,71,2165,27,124.011661
-"threshold 2n/3, no failover",blackout na_west seed 1,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,2615,1423464,1168,291.040383
-"threshold 2n/3, no failover",blackout na_west seed 2,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,178,2496,1265804,1120,317.043112
-"threshold 2n/3, no failover",blackout na_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,1952,28709,822,84.972728
-"threshold 2n/3, no failover",blackout na_west seed 3,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,171,2395,1279333,1061,189.014852
-"threshold 2n/3, no failover",blackout na_west seed 4,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,176,2486,1264882,1092,226.996666
-"threshold 2n/3, no failover",blackout sa_east seed 0,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,601,3732,2162644,1709,348.976224
-"threshold 2n/3, no failover",blackout sa_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,71,2165,27,124.011661
-"threshold 2n/3, no failover",blackout sa_east seed 1,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,606,3514,2076284,1609,192.928254
-"threshold 2n/3, no failover",blackout sa_east seed 2,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,595,3314,1921985,1544,301.026049
-"threshold 2n/3, no failover",blackout sa_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,3003,44570,1279,88.890713
-"threshold 2n/3, no failover",blackout sa_east seed 3,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,593,3275,1960449,1505,222.918942
-"threshold 2n/3, no failover",blackout sa_east seed 4,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,586,3311,1960245,1511,240.013398
-"threshold 2n/3, no failover",blackout eu_west seed 0,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1125,4392,3197857,2092,355.023275
-"threshold 2n/3, no failover",blackout eu_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,71,2165,27,124.011661
-"threshold 2n/3, no failover",blackout eu_west seed 1,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1134,4368,3195062,2114,183.056838
-"threshold 2n/3, no failover",blackout eu_west seed 2,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1130,4255,2971648,1973,278.056815
-"threshold 2n/3, no failover",blackout eu_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,438,4255,63467,1973,89.990198
-"threshold 2n/3, no failover",blackout eu_west seed 3,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1142,4158,3035819,1973,200.006125
-"threshold 2n/3, no failover",blackout eu_west seed 4,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1140,4258,3073015,1934,287.045036
-"threshold 2n/3, no failover",blackout af seed 0,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1112,3947,2968833,1823,327.96577
-"threshold 2n/3, no failover",blackout af seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,71,2165,27,124.011661
-"threshold 2n/3, no failover",blackout af seed 1,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1110,4203,2939409,1935,186.957319
-"threshold 2n/3, no failover",blackout af seed 2,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1053,4212,2839475,1904,290.991685
-"threshold 2n/3, no failover",blackout af seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,438,4213,62853,1905,203.954073
-"threshold 2n/3, no failover",blackout af seed 3,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1115,3860,2729488,1803,212.043511
-"threshold 2n/3, no failover",blackout af seed 4,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,996,3951,2771559,1774,350.972307
-"threshold 2n/3, no failover",blackout as_south seed 0,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2157,4679,4742875,2273,266.003461
-"threshold 2n/3, no failover",blackout as_south seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,71,2165,27,124.011661
-"threshold 2n/3, no failover",blackout as_south seed 1,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2043,4516,4576182,2240,199.040261
-"threshold 2n/3, no failover",blackout as_south seed 2,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2041,4512,4550386,2215,228.063771
-"threshold 2n/3, no failover",blackout as_south seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,0,4273,63911,2012,72.04743
-"threshold 2n/3, no failover",blackout as_south seed 3,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2050,4423,4488051,2175,396.996856
-"threshold 2n/3, no failover",blackout as_south seed 4,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2185,4451,4596903,2145,232.079938
-"threshold 2n/3, no failover",blackout as_east seed 0,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3598,5132,5705410,2434,678.310133
-"threshold 2n/3, no failover",blackout as_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,71,2165,27,124.011661
-"threshold 2n/3, no failover",blackout as_east seed 1,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3608,5093,5691696,2481,205.044743
-"threshold 2n/3, no failover",blackout as_east seed 2,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3586,4982,5670129,2399,782.035866
-"threshold 2n/3, no failover",blackout as_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,419,4643,69490,2399,64.959768
-"threshold 2n/3, no failover",blackout as_east seed 3,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3591,5027,5672002,2399,230.005445
-"threshold 2n/3, no failover",blackout as_east seed 4,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3587,4998,5678546,2376,221.048332
-"threshold 2n/3, no failover",blackout oc seed 0,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,47,2213,1002606,948,368.97605
-"threshold 2n/3, no failover",blackout oc seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,71,2165,27,124.011661
-"threshold 2n/3, no failover",blackout oc seed 1,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,54,1951,942102,836,191.998238
-"threshold 2n/3, no failover",blackout oc seed 2,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,1867,855416,827,313.030174
-"threshold 2n/3, no failover",blackout oc seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,1341,19164,536,140.928682
-"threshold 2n/3, no failover",blackout oc seed 3,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,1705,833020,749,192.011243
-"threshold 2n/3, no failover",blackout oc seed 4,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,54,1890,852781,803,238.972358
-"threshold 2n/3, failover",C7 departures 0,provider outage,as_east,0.1,1,7.794052995833333,0.8429781156864469,27215,55,198,381,197,202.085031
-"threshold 2n/3, failover",C7 departures 0,provider outage,na_east,0.1,1,18.771956361493057,1.2446949563614276,4611,10,31,138,31,279.882644
-"threshold 2n/3, failover",C7 departures 0,provider outage,sa_east,0.1,1,21.728286593009262,1.8063224970415914,4495,16,35,318,34,158.998098
-"threshold 2n/3, failover",C7 departures 0,provider outage,as_east,0.1,1,22.941738687118054,0.839179444397677,27215,61,236,342,229,172.810705
-"threshold 2n/3, failover",C7 departures 0.1,provider outage,af,0.5,3,8.833635913391204,2.065896708518599,8471,19,102,604,102,169.036716
-"threshold 2n/3, failover",C7 departures 0.1,provider outage,as_south,0.5,3,24.132994190613424,1.7210952390917462,17075,49,30,87,29,229.954277
-"threshold 2n/3, failover",C7 departures 0.1,provider outage,af,0.5,3,27.01530966134259,1.5785154945275872,8507,17,5,31,5,185.984887
-"threshold 2n/3, failover",C7 departures 0.25,provider outage,eu_west,0.1,1,8.495717087129629,5.232982801566294,8599,24,9,148,9,202.968275
-"threshold 2n/3, failover",C7 departures 0.25,provider outage,sa_east,0.1,1,16.50623497119213,0.13479109009966186,4591,21,0,0,0,83.993135
-"threshold 2n/3, failover",C7 departures 0.25,provider outage,na_east,0.1,1,18.180121652337963,0.8080643487004568,4752,13,1,5,1,122.962372
-"threshold 2n/3, failover",C7 departures 0.25,provider outage,as_east,0.1,1,21.711787729849537,0.6380725905263804,27136,40,84,265,83,146.977199
-"threshold 2n/3, failover",C7 departures 0.25,provider outage,as_south,0.5,3,22.70513289584491,5.033668914004605,16883,55,83,1140,79,273.084874
-"threshold 2n/3, failover",day-9.19 event,provider outage,af,0.5,3,2.5757364030439818,1.0737242512846785,1150,254,3,6,1,185.93635
-"threshold 2n/3, failover",day-9.19 event,provider outage,as_south,0.5,3,8.38243266085648,0.3589222696767934,2228,495,17,25,11,85.98939
-"threshold 2n/3, failover",day-9.19 event,scripted regional blackout,as_east,0.1,1,8.738735,10.879444444444445,14508,2232,4904,40810,3004,995.057063
-"threshold 2n/3, failover",blackout na_east seed 0,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,513,382,20787,132,348.997204
-"threshold 2n/3, failover",blackout na_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,19,30,5,110.989028
-"threshold 2n/3, failover",blackout na_east seed 1,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,486,405,20397,123,205.989199
-"threshold 2n/3, failover",blackout na_east seed 2,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,523,1412,19673,527,305.069248
-"threshold 2n/3, failover",blackout na_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,430,1408,1580,524,156.02239
-"threshold 2n/3, failover",blackout na_east seed 3,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,521,310,19140,101,243.050207
-"threshold 2n/3, failover",blackout na_east seed 4,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,505,320,18174,117,230.872482
-"threshold 2n/3, failover",blackout na_west seed 0,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,237,12322,93,366.993091
-"threshold 2n/3, failover",blackout na_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,19,30,5,110.989028
-"threshold 2n/3, failover",blackout na_west seed 1,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,278,12334,108,183.016027
-"threshold 2n/3, failover",blackout na_west seed 2,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,178,925,11920,389,317.050869
-"threshold 2n/3, failover",blackout na_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,431,925,1051,388,143.971696
-"threshold 2n/3, failover",blackout na_west seed 3,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,188,11345,73,190.037691
-"threshold 2n/3, failover",blackout na_west seed 4,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,175,248,11618,85,229.912289
-"threshold 2n/3, failover",blackout sa_east seed 0,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,601,403,20127,131,348.991638
-"threshold 2n/3, failover",blackout sa_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,19,30,5,110.989028
-"threshold 2n/3, failover",blackout sa_east seed 1,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,606,348,18921,112,371.953414
-"threshold 2n/3, failover",blackout sa_east seed 2,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,593,1530,19471,570,302.049075
-"threshold 2n/3, failover",blackout sa_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,429,1525,1712,568,115.067786
-"threshold 2n/3, failover",blackout sa_east seed 3,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,594,355,18181,98,203.068557
-"threshold 2n/3, failover",blackout sa_east seed 4,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,586,300,18758,106,232.900835
-"threshold 2n/3, failover",blackout eu_west seed 0,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1126,621,29479,175,366.005959
-"threshold 2n/3, failover",blackout eu_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,19,30,5,110.989028
-"threshold 2n/3, failover",blackout eu_west seed 1,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1135,659,30751,134,187.046461
-"threshold 2n/3, failover",blackout eu_west seed 2,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1131,2044,27577,620,279.043119
-"threshold 2n/3, failover",blackout eu_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,416,2036,2242,614,109.997569
-"threshold 2n/3, failover",blackout eu_west seed 3,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1141,509,28301,130,176.005804
-"threshold 2n/3, failover",blackout eu_west seed 4,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1139,512,27504,135,333.970877
-"threshold 2n/3, failover",blackout af seed 0,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1113,455,22292,161,330.045807
-"threshold 2n/3, failover",blackout af seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,19,30,5,110.989028
-"threshold 2n/3, failover",blackout af seed 1,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1110,522,23595,117,238.034152
-"threshold 2n/3, failover",blackout af seed 2,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1054,1860,22770,568,290.999877
-"threshold 2n/3, failover",blackout af seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,415,1843,2017,561,163.561847
-"threshold 2n/3, failover",blackout af seed 3,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1115,312,22627,78,278.075229
-"threshold 2n/3, failover",blackout af seed 4,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,997,378,21518,111,235.990094
-"threshold 2n/3, failover",blackout as_south seed 0,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2156,1426,38257,563,290.968729
-"threshold 2n/3, failover",blackout as_south seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,19,30,5,110.989028
-"threshold 2n/3, failover",blackout as_south seed 1,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2042,1376,36666,532,252.959532
-"threshold 2n/3, failover",blackout as_south seed 2,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2039,1336,34391,534,297.021883
-"threshold 2n/3, failover",blackout as_south seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,0,26,75,3,89.089059
-"threshold 2n/3, failover",blackout as_south seed 3,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2051,1266,37367,521,203.020482
-"threshold 2n/3, failover",blackout as_south seed 4,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2187,1527,36769,595,274.036298
-"threshold 2n/3, failover",blackout as_east seed 0,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3599,5107,52639,2310,790.113094
-"threshold 2n/3, failover",blackout as_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,19,30,5,110.989028
-"threshold 2n/3, failover",blackout as_east seed 1,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3604,5034,51803,2284,433.043185
-"threshold 2n/3, failover",blackout as_east seed 2,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3588,4969,54676,2269,524.204822
-"threshold 2n/3, failover",blackout as_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,359,2500,2632,158,119.994725
-"threshold 2n/3, failover",blackout as_east seed 3,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3590,5006,53334,2271,268.933692
-"threshold 2n/3, failover",blackout as_east seed 4,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3588,5009,54461,2290,196.00644
-"threshold 2n/3, failover",blackout oc seed 0,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,47,194,8604,85,371.993091
-"threshold 2n/3, failover",blackout oc seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,19,30,5,110.989028
-"threshold 2n/3, failover",blackout oc seed 1,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,54,185,8289,71,196.886717
-"threshold 2n/3, failover",blackout oc seed 2,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,666,8191,283,313.049075
-"threshold 2n/3, failover",blackout oc seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,435,663,768,281,158.006204
-"threshold 2n/3, failover",blackout oc seed 3,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,164,7567,70,219.023895
-"threshold 2n/3, failover",blackout oc seed 4,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,54,166,7701,61,241.907543
-"threshold 21/40, no failover",C7 departures 0,provider outage,as_east,0.1,1,7.794052995833333,0.8429781156864469,27215,55,9,780,9,199.014665
-"threshold 21/40, no failover",C7 departures 0,provider outage,na_east,0.1,1,18.771956361493057,1.2446949563614276,4611,10,6,676,5,154.994336
-"threshold 21/40, no failover",C7 departures 0,provider outage,sa_east,0.1,1,21.728286593009262,1.8063224970415914,4495,16,4,649,4,156.971635
-"threshold 21/40, no failover",C7 departures 0,provider outage,as_east,0.1,1,22.941738687118054,0.839179444397677,27215,61,21,1547,21,186.863155
-"threshold 21/40, no failover",C7 departures 0.1,provider outage,af,0.5,3,8.833635913391204,2.065896708518599,8471,19,12,1779,12,180.959677
-"threshold 21/40, no failover",C7 departures 0.1,provider outage,as_south,0.5,3,24.132994190613424,1.7210952390917462,17075,49,0,0,0,221.975703
-"threshold 21/40, no failover",C7 departures 0.1,provider outage,af,0.5,3,27.01530966134259,1.5785154945275872,8507,17,0,0,0,188.078461
+"all-online (One Chance), no failover",C7 departures 0,provider outage,as_east,0.1,1,7.794052995833333,0.8429781156864469,27215,55,603,33266,594,154.999163
+"all-online (One Chance), no failover",C7 departures 0,provider outage,na_east,0.1,1,18.771956361493057,1.2446949563614276,4611,10,360,26651,355,260.974429
+"all-online (One Chance), no failover",C7 departures 0,provider outage,sa_east,0.1,1,21.728286593009262,1.8063224970415914,4495,16,395,35059,390,222.978191
+"all-online (One Chance), no failover",C7 departures 0,provider outage,as_east,0.1,1,22.941738687118054,0.839179444397677,27215,62,584,36381,579,312.029619
+"all-online (One Chance), no failover",C7 departures 0.1,provider outage,af,0.5,3,8.833635913391204,2.065896708518599,8471,19,515,68209,511,178.954359
+"all-online (One Chance), no failover",C7 departures 0.1,provider outage,as_south,0.5,3,24.132994190613424,1.7210952390917462,17075,48,653,16912,645,214.026747
+"all-online (One Chance), no failover",C7 departures 0.1,provider outage,af,0.5,3,27.01530966134259,1.5785154945275872,8507,17,391,10418,389,175.056923
+"all-online (One Chance), no failover",C7 departures 0.25,provider outage,eu_west,0.1,1,8.495717087129629,5.232982801566294,8599,23,583,25056,573,231.014721
+"all-online (One Chance), no failover",C7 departures 0.25,provider outage,sa_east,0.1,1,16.50623497119213,0.13479109009966186,4591,21,422,2187,420,79.994415
+"all-online (One Chance), no failover",C7 departures 0.25,provider outage,na_east,0.1,1,18.180121652337963,0.8080643487004568,4752,13,313,4328,308,181.017214
+"all-online (One Chance), no failover",C7 departures 0.25,provider outage,as_east,0.1,1,21.711787729849537,0.6380725905263804,27136,38,660,15619,656,187.936089
+"all-online (One Chance), no failover",C7 departures 0.25,provider outage,as_south,0.5,3,22.70513289584491,5.033668914004605,16883,56,637,139953,631,225.935306
+"all-online (One Chance), no failover",day-9.19 event,provider outage,af,0.5,3,2.5757364030439818,1.0737242512846785,1150,255,5505,57759,2042,184.950051
+"all-online (One Chance), no failover",day-9.19 event,provider outage,as_south,0.5,3,8.38243266085648,0.3589222696767934,2228,496,7223,51653,3623,126.964715
+"all-online (One Chance), no failover",day-9.19 event,scripted regional blackout,as_east,0.1,1,8.738735,10.879444444444445,14508,2244,5230,4902408,3330,846.126447
+"all-online (One Chance), no failover",blackout na_east seed 0,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,513,8033,2382830,2763,337.953938
+"all-online (One Chance), no failover",blackout na_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,2907,18037,1077,108.9966
+"all-online (One Chance), no failover",blackout na_east seed 1,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,485,8001,2383266,2823,331.875416
+"all-online (One Chance), no failover",blackout na_east seed 2,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,523,7821,2256779,2744,305.045971
+"all-online (One Chance), no failover",blackout na_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,5717,57968,2452,204.05108
+"all-online (One Chance), no failover",blackout na_east seed 3,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,521,7800,2226618,2745,225.009996
+"all-online (One Chance), no failover",blackout na_east seed 4,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,505,7910,2234601,2765,255.058772
+"all-online (One Chance), no failover",blackout na_west seed 0,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,171,6141,1641115,2039,350.965733
+"all-online (One Chance), no failover",blackout na_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,2907,18037,1077,108.9966
+"all-online (One Chance), no failover",blackout na_west seed 1,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,6535,1650960,2230,344.864355
+"all-online (One Chance), no failover",blackout na_west seed 2,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,178,5826,1516215,2393,332.022578
+"all-online (One Chance), no failover",blackout na_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,5826,48267,2393,114.728793
+"all-online (One Chance), no failover",blackout na_west seed 3,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,171,5763,1530901,1952,180.052437
+"all-online (One Chance), no failover",blackout na_west seed 4,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,176,5721,1527911,1919,258.120225
+"all-online (One Chance), no failover",blackout sa_east seed 0,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,601,8172,2341076,2844,337.948998
+"all-online (One Chance), no failover",blackout sa_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,2907,18037,1077,108.9966
+"all-online (One Chance), no failover",blackout sa_east seed 1,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,606,8042,2301544,2879,218.205288
+"all-online (One Chance), no failover",blackout sa_east seed 2,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,594,7966,2131912,2803,296.016074
+"all-online (One Chance), no failover",blackout sa_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,436,5752,57148,2465,225.031816
+"all-online (One Chance), no failover",blackout sa_east seed 3,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,593,8070,2224203,2825,225.010693
+"all-online (One Chance), no failover",blackout sa_east seed 4,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,586,8081,2189794,2843,256.06614
+"all-online (One Chance), no failover",blackout eu_west seed 0,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1127,8049,3353761,2940,322.026967
+"all-online (One Chance), no failover",blackout eu_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,2907,18037,1077,108.9966
+"all-online (One Chance), no failover",blackout eu_west seed 1,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1134,7908,3389319,2948,230.001638
+"all-online (One Chance), no failover",blackout eu_west seed 2,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1130,7886,3135934,2922,271.051184
+"all-online (One Chance), no failover",blackout eu_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,437,5560,69872,2520,81.99243
+"all-online (One Chance), no failover",blackout eu_west seed 3,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1141,7967,3219878,2942,271.973154
+"all-online (One Chance), no failover",blackout eu_west seed 4,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1140,7971,3264217,2947,276.938133
+"all-online (One Chance), no failover",blackout af seed 0,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1112,8094,3075675,2947,294.942196
+"all-online (One Chance), no failover",blackout af seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,2907,18037,1077,108.9966
+"all-online (One Chance), no failover",blackout af seed 1,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1110,7925,3086582,2946,220.557803
+"all-online (One Chance), no failover",blackout af seed 2,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1054,7959,2992010,2929,281.980489
+"all-online (One Chance), no failover",blackout af seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,5552,69279,2514,85.013359
+"all-online (One Chance), no failover",blackout af seed 3,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1115,8004,2903220,2946,233.960858
+"all-online (One Chance), no failover",blackout af seed 4,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,997,8076,2983484,2956,233.025428
+"all-online (One Chance), no failover",blackout as_south seed 0,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2154,7133,4750863,2851,209.987523
+"all-online (One Chance), no failover",blackout as_south seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,2907,18037,1077,108.9966
+"all-online (One Chance), no failover",blackout as_south seed 1,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2043,7163,4769158,2906,295.976738
+"all-online (One Chance), no failover",blackout as_south seed 2,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2041,7118,4548437,2864,212.065296
+"all-online (One Chance), no failover",blackout as_south seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,0,4296,64258,2005,98.009055
+"all-online (One Chance), no failover",blackout as_south seed 3,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2050,7180,4625377,2883,267.059521
+"all-online (One Chance), no failover",blackout as_south seed 4,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2187,7040,4630378,2879,235.067036
+"all-online (One Chance), no failover",blackout as_east seed 0,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3598,5620,5694867,2692,478.176504
+"all-online (One Chance), no failover",blackout as_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,2907,18037,1077,108.9966
+"all-online (One Chance), no failover",blackout as_east seed 1,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3608,5460,5701483,2643,313.296252
+"all-online (One Chance), no failover",blackout as_east seed 2,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3588,5509,5678870,2622,672.24603
+"all-online (One Chance), no failover",blackout as_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,415,4767,70102,2419,129.915888
+"all-online (One Chance), no failover",blackout as_east seed 3,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3588,5558,5709524,2641,1427.004502
+"all-online (One Chance), no failover",blackout as_east seed 4,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3588,5570,5688157,2613,277.015286
+"all-online (One Chance), no failover",blackout oc seed 0,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,49,4146,1246300,1385,356.965733
+"all-online (One Chance), no failover",blackout oc seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,2907,18037,1077,108.9966
+"all-online (One Chance), no failover",blackout oc seed 1,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,54,5043,1220327,1719,208.953701
+"all-online (One Chance), no failover",blackout oc seed 2,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,5983,1096904,2405,316.022015
+"all-online (One Chance), no failover",blackout oc seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,438,5983,42649,2405,169.974662
+"all-online (One Chance), no failover",blackout oc seed 3,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,3813,1119141,1325,200.01672
+"all-online (One Chance), no failover",blackout oc seed 4,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,54,3992,1133291,1346,229.907041
+"all-online (One Chance), failover",C7 departures 0,provider outage,as_east,0.1,1,7.794052995833333,0.8429781156864469,27215,53,570,2885,566,180.983741
+"all-online (One Chance), failover",C7 departures 0,provider outage,na_east,0.1,1,18.771956361493057,1.2446949563614276,4611,9,292,3363,288,132.887522
+"all-online (One Chance), failover",C7 departures 0,provider outage,sa_east,0.1,1,21.728286593009262,1.8063224970415914,4495,16,331,4872,326,244.099944
+"all-online (One Chance), failover",C7 departures 0,provider outage,as_east,0.1,1,22.941738687118054,0.839179444397677,27215,63,547,2783,540,159.974084
+"all-online (One Chance), failover",C7 departures 0.1,provider outage,af,0.5,3,8.833635913391204,2.065896708518599,8471,19,478,5036,468,156.997005
+"all-online (One Chance), failover",C7 departures 0.1,provider outage,as_south,0.5,3,24.132994190613424,1.7210952390917462,17075,49,645,6390,638,181.036586
+"all-online (One Chance), failover",C7 departures 0.1,provider outage,af,0.5,3,27.01530966134259,1.5785154945275872,8507,17,400,5488,397,190.08006
+"all-online (One Chance), failover",C7 departures 0.25,provider outage,eu_west,0.1,1,8.495717087129629,5.232982801566294,8599,24,596,16134,582,206.010529
+"all-online (One Chance), failover",C7 departures 0.25,provider outage,sa_east,0.1,1,16.50623497119213,0.13479109009966186,4591,21,382,1956,379,93.950203
+"all-online (One Chance), failover",C7 departures 0.25,provider outage,na_east,0.1,1,18.180121652337963,0.8080643487004568,4752,13,331,4149,325,187.937544
+"all-online (One Chance), failover",C7 departures 0.25,provider outage,as_east,0.1,1,21.711787729849537,0.6380725905263804,27136,40,626,3612,620,183.99775
+"all-online (One Chance), failover",C7 departures 0.25,provider outage,as_south,0.5,3,22.70513289584491,5.033668914004605,16883,54,606,10529,602,224.051653
+"all-online (One Chance), failover",day-9.19 event,provider outage,af,0.5,3,2.5757364030439818,1.0737242512846785,1150,255,5591,56482,1942,187.942254
+"all-online (One Chance), failover",day-9.19 event,provider outage,as_south,0.5,3,8.38243266085648,0.3589222696767934,2228,496,7180,50325,3356,140.797764
+"all-online (One Chance), failover",day-9.19 event,scripted regional blackout,as_east,0.1,1,8.738735,10.879444444444445,14508,2241,5200,78724,3165,250.114048
+"all-online (One Chance), failover",blackout na_east seed 0,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,513,8078,290327,2635,331.912219
+"all-online (One Chance), failover",blackout na_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,3109,17210,970,112.040082
+"all-online (One Chance), failover",blackout na_east seed 1,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,485,8047,299967,2633,197.000141
+"all-online (One Chance), failover",blackout na_east seed 2,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,523,7912,292471,2611,296.044212
+"all-online (One Chance), failover",blackout na_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,427,5128,20570,1781,96.010091
+"all-online (One Chance), failover",blackout na_east seed 3,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,520,7891,285921,2603,190.99458
+"all-online (One Chance), failover",blackout na_east seed 4,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,506,7954,289857,2613,251.018571
+"all-online (One Chance), failover",blackout na_west seed 0,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,6094,294720,1922,357.972165
+"all-online (One Chance), failover",blackout na_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,3109,17210,970,112.040082
+"all-online (One Chance), failover",blackout na_west seed 1,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,6478,305700,2056,257.946547
+"all-online (One Chance), failover",blackout na_west seed 2,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,178,5662,297309,2017,313.027852
+"all-online (One Chance), failover",blackout na_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,435,5537,24388,2014,136.009383
+"all-online (One Chance), failover",blackout na_west seed 3,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,171,5833,287004,1876,219.840705
+"all-online (One Chance), failover",blackout na_west seed 4,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,175,5875,288052,1846,257.007272
+"all-online (One Chance), failover",blackout sa_east seed 0,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,601,8155,294227,2680,332.944154
+"all-online (One Chance), failover",blackout sa_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,3109,17210,970,112.040082
+"all-online (One Chance), failover",blackout sa_east seed 1,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,605,8094,300513,2698,317.996168
+"all-online (One Chance), failover",blackout sa_east seed 2,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,595,7994,296384,2665,292.016074
+"all-online (One Chance), failover",blackout sa_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,424,5169,20606,1787,99.954667
+"all-online (One Chance), failover",blackout sa_east seed 3,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,594,8050,284440,2667,203.111327
+"all-online (One Chance), failover",blackout sa_east seed 4,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,586,8135,285622,2675,223.991818
+"all-online (One Chance), failover",blackout eu_west seed 0,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1127,8052,274959,2796,329.046016
+"all-online (One Chance), failover",blackout eu_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,3109,17210,970,112.040082
+"all-online (One Chance), failover",blackout eu_west seed 1,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1135,7874,280283,2727,289.050903
+"all-online (One Chance), failover",blackout eu_west seed 2,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1131,7908,271347,2758,268.045173
+"all-online (One Chance), failover",blackout eu_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,401,4619,15046,1303,191.925611
+"all-online (One Chance), failover",blackout eu_west seed 3,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1142,7943,264549,2763,207.09808
+"all-online (One Chance), failover",blackout eu_west seed 4,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1139,7930,265852,2780,327.99656
+"all-online (One Chance), failover",blackout af seed 0,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1113,8062,235743,2782,308.98292
+"all-online (One Chance), failover",blackout af seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,3109,17210,970,112.040082
+"all-online (One Chance), failover",blackout af seed 1,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1110,7924,214662,2741,255.006941
+"all-online (One Chance), failover",blackout af seed 2,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1054,7980,257565,2751,280.984541
+"all-online (One Chance), failover",blackout af seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,419,4712,16131,1336,104.950417
+"all-online (One Chance), failover",blackout af seed 3,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1114,7980,213200,2755,208.312281
+"all-online (One Chance), failover",blackout af seed 4,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,995,8046,212062,2743,234.012296
+"all-online (One Chance), failover",blackout as_south seed 0,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2155,7127,149798,2655,266.952661
+"all-online (One Chance), failover",blackout as_south seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,3109,17210,970,112.040082
+"all-online (One Chance), failover",blackout as_south seed 1,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2043,7151,169455,2647,205.977463
+"all-online (One Chance), failover",blackout as_south seed 2,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2040,7111,123892,2664,294.084531
+"all-online (One Chance), failover",blackout as_south seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,0,42,353,6,87.432805
+"all-online (One Chance), failover",blackout as_south seed 3,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2050,7176,159910,2664,194.97287
+"all-online (One Chance), failover",blackout as_south seed 4,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2187,7034,163088,2656,211.984849
+"all-online (One Chance), failover",blackout as_east seed 0,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3599,5615,165590,2535,308.122712
+"all-online (One Chance), failover",blackout as_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,3109,17210,970,112.040082
+"all-online (One Chance), failover",blackout as_east seed 1,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3609,5450,166596,2488,242.000048
+"all-online (One Chance), failover",blackout as_east seed 2,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3585,5499,175409,2508,255.167383
+"all-online (One Chance), failover",blackout as_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,366,3779,8758,207,163.052847
+"all-online (One Chance), failover",blackout as_east seed 3,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3589,5553,166303,2529,896.140626
+"all-online (One Chance), failover",blackout as_east seed 4,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3588,5564,173802,2540,204.937064
+"all-online (One Chance), failover",blackout oc seed 0,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,47,4134,293657,1328,363.960614
+"all-online (One Chance), failover",blackout oc seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,3109,17210,970,112.040082
+"all-online (One Chance), failover",blackout oc seed 1,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,55,4935,304230,1583,195.902964
+"all-online (One Chance), failover",blackout oc seed 2,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,5804,294327,2128,309.027852
+"all-online (One Chance), failover",blackout oc seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,431,5802,26928,2125,185.986896
+"all-online (One Chance), failover",blackout oc seed 3,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,3871,283272,1236,216.871191
+"all-online (One Chance), failover",blackout oc seed 4,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,54,3899,283664,1277,292.96411
+"threshold 2n/3, no failover",C7 departures 0,provider outage,as_east,0.1,1,7.794052995833333,0.8429781156864469,27215,55,340,33004,338,157.957499
+"threshold 2n/3, no failover",C7 departures 0,provider outage,na_east,0.1,1,18.771956361493057,1.2446949563614276,4611,10,171,22559,170,195.95932
+"threshold 2n/3, no failover",C7 departures 0,provider outage,sa_east,0.1,1,21.728286593009262,1.8063224970415914,4495,15,168,28094,166,165.92148
+"threshold 2n/3, no failover",C7 departures 0,provider outage,as_east,0.1,1,22.941738687118054,0.839179444397677,27215,62,382,34895,378,214.996042
+"threshold 2n/3, no failover",C7 departures 0.1,provider outage,af,0.5,3,8.833635913391204,2.065896708518599,8471,19,307,66934,304,187.015704
+"threshold 2n/3, no failover",C7 departures 0.1,provider outage,as_south,0.5,3,24.132994190613424,1.7210952390917462,17075,49,56,9321,56,193.421404
+"threshold 2n/3, no failover",C7 departures 0.1,provider outage,af,0.5,3,27.01530966134259,1.5785154945275872,8507,16,56,5158,56,179.907041
+"threshold 2n/3, no failover",C7 departures 0.25,provider outage,eu_west,0.1,1,8.495717087129629,5.232982801566294,8599,23,79,7497,79,199.01942
+"threshold 2n/3, no failover",C7 departures 0.25,provider outage,sa_east,0.1,1,16.50623497119213,0.13479109009966186,4591,21,0,0,0,81.003197
+"threshold 2n/3, no failover",C7 departures 0.25,provider outage,na_east,0.1,1,18.180121652337963,0.8080643487004568,4752,13,4,296,4,129.981832
+"threshold 2n/3, no failover",C7 departures 0.25,provider outage,as_east,0.1,1,21.711787729849537,0.6380725905263804,27136,40,181,11628,181,168.038483
+"threshold 2n/3, no failover",C7 departures 0.25,provider outage,as_south,0.5,3,22.70513289584491,5.033668914004605,16883,56,294,118217,290,196.102325
+"threshold 2n/3, no failover",day-9.19 event,provider outage,af,0.5,3,2.5757364030439818,1.0737242512846785,1150,255,10,336,4,187.976381
+"threshold 2n/3, no failover",day-9.19 event,provider outage,as_south,0.5,3,8.38243266085648,0.3589222696767934,2228,495,22,854,7,85.935547
+"threshold 2n/3, no failover",day-9.19 event,scripted regional blackout,as_east,0.1,1,8.738735,10.879444444444445,14508,2243,4956,4873717,3147,711.005057
+"threshold 2n/3, no failover",blackout na_east seed 0,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,513,3675,2146413,1691,351.974417
+"threshold 2n/3, no failover",blackout na_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,69,1822,28,111.055115
+"threshold 2n/3, no failover",blackout na_east seed 1,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,486,3495,2068311,1633,207.983651
+"threshold 2n/3, no failover",blackout na_east seed 2,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,523,3342,2000183,1571,290.06842
+"threshold 2n/3, no failover",blackout na_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,438,2939,43717,1289,135.196323
+"threshold 2n/3, no failover",blackout na_east seed 3,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,521,3303,2002645,1538,300.013121
+"threshold 2n/3, no failover",blackout na_east seed 4,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,506,3378,2061195,1537,218.940473
+"threshold 2n/3, no failover",blackout na_west seed 0,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,171,2875,1418091,1267,370.975468
+"threshold 2n/3, no failover",blackout na_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,69,1822,28,111.055115
+"threshold 2n/3, no failover",blackout na_west seed 1,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,2607,1367036,1147,205.959949
+"threshold 2n/3, no failover",blackout na_west seed 2,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,178,2526,1304407,1129,301.029611
+"threshold 2n/3, no failover",blackout na_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,2028,29889,846,108.073229
+"threshold 2n/3, no failover",blackout na_west seed 3,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,171,2386,1267743,1040,189.031997
+"threshold 2n/3, no failover",blackout na_west seed 4,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,176,2430,1298871,1077,246.925496
+"threshold 2n/3, no failover",blackout sa_east seed 0,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,601,3747,2143502,1683,351.974089
+"threshold 2n/3, no failover",blackout sa_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,69,1822,28,111.055115
+"threshold 2n/3, no failover",blackout sa_east seed 1,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,606,3483,2022513,1585,217.275937
+"threshold 2n/3, no failover",blackout sa_east seed 2,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,595,3317,1945470,1527,252.047045
+"threshold 2n/3, no failover",blackout sa_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,2928,43037,1271,133.890796
+"threshold 2n/3, no failover",blackout sa_east seed 3,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,592,3275,1987438,1480,228.953305
+"threshold 2n/3, no failover",blackout sa_east seed 4,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,586,3314,1974820,1531,239.95064
+"threshold 2n/3, no failover",blackout eu_west seed 0,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1127,4421,3183767,2099,355.036346
+"threshold 2n/3, no failover",blackout eu_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,69,1822,28,111.055115
+"threshold 2n/3, no failover",blackout eu_west seed 1,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1135,4282,3119488,2078,185.016605
+"threshold 2n/3, no failover",blackout eu_west seed 2,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1131,4201,2957681,1938,214.998318
+"threshold 2n/3, no failover",blackout eu_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,4200,62750,1938,169.980793
+"threshold 2n/3, no failover",blackout eu_west seed 3,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1142,4170,3023986,1971,298.997732
+"threshold 2n/3, no failover",blackout eu_west seed 4,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1141,4187,2991932,1939,290.035295
+"threshold 2n/3, no failover",blackout af seed 0,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1112,3918,2919812,1800,331.979341
+"threshold 2n/3, no failover",blackout af seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,69,1822,28,111.055115
+"threshold 2n/3, no failover",blackout af seed 1,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1110,4167,2918741,1892,220.042313
+"threshold 2n/3, no failover",blackout af seed 2,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1054,4148,2844501,1922,277.004325
+"threshold 2n/3, no failover",blackout af seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,438,4148,61940,1922,148.917486
+"threshold 2n/3, no failover",blackout af seed 3,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1113,3891,2747132,1787,222.044088
+"threshold 2n/3, no failover",blackout af seed 4,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,997,3879,2769696,1788,229.032114
+"threshold 2n/3, no failover",blackout as_south seed 0,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2157,4655,4720097,2240,283.96921
+"threshold 2n/3, no failover",blackout as_south seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,69,1822,28,111.055115
+"threshold 2n/3, no failover",blackout as_south seed 1,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2042,4530,4596858,2240,228.950698
+"threshold 2n/3, no failover",blackout as_south seed 2,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2041,4472,4471262,2210,219.099588
+"threshold 2n/3, no failover",blackout as_south seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,0,4188,62649,1981,100.914925
+"threshold 2n/3, no failover",blackout as_south seed 3,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2050,4480,4546727,2170,244.006722
+"threshold 2n/3, no failover",blackout as_south seed 4,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2186,4478,4597569,2169,262.975912
+"threshold 2n/3, no failover",blackout as_east seed 0,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3596,5159,5700827,2441,2130.065002
+"threshold 2n/3, no failover",blackout as_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,69,1822,28,111.055115
+"threshold 2n/3, no failover",blackout as_east seed 1,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3605,5064,5677120,2450,317.04658
+"threshold 2n/3, no failover",blackout as_east seed 2,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3588,4973,5666338,2408,1227.099231
+"threshold 2n/3, no failover",blackout as_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,416,4688,70063,2408,98.046725
+"threshold 2n/3, no failover",blackout as_east seed 3,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3592,4956,5668703,2380,1708.15584
+"threshold 2n/3, no failover",blackout as_east seed 4,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3587,4983,5671511,2364,253.040043
+"threshold 2n/3, no failover",blackout oc seed 0,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,49,2223,998023,958,371.974215
+"threshold 2n/3, no failover",blackout oc seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,69,1822,28,111.055115
+"threshold 2n/3, no failover",blackout oc seed 1,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,55,1988,951777,867,191.034571
+"threshold 2n/3, no failover",blackout oc seed 2,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,1859,839427,820,337.085983
+"threshold 2n/3, no failover",blackout oc seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,438,1236,18212,519,85.024184
+"threshold 2n/3, no failover",blackout oc seed 3,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,1737,853522,741,216.987956
+"threshold 2n/3, no failover",blackout oc seed 4,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,54,1877,887235,803,234.955541
+"threshold 2n/3, failover",C7 departures 0,provider outage,as_east,0.1,1,7.794052995833333,0.8429781156864469,27215,53,227,389,223,194.031409
+"threshold 2n/3, failover",C7 departures 0,provider outage,na_east,0.1,1,18.771956361493057,1.2446949563614276,4611,10,36,178,36,173.964905
+"threshold 2n/3, failover",C7 departures 0,provider outage,sa_east,0.1,1,21.728286593009262,1.8063224970415914,4495,16,40,315,40,211.982399
+"threshold 2n/3, failover",C7 departures 0,provider outage,as_east,0.1,1,22.941738687118054,0.839179444397677,27215,63,252,384,247,166.851223
+"threshold 2n/3, failover",C7 departures 0.1,provider outage,af,0.5,3,8.833635913391204,2.065896708518599,8471,19,79,605,79,162.946715
+"threshold 2n/3, failover",C7 departures 0.1,provider outage,as_south,0.5,3,24.132994190613424,1.7210952390917462,17075,48,19,60,19,217.959581
+"threshold 2n/3, failover",C7 departures 0.1,provider outage,af,0.5,3,27.01530966134259,1.5785154945275872,8507,17,11,24,11,185.989755
+"threshold 2n/3, failover",C7 departures 0.25,provider outage,eu_west,0.1,1,8.495717087129629,5.232982801566294,8599,23,10,139,10,196.031876
+"threshold 2n/3, failover",C7 departures 0.25,provider outage,sa_east,0.1,1,16.50623497119213,0.13479109009966186,4591,21,1,1,1,80.028271
+"threshold 2n/3, failover",C7 departures 0.25,provider outage,na_east,0.1,1,18.180121652337963,0.8080643487004568,4752,13,2,5,2,121.934991
+"threshold 2n/3, failover",C7 departures 0.25,provider outage,as_east,0.1,1,21.711787729849537,0.6380725905263804,27136,38,86,293,86,97.456351
+"threshold 2n/3, failover",C7 departures 0.25,provider outage,as_south,0.5,3,22.70513289584491,5.033668914004605,16883,56,83,1066,82,271.016088
+"threshold 2n/3, failover",day-9.19 event,provider outage,af,0.5,3,2.5757364030439818,1.0737242512846785,1150,254,2,6,1,186.93725
+"threshold 2n/3, failover",day-9.19 event,provider outage,as_south,0.5,3,8.38243266085648,0.3589222696767934,2228,496,12,22,8,85.918594
+"threshold 2n/3, failover",day-9.19 event,scripted regional blackout,as_east,0.1,1,8.738735,10.879444444444445,14508,2242,4928,38140,3019,270.048198
+"threshold 2n/3, failover",blackout na_east seed 0,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,513,396,19403,127,348.988653
+"threshold 2n/3, failover",blackout na_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,6,16,4,111.987426
+"threshold 2n/3, failover",blackout na_east seed 1,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,486,367,19405,123,201.994384
+"threshold 2n/3, failover",blackout na_east seed 2,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,523,1429,19074,539,305.029611
+"threshold 2n/3, failover",blackout na_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,424,1420,1633,535,155.901077
+"threshold 2n/3, failover",blackout na_east seed 3,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,521,349,19318,118,235.021826
+"threshold 2n/3, failover",blackout na_east seed 4,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,505,329,17938,111,225.891057
+"threshold 2n/3, failover",blackout na_west seed 0,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,267,12689,92,366.998657
+"threshold 2n/3, failover",blackout na_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,6,16,4,111.987426
+"threshold 2n/3, failover",blackout na_west seed 1,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,263,12364,93,188.974869
+"threshold 2n/3, failover",blackout na_west seed 2,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,178,958,11627,412,318.009638
+"threshold 2n/3, failover",blackout na_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,435,956,1079,410,115.047382
+"threshold 2n/3, failover",blackout na_west seed 3,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,171,211,11160,79,185.041768
+"threshold 2n/3, failover",blackout na_west seed 4,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,176,186,10738,71,229.89729
+"threshold 2n/3, failover",blackout sa_east seed 0,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,601,332,18894,118,348.994705
+"threshold 2n/3, failover",blackout sa_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,6,16,4,111.987426
+"threshold 2n/3, failover",blackout sa_east seed 1,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,606,344,19619,112,323.888565
+"threshold 2n/3, failover",blackout sa_east seed 2,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,594,1376,18062,517,302.018453
+"threshold 2n/3, failover",blackout sa_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,432,1365,1515,512,105.955694
+"threshold 2n/3, failover",blackout sa_east seed 3,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,592,336,18543,101,203.048028
+"threshold 2n/3, failover",blackout sa_east seed 4,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,586,366,18237,127,232.923314
+"threshold 2n/3, failover",blackout eu_west seed 0,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1125,613,28988,169,361.018158
+"threshold 2n/3, failover",blackout eu_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,6,16,4,111.987426
+"threshold 2n/3, failover",blackout eu_west seed 1,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1135,568,28193,122,187.079561
+"threshold 2n/3, failover",blackout eu_west seed 2,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1131,2264,27604,665,281.050479
+"threshold 2n/3, failover",blackout eu_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,424,2247,2420,658,91.04439
+"threshold 2n/3, failover",blackout eu_west seed 3,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1142,485,28181,124,219.168714
+"threshold 2n/3, failover",blackout eu_west seed 4,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1141,537,27869,152,340.950403
+"threshold 2n/3, failover",blackout af seed 0,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1112,437,22528,152,333.024768
+"threshold 2n/3, failover",blackout af seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,6,16,4,111.987426
+"threshold 2n/3, failover",blackout af seed 1,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1110,524,23701,133,244.083062
+"threshold 2n/3, failover",blackout af seed 2,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1055,2002,23024,603,294.002124
+"threshold 2n/3, failover",blackout af seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,415,1986,2217,594,156.9866
+"threshold 2n/3, failover",blackout af seed 3,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1113,271,22013,74,207.949048
+"threshold 2n/3, failover",blackout af seed 4,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,997,381,21528,106,248.021591
+"threshold 2n/3, failover",blackout as_south seed 0,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2157,1491,38745,595,293.041597
+"threshold 2n/3, failover",blackout as_south seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,6,16,4,111.987426
+"threshold 2n/3, failover",blackout as_south seed 1,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2042,1331,36631,512,187.037452
+"threshold 2n/3, failover",blackout as_south seed 2,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2041,1393,32634,556,298.965668
+"threshold 2n/3, failover",blackout as_south seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,0,25,85,3,80.808532
+"threshold 2n/3, failover",blackout as_south seed 3,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2050,1244,35817,515,201.909369
+"threshold 2n/3, failover",blackout as_south seed 4,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2186,1476,35506,603,269.910925
+"threshold 2n/3, failover",blackout as_east seed 0,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3598,5100,55302,2325,230.0827
+"threshold 2n/3, failover",blackout as_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,6,16,4,111.987426
+"threshold 2n/3, failover",blackout as_east seed 1,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3604,5023,50870,2324,488.213859
+"threshold 2n/3, failover",blackout as_east seed 2,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3588,4923,55859,2258,383.093476
+"threshold 2n/3, failover",blackout as_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,356,2325,2495,160,87.015881
+"threshold 2n/3, failover",blackout as_east seed 3,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3592,4961,54886,2293,500.246897
+"threshold 2n/3, failover",blackout as_east seed 4,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3587,4977,56202,2283,870.118843
+"threshold 2n/3, failover",blackout oc seed 0,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,49,221,8696,81,371.998657
+"threshold 2n/3, failover",blackout oc seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,6,16,4,111.987426
+"threshold 2n/3, failover",blackout oc seed 1,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,55,173,8189,67,189.980636
+"threshold 2n/3, failover",blackout oc seed 2,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,596,7901,290,317.009638
+"threshold 2n/3, failover",blackout oc seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,437,593,659,289,128.030129
+"threshold 2n/3, failover",blackout oc seed 3,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,163,7528,64,218.074749
+"threshold 2n/3, failover",blackout oc seed 4,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,54,153,7295,63,239.908595
+"threshold 21/40, no failover",C7 departures 0,provider outage,as_east,0.1,1,7.794052995833333,0.8429781156864469,27215,55,21,1789,21,196.070563
+"threshold 21/40, no failover",C7 departures 0,provider outage,na_east,0.1,1,18.771956361493057,1.2446949563614276,4611,10,2,186,2,164.967259
+"threshold 21/40, no failover",C7 departures 0,provider outage,sa_east,0.1,1,21.728286593009262,1.8063224970415914,4495,16,6,588,6,158.996951
+"threshold 21/40, no failover",C7 departures 0,provider outage,as_east,0.1,1,22.941738687118054,0.839179444397677,27215,63,24,1986,24,171.906507
+"threshold 21/40, no failover",C7 departures 0.1,provider outage,af,0.5,3,8.833635913391204,2.065896708518599,8471,18,9,1112,9,163.985527
+"threshold 21/40, no failover",C7 departures 0.1,provider outage,as_south,0.5,3,24.132994190613424,1.7210952390917462,17075,49,1,156,1,228.989501
+"threshold 21/40, no failover",C7 departures 0.1,provider outage,af,0.5,3,27.01530966134259,1.5785154945275872,8507,17,0,0,0,191.021653
 "threshold 21/40, no failover",C7 departures 0.25,provider outage,eu_west,0.1,1,8.495717087129629,5.232982801566294,8599,24,1,7,1,200.071336
 "threshold 21/40, no failover",C7 departures 0.25,provider outage,sa_east,0.1,1,16.50623497119213,0.13479109009966186,4591,21,0,0,0,78.993122
-"threshold 21/40, no failover",C7 departures 0.25,provider outage,na_east,0.1,1,18.180121652337963,0.8080643487004568,4752,13,0,0,0,122.018067
-"threshold 21/40, no failover",C7 departures 0.25,provider outage,as_east,0.1,1,21.711787729849537,0.6380725905263804,27136,40,6,176,6,95.007563
-"threshold 21/40, no failover",C7 departures 0.25,provider outage,as_south,0.5,3,22.70513289584491,5.033668914004605,16883,55,14,2935,14,268.03315
-"threshold 21/40, no failover",day-9.19 event,provider outage,af,0.5,3,2.5757364030439818,1.0737242512846785,1150,254,0,0,0,190.974526
-"threshold 21/40, no failover",day-9.19 event,provider outage,as_south,0.5,3,8.38243266085648,0.3589222696767934,2228,495,0,0,0,86.005574
-"threshold 21/40, no failover",day-9.19 event,scripted regional blackout,as_east,0.1,1,8.738735,10.879444444444445,14508,2242,2747,3084855,1998,246.92616
-"threshold 21/40, no failover",blackout na_east seed 0,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,513,367,127609,173,348.987627
-"threshold 21/40, no failover",blackout na_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.031777
-"threshold 21/40, no failover",blackout na_east seed 1,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,486,239,91690,121,203.996399
-"threshold 21/40, no failover",blackout na_east seed 2,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,523,234,85581,118,311.046551
-"threshold 21/40, no failover",blackout na_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,438,130,1899,58,165.921418
-"threshold 21/40, no failover",blackout na_east seed 3,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,520,192,71728,98,240.014692
-"threshold 21/40, no failover",blackout na_east seed 4,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,505,245,86141,119,226.965619
-"threshold 21/40, no failover",blackout na_west seed 0,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,145,41616,63,366.985371
-"threshold 21/40, no failover",blackout na_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.031777
-"threshold 21/40, no failover",blackout na_west seed 1,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,89,30613,46,189.033244
-"threshold 21/40, no failover",blackout na_west seed 2,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,178,71,24215,37,324.040204
-"threshold 21/40, no failover",blackout na_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,28,371,12,166.945351
-"threshold 21/40, no failover",blackout na_west seed 3,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,49,13807,31,189.003363
-"threshold 21/40, no failover",blackout na_west seed 4,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,175,93,21322,45,229.976638
-"threshold 21/40, no failover",blackout sa_east seed 0,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,600,286,98508,136,348.97623
-"threshold 21/40, no failover",blackout sa_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.031777
-"threshold 21/40, no failover",blackout sa_east seed 1,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,606,209,78560,104,321.974173
-"threshold 21/40, no failover",blackout sa_east seed 2,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,594,218,74369,114,308.024086
-"threshold 21/40, no failover",blackout sa_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,440,117,1605,58,157.949431
-"threshold 21/40, no failover",blackout sa_east seed 3,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,594,165,52493,85,204.041047
-"threshold 21/40, no failover",blackout sa_east seed 4,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,586,206,69552,106,233.978483
-"threshold 21/40, no failover",blackout eu_west seed 0,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1127,702,298179,350,360.006663
-"threshold 21/40, no failover",blackout eu_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.031777
-"threshold 21/40, no failover",blackout eu_west seed 1,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1135,604,278081,310,179.957872
-"threshold 21/40, no failover",blackout eu_west seed 2,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1131,423,212194,221,286.056813
-"threshold 21/40, no failover",blackout eu_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,438,423,6265,205,174.005566
-"threshold 21/40, no failover",blackout eu_west seed 3,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1142,476,228368,251,182.946979
-"threshold 21/40, no failover",blackout eu_west seed 4,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1139,494,228072,255,342.991141
-"threshold 21/40, no failover",blackout af seed 0,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1113,415,221794,194,330.981321
-"threshold 21/40, no failover",blackout af seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.031777
-"threshold 21/40, no failover",blackout af seed 1,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1110,456,216588,213,242.091176
-"threshold 21/40, no failover",blackout af seed 2,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1055,454,202623,224,298.020845
-"threshold 21/40, no failover",blackout af seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,454,6743,224,176.976742
-"threshold 21/40, no failover",blackout af seed 3,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1115,332,152642,163,208.944663
-"threshold 21/40, no failover",blackout af seed 4,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,995,335,182673,161,238.93512
-"threshold 21/40, no failover",blackout as_south seed 0,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2156,1025,617699,547,291.007775
-"threshold 21/40, no failover",blackout as_south seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.031777
-"threshold 21/40, no failover",blackout as_south seed 1,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2042,916,522179,505,191.99028
-"threshold 21/40, no failover",blackout as_south seed 2,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2042,796,505317,444,260.004998
-"threshold 21/40, no failover",blackout as_south seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,0,519,7710,266,71.946598
-"threshold 21/40, no failover",blackout as_south seed 3,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2051,753,524221,402,243.916918
-"threshold 21/40, no failover",blackout as_south seed 4,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2186,808,525942,443,235.038889
-"threshold 21/40, no failover",blackout as_east seed 0,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3598,2357,2055056,1485,250.022875
-"threshold 21/40, no failover",blackout as_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.031777
-"threshold 21/40, no failover",blackout as_east seed 1,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3605,2420,2124787,1550,271.034283
-"threshold 21/40, no failover",blackout as_east seed 2,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3588,2396,1862210,1518,196.988057
-"threshold 21/40, no failover",blackout as_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,414,2049,30512,1169,86.971816
-"threshold 21/40, no failover",blackout as_east seed 3,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3592,2378,1886944,1524,238.988467
-"threshold 21/40, no failover",blackout as_east seed 4,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3588,2543,1990422,1576,227.978011
-"threshold 21/40, no failover",blackout oc seed 0,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,47,75,17235,31,371.985371
-"threshold 21/40, no failover",blackout oc seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.031777
-"threshold 21/40, no failover",blackout oc seed 1,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,55,38,11088,18,190.979912
-"threshold 21/40, no failover",blackout oc seed 2,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,53,13098,22,322.040204
-"threshold 21/40, no failover",blackout oc seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,15,189,5,176.966868
-"threshold 21/40, no failover",blackout oc seed 3,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,25,6993,12,222.034943
-"threshold 21/40, no failover",blackout oc seed 4,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,54,49,9666,23,240.981443
-"threshold 21/40, failover",C7 departures 0,provider outage,as_east,0.1,1,7.794052995833333,0.8429781156864469,27215,55,9,20,8,217.028763
-"threshold 21/40, failover",C7 departures 0,provider outage,na_east,0.1,1,18.771956361493057,1.2446949563614276,4611,10,1,1,1,160.021091
-"threshold 21/40, failover",C7 departures 0,provider outage,sa_east,0.1,1,21.728286593009262,1.8063224970415914,4495,16,2,7,2,158.981504
-"threshold 21/40, failover",C7 departures 0,provider outage,as_east,0.1,1,22.941738687118054,0.839179444397677,27215,61,20,34,20,189.006491
-"threshold 21/40, failover",C7 departures 0.1,provider outage,af,0.5,3,8.833635913391204,2.065896708518599,8471,19,2,23,2,181.012733
-"threshold 21/40, failover",C7 departures 0.1,provider outage,as_south,0.5,3,24.132994190613424,1.7210952390917462,17075,49,1,2,1,184.002892
-"threshold 21/40, failover",C7 departures 0.1,provider outage,af,0.5,3,27.01530966134259,1.5785154945275872,8507,17,0,0,0,189.04623
+"threshold 21/40, no failover",C7 departures 0.25,provider outage,na_east,0.1,1,18.180121652337963,0.8080643487004568,4752,13,0,0,0,121.018067
+"threshold 21/40, no failover",C7 departures 0.25,provider outage,as_east,0.1,1,21.711787729849537,0.6380725905263804,27136,40,6,218,6,94.998812
+"threshold 21/40, no failover",C7 departures 0.25,provider outage,as_south,0.5,3,22.70513289584491,5.033668914004605,16883,56,8,1313,8,270.999794
+"threshold 21/40, no failover",day-9.19 event,provider outage,af,0.5,3,2.5757364030439818,1.0737242512846785,1150,255,0,0,0,190.947842
+"threshold 21/40, no failover",day-9.19 event,provider outage,as_south,0.5,3,8.38243266085648,0.3589222696767934,2228,495,0,0,0,85.967263
+"threshold 21/40, no failover",day-9.19 event,scripted regional blackout,as_east,0.1,1,8.738735,10.879444444444445,14508,2242,2722,3092334,2024,343.054239
+"threshold 21/40, no failover",blackout na_east seed 0,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,513,295,99731,148,348.960308
+"threshold 21/40, no failover",blackout na_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.007119
+"threshold 21/40, no failover",blackout na_east seed 1,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,486,202,80246,105,199.019653
+"threshold 21/40, no failover",blackout na_east seed 2,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,523,213,71699,101,310.057599
+"threshold 21/40, no failover",blackout na_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,136,1954,58,168.039353
+"threshold 21/40, no failover",blackout na_east seed 3,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,521,203,72222,95,241.992957
+"threshold 21/40, no failover",blackout na_east seed 4,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,506,243,84997,111,226.940649
+"threshold 21/40, no failover",blackout na_west seed 0,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,169,90,23013,45,366.960997
+"threshold 21/40, no failover",blackout na_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.007119
+"threshold 21/40, no failover",blackout na_west seed 1,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,95,28919,48,190.990782
+"threshold 21/40, no failover",blackout na_west seed 2,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,178,66,17819,29,321.030703
+"threshold 21/40, no failover",blackout na_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,438,20,284,9,138.010838
+"threshold 21/40, no failover",blackout na_west seed 3,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,59,17391,35,189.014569
+"threshold 21/40, no failover",blackout na_west seed 4,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,176,71,20234,36,229.950971
+"threshold 21/40, no failover",blackout sa_east seed 0,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,601,293,86457,134,348.960997
+"threshold 21/40, no failover",blackout sa_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.007119
+"threshold 21/40, no failover",blackout sa_east seed 1,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,606,217,82054,111,326.996485
+"threshold 21/40, no failover",blackout sa_east seed 2,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,595,251,75185,114,340.987477
+"threshold 21/40, no failover",blackout sa_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,438,107,1554,49,131.019915
+"threshold 21/40, no failover",blackout sa_east seed 3,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,594,152,51398,79,205.034338
+"threshold 21/40, no failover",blackout sa_east seed 4,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,586,177,62200,93,234.002667
+"threshold 21/40, no failover",blackout eu_west seed 0,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1125,607,264625,320,363.021072
+"threshold 21/40, no failover",blackout eu_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.007119
+"threshold 21/40, no failover",blackout eu_west seed 1,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1135,621,272361,323,181.998855
+"threshold 21/40, no failover",blackout eu_west seed 2,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1130,452,232090,235,284.04592
+"threshold 21/40, no failover",blackout eu_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,436,445,6454,214,113.05051
+"threshold 21/40, no failover",blackout eu_west seed 3,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1141,510,241050,260,211.032357
+"threshold 21/40, no failover",blackout eu_west seed 4,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1141,508,249880,265,341.020123
+"threshold 21/40, no failover",blackout af seed 0,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1112,407,216114,200,332.970394
+"threshold 21/40, no failover",blackout af seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.007119
+"threshold 21/40, no failover",blackout af seed 1,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1110,422,192432,204,253.091343
+"threshold 21/40, no failover",blackout af seed 2,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1055,466,186278,225,297.004042
+"threshold 21/40, no failover",blackout af seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,438,466,6870,225,73.993757
+"threshold 21/40, no failover",blackout af seed 3,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1115,374,164861,183,209.975961
+"threshold 21/40, no failover",blackout af seed 4,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,997,361,182917,179,236.972993
+"threshold 21/40, no failover",blackout as_south seed 0,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2157,1036,614139,560,287.982069
+"threshold 21/40, no failover",blackout as_south seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.007119
+"threshold 21/40, no failover",blackout as_south seed 1,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2042,852,492085,475,191.943908
+"threshold 21/40, no failover",blackout as_south seed 2,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2041,806,488176,434,254.025161
+"threshold 21/40, no failover",blackout as_south seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,0,477,7096,244,68.00488
+"threshold 21/40, no failover",blackout as_south seed 3,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2051,717,504235,383,256.057067
+"threshold 21/40, no failover",blackout as_south seed 4,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2186,790,562730,445,222.100518
+"threshold 21/40, no failover",blackout as_east seed 0,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3598,2367,2082107,1494,566.027854
+"threshold 21/40, no failover",blackout as_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.007119
+"threshold 21/40, no failover",blackout as_east seed 1,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3604,2433,2160158,1541,189.96561
+"threshold 21/40, no failover",blackout as_east seed 2,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3589,2409,1887165,1521,223.147493
+"threshold 21/40, no failover",blackout as_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,420,2152,31998,1203,92.948364
+"threshold 21/40, no failover",blackout as_east seed 3,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3589,2431,1941146,1549,215.981666
+"threshold 21/40, no failover",blackout as_east seed 4,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3588,2469,1974073,1558,239.910241
+"threshold 21/40, no failover",blackout oc seed 0,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,49,58,13860,24,371.960997
+"threshold 21/40, no failover",blackout oc seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.007119
+"threshold 21/40, no failover",blackout oc seed 1,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,55,45,10767,18,194.005314
+"threshold 21/40, no failover",blackout oc seed 2,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,57,48,10048,20,321.027186
+"threshold 21/40, no failover",blackout oc seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,12,132,6,147.049855
+"threshold 21/40, no failover",blackout oc seed 3,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,33,8075,19,222.06503
+"threshold 21/40, no failover",blackout oc seed 4,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,54,39,9572,17,239.957223
+"threshold 21/40, failover",C7 departures 0,provider outage,as_east,0.1,1,7.794052995833333,0.8429781156864469,27215,55,16,31,16,219.032578
+"threshold 21/40, failover",C7 departures 0,provider outage,na_east,0.1,1,18.771956361493057,1.2446949563614276,4611,9,2,7,1,162.008686
+"threshold 21/40, failover",C7 departures 0,provider outage,sa_east,0.1,1,21.728286593009262,1.8063224970415914,4495,15,2,13,2,154.915656
+"threshold 21/40, failover",C7 departures 0,provider outage,as_east,0.1,1,22.941738687118054,0.839179444397677,27215,61,13,21,13,190.898326
+"threshold 21/40, failover",C7 departures 0.1,provider outage,af,0.5,3,8.833635913391204,2.065896708518599,8471,18,3,26,3,168.980584
+"threshold 21/40, failover",C7 departures 0.1,provider outage,as_south,0.5,3,24.132994190613424,1.7210952390917462,17075,49,0,0,0,225.975504
+"threshold 21/40, failover",C7 departures 0.1,provider outage,af,0.5,3,27.01530966134259,1.5785154945275872,8507,17,0,0,0,199.019944
 "threshold 21/40, failover",C7 departures 0.25,provider outage,eu_west,0.1,1,8.495717087129629,5.232982801566294,8599,23,1,1,1,199.021241
 "threshold 21/40, failover",C7 departures 0.25,provider outage,sa_east,0.1,1,16.50623497119213,0.13479109009966186,4591,21,0,0,0,83.990349
 "threshold 21/40, failover",C7 departures 0.25,provider outage,na_east,0.1,1,18.180121652337963,0.8080643487004568,4752,13,0,0,0,121.006105
-"threshold 21/40, failover",C7 departures 0.25,provider outage,as_east,0.1,1,21.711787729849537,0.6380725905263804,27136,40,1,6,1,156.985162
-"threshold 21/40, failover",C7 departures 0.25,provider outage,as_south,0.5,3,22.70513289584491,5.033668914004605,16883,56,2,34,2,273.070072
-"threshold 21/40, failover",day-9.19 event,provider outage,af,0.5,3,2.5757364030439818,1.0737242512846785,1150,254,0,0,0,190.955811
-"threshold 21/40, failover",day-9.19 event,provider outage,as_south,0.5,3,8.38243266085648,0.3589222696767934,2228,495,0,0,0,85.977582
-"threshold 21/40, failover",day-9.19 event,scripted regional blackout,as_east,0.1,1,8.738735,10.879444444444445,14508,2242,2138,5852,1373,238.042833
-"threshold 21/40, failover",blackout na_east seed 0,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,513,42,1166,18,348.985371
-"threshold 21/40, failover",blackout na_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.034135
-"threshold 21/40, failover",blackout na_east seed 1,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,486,27,1049,10,204.014496
-"threshold 21/40, failover",blackout na_east seed 2,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,523,92,1052,44,311.058875
-"threshold 21/40, failover",blackout na_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,437,89,107,43,163.935293
-"threshold 21/40, failover",blackout na_east seed 3,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,520,32,981,14,240.986075
-"threshold 21/40, failover",blackout na_east seed 4,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,505,23,976,9,226.962038
-"threshold 21/40, failover",blackout na_west seed 0,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,21,467,11,366.982553
-"threshold 21/40, failover",blackout na_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.034135
-"threshold 21/40, failover",blackout na_west seed 1,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,16,496,8,190.001677
-"threshold 21/40, failover",blackout na_west seed 2,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,178,24,416,12,325.013612
-"threshold 21/40, failover",blackout na_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,437,24,35,12,83.049299
-"threshold 21/40, failover",blackout na_west seed 3,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,171,11,298,4,193.019086
-"threshold 21/40, failover",blackout na_west seed 4,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,176,14,342,5,230.970923
-"threshold 21/40, failover",blackout sa_east seed 0,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,601,33,1090,16,348.973412
-"threshold 21/40, failover",blackout sa_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.034135
-"threshold 21/40, failover",blackout sa_east seed 1,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,606,27,1030,11,327.946754
-"threshold 21/40, failover",blackout sa_east seed 2,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,595,76,932,43,308.012697
-"threshold 21/40, failover",blackout sa_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,76,96,43,157.959701
-"threshold 21/40, failover",blackout sa_east seed 3,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,594,24,826,10,205.024063
-"threshold 21/40, failover",blackout sa_east seed 4,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,586,18,964,9,233.977069
-"threshold 21/40, failover",blackout eu_west seed 0,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1127,90,2315,39,364.006663
-"threshold 21/40, failover",blackout eu_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.034135
-"threshold 21/40, failover",blackout eu_west seed 1,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1135,84,2402,38,190.207651
-"threshold 21/40, failover",blackout eu_west seed 2,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1131,295,2035,151,286.046924
-"threshold 21/40, failover",blackout eu_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,434,294,335,150,174.010543
-"threshold 21/40, failover",blackout eu_west seed 3,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1140,55,1966,30,183.957222
-"threshold 21/40, failover",blackout eu_west seed 4,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1139,78,2015,35,343.01438
-"threshold 21/40, failover",blackout af seed 0,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1113,38,1513,18,330.981321
-"threshold 21/40, failover",blackout af seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.034135
-"threshold 21/40, failover",blackout af seed 1,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1110,58,1603,26,263.990983
-"threshold 21/40, failover",blackout af seed 2,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1055,262,1747,124,298.978797
-"threshold 21/40, failover",blackout af seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,432,261,302,123,154.984788
-"threshold 21/40, failover",blackout af seed 3,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1114,40,1338,19,217.891074
-"threshold 21/40, failover",blackout af seed 4,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,995,29,1603,12,247.945923
-"threshold 21/40, failover",blackout as_south seed 0,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2155,42,3671,24,291.007057
-"threshold 21/40, failover",blackout as_south seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.034135
-"threshold 21/40, failover",blackout as_south seed 1,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2042,55,3441,30,194.012419
-"threshold 21/40, failover",blackout as_south seed 2,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2042,34,3193,16,297.062283
-"threshold 21/40, failover",blackout as_south seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,0,11,14,5,78.945363
-"threshold 21/40, failover",blackout as_south seed 3,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2051,82,3237,27,204.943621
-"threshold 21/40, failover",blackout as_south seed 4,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2186,43,3264,20,217.095688
-"threshold 21/40, failover",blackout as_east seed 0,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3599,1577,8279,755,315.955279
-"threshold 21/40, failover",blackout as_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.034135
-"threshold 21/40, failover",blackout as_east seed 1,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3604,1890,8564,874,212.973326
-"threshold 21/40, failover",blackout as_east seed 2,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3588,1487,8556,697,235.020227
-"threshold 21/40, failover",blackout as_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,406,664,751,292,90.995476
-"threshold 21/40, failover",blackout as_east seed 3,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3589,1378,8219,682,264.000261
-"threshold 21/40, failover",blackout as_east seed 4,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3589,1532,8459,713,201.082782
-"threshold 21/40, failover",blackout oc seed 0,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,47,12,221,6,371.982553
-"threshold 21/40, failover",blackout oc seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.034135
-"threshold 21/40, failover",blackout oc seed 1,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,55,5,176,2,194.004895
-"threshold 21/40, failover",blackout oc seed 2,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,6,168,4,322.016533
-"threshold 21/40, failover",blackout oc seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,438,3,7,2,172.983097
-"threshold 21/40, failover",blackout oc seed 3,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,12,171,4,222.03879
-"threshold 21/40, failover",blackout oc seed 4,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,54,6,149,2,239.977766
+"threshold 21/40, failover",C7 departures 0.25,provider outage,as_east,0.1,1,21.711787729849537,0.6380725905263804,27136,40,1,4,1,156.985162
+"threshold 21/40, failover",C7 departures 0.25,provider outage,as_south,0.5,3,22.70513289584491,5.033668914004605,16883,56,2,39,2,273.057017
+"threshold 21/40, failover",day-9.19 event,provider outage,af,0.5,3,2.5757364030439818,1.0737242512846785,1150,255,0,0,0,188.933776
+"threshold 21/40, failover",day-9.19 event,provider outage,as_south,0.5,3,8.38243266085648,0.3589222696767934,2228,496,0,0,0,85.999168
+"threshold 21/40, failover",day-9.19 event,scripted regional blackout,as_east,0.1,1,8.738735,10.879444444444445,14508,2244,2132,6062,1375,211.079551
+"threshold 21/40, failover",blackout na_east seed 0,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,513,30,1274,15,348.960308
+"threshold 21/40, failover",blackout na_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.00585
+"threshold 21/40, failover",blackout na_east seed 1,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,486,22,954,11,224.962724
+"threshold 21/40, failover",blackout na_east seed 2,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,523,61,1054,29,310.029447
+"threshold 21/40, failover",blackout na_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,437,60,73,28,167.033285
+"threshold 21/40, failover",blackout na_east seed 3,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,520,21,934,10,242.010233
+"threshold 21/40, failover",blackout na_east seed 4,scripted regional blackout,na_east,0.1,1,1.5,10.879444444444445,2535,505,23,1016,11,226.948047
+"threshold 21/40, failover",blackout na_west seed 0,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,15,427,8,365.960997
+"threshold 21/40, failover",blackout na_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.00585
+"threshold 21/40, failover",blackout na_west seed 1,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,170,12,454,6,191.008708
+"threshold 21/40, failover",blackout na_west seed 2,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,178,17,319,11,320.995123
+"threshold 21/40, failover",blackout na_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,438,16,24,10,138.025988
+"threshold 21/40, failover",blackout na_west seed 3,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,171,14,296,3,189.019086
+"threshold 21/40, failover",blackout na_west seed 4,scripted regional blackout,na_west,0.1,1,1.5,10.879444444444445,1092,176,9,326,4,230.970797
+"threshold 21/40, failover",blackout sa_east seed 0,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,601,32,1118,14,348.957979
+"threshold 21/40, failover",blackout sa_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.00585
+"threshold 21/40, failover",blackout sa_east seed 1,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,606,25,1050,15,328.964217
+"threshold 21/40, failover",blackout sa_east seed 2,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,595,71,1036,35,305.994917
+"threshold 21/40, failover",blackout sa_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,439,69,92,34,134.01803
+"threshold 21/40, failover",blackout sa_east seed 3,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,594,18,800,8,205.042018
+"threshold 21/40, failover",blackout sa_east seed 4,scripted regional blackout,sa_east,0.1,1,1.5,10.879444444444445,2418,586,26,956,14,234.010929
+"threshold 21/40, failover",blackout eu_west seed 0,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1125,62,2392,28,360.015818
+"threshold 21/40, failover",blackout eu_west seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.00585
+"threshold 21/40, failover",blackout eu_west seed 1,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1135,69,2411,34,206.923663
+"threshold 21/40, failover",blackout eu_west seed 2,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1130,275,2137,141,284.024992
+"threshold 21/40, failover",blackout eu_west seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,435,275,333,141,115.05051
+"threshold 21/40, failover",blackout eu_west seed 3,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1142,74,1962,31,211.059428
+"threshold 21/40, failover",blackout eu_west seed 4,scripted regional blackout,eu_west,0.1,1,1.5,10.879444444444445,4563,1139,51,1995,25,343.020123
+"threshold 21/40, failover",blackout af seed 0,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1112,30,1610,15,331.969015
+"threshold 21/40, failover",blackout af seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.00585
+"threshold 21/40, failover",blackout af seed 1,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1110,46,1637,25,270.97848
+"threshold 21/40, failover",blackout af seed 2,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1055,296,1664,138,296.991687
+"threshold 21/40, failover",blackout af seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,436,293,310,136,73.967197
+"threshold 21/40, failover",blackout af seed 3,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,1114,34,1264,15,217.006385
+"threshold 21/40, failover",blackout af seed 4,scripted regional blackout,af,0.5,3,1.5,10.879444444444445,4563,995,18,1349,11,245.947045
+"threshold 21/40, failover",blackout as_south seed 0,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2157,42,3752,21,287.999825
+"threshold 21/40, failover",blackout as_south seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.00585
+"threshold 21/40, failover",blackout as_south seed 1,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2043,39,3364,18,204.89651
+"threshold 21/40, failover",blackout as_south seed 2,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2041,30,3118,17,296.030138
+"threshold 21/40, failover",blackout as_south seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,0,3,9,1,73.019595
+"threshold 21/40, failover",blackout as_south seed 3,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2050,68,3286,29,201.946644
+"threshold 21/40, failover",blackout as_south seed 4,scripted regional blackout,as_south,0.5,3,1.5,10.879444444444445,9087,2186,38,3205,20,217.103027
+"threshold 21/40, failover",blackout as_east seed 0,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3598,1541,8265,739,206.023607
+"threshold 21/40, failover",blackout as_east seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.00585
+"threshold 21/40, failover",blackout as_east seed 1,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3605,1847,8210,882,214.067205
+"threshold 21/40, failover",blackout as_east seed 2,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3589,1476,8435,714,243.111126
+"threshold 21/40, failover",blackout as_east seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,404,630,679,280,110.951704
+"threshold 21/40, failover",blackout as_east seed 3,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3592,1421,8242,698,261.990527
+"threshold 21/40, failover",blackout as_east seed 4,scripted regional blackout,as_east,0.1,1,1.5,10.879444444444445,14508,3589,1458,8504,701,230.940346
+"threshold 21/40, failover",blackout oc seed 0,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,47,9,231,4,368.960997
+"threshold 21/40, failover",blackout oc seed 1,provider outage,na_east,0.1,1,1.1934523709837963,0.304459356382465,605,109,0,0,0,112.00585
+"threshold 21/40, failover",blackout oc seed 1,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,55,8,190,2,194.02447
+"threshold 21/40, failover",blackout oc seed 2,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,57,6,148,3,320.998623
+"threshold 21/40, failover",blackout oc seed 2,provider outage,as_south,0.5,3,1.7316700255671296,0.1279457801305337,2257,438,5,6,3,143.018796
+"threshold 21/40, failover",blackout oc seed 3,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,58,4,127,2,223.062079
+"threshold 21/40, failover",blackout oc seed 4,scripted regional blackout,oc,0.1,1,1.5,10.879444444444445,234,54,8,112,3,239.950971

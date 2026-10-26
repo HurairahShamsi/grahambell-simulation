@@ -1,16 +1,16 @@
 {
-  "run_id": "20261022T154711Z_1d9ce91_s20261005",
-  "created_utc": "2026-10-22T15:47:11Z",
+  "run_id": "20261023T200413Z_7cf4ff2_s20261005",
+  "created_utc": "2026-10-23T20:04:13Z",
   "analysis": "sim",
   "command_line": [
     "./target/release/gb",
     "sim"
   ],
   "seed": 20261005,
-  "git_commit": "1d9ce918617c80482453569698f6115473f1a2e3",
+  "git_commit": "7cf4ff2533969bd505cfe9da5de1c8d5f2a6808b",
   "git_dirty": false,
   "config_path": null,
-  "config_sha256": "5109f41b81744e64f9ae6678444041f02c50c8c4c2f30460e87b00f0c60d7b59",
+  "config_sha256": "fa7baeaa43d34d7a5d0cc20362d68f648bc03ecaa25f2c81ef4a3f7a911489a2",
   "crate_version": "0.1.0",
   "rustc_version": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
   "target_os": "macos",
@@ -18,98 +18,103 @@
   "outputs": [
     {
       "path": "A6_first_id_wait.csv",
-      "sha256": "0c1a7d734ef32b42d4f4fc7ae36c0c12d36dda6931cd083409c82f7870f660a6",
-      "bytes": 324
+      "sha256": "21bb292b0fdb977edf0a5c0e4fcbf393a706feaec5417840a10c75d475d5034b",
+      "bytes": 321
     },
     {
       "path": "A6_growth_and_patience.csv",
-      "sha256": "b73d49714227ea995b3afa68883b88f91d9629917c4f43766ac9123ad540f698",
+      "sha256": "50e3c65ed8e673d14eeff6202953b12aebf604750cc4598f36e6074aa4924d5a",
       "bytes": 290
     },
     {
       "path": "A6_post_admission_wait.csv",
-      "sha256": "59ef9cf0b147f9f3a7ecf38fd096af399721adffad579fba545048aa187fd98a",
+      "sha256": "ceb546bf0030b6d9c2634c6cd0ce8d69411646161236c26cd01d850752f3bbe5",
       "bytes": 163
     },
     {
       "path": "ALL_runs.csv",
-      "sha256": "3cc6f8b4e0c1c69844d70f0a5c68f24396af8e874e225efdb72bc24f59f1077c",
-      "bytes": 447478
+      "sha256": "f3a2f5ae57d42d47f2efd93fa3d0badf28d23328501f3c4a687cf108e1d3866b",
+      "bytes": 445134
     },
     {
       "path": "C1_amplification.csv",
-      "sha256": "5212c5840f980e902616c738d5566ef14875bb5944e076465c509480afa1ccc0",
-      "bytes": 1004
+      "sha256": "07dde41c356c2b5ff10b91d0283c2c5fdde3516b14a25992c0ec8ea6d04b292e",
+      "bytes": 1006
     },
     {
       "path": "C1_amplification_by_region.csv",
-      "sha256": "c35d04e7ce90bfb11a492e401907495dd56c23cae0ee0c173da2dccf45c30e09",
-      "bytes": 3344
+      "sha256": "714361ff8bfd8d8f8d1de398c041cc6d0d789849f3f0d9995c0358f585a15ae0",
+      "bytes": 3350
     },
     {
       "path": "C1_group_breakdown.csv",
-      "sha256": "ef015354631c382249aa4ba66eb3ae2f013f0e5fa2653174ed7f6931cb0d0ff9",
-      "bytes": 10990
+      "sha256": "40866bc2653fd1d8bec0e3ceba28f19f31e7ee8f78e2187f325ec5cf3c272446",
+      "bytes": 11009
     },
     {
       "path": "C2_fork_choice.csv",
-      "sha256": "54b9bf855c41abae62b347f16db88a46f7b26f2a6d9b47e7584a68c4f15459d0",
-      "bytes": 4439
+      "sha256": "54080bd8a2c3808b81cdc1a9f285f8d1cad4bd2e2f99ec1f3639f95b0b32813a",
+      "bytes": 4551
     },
     {
       "path": "C3_late_by_region.csv",
-      "sha256": "d86f9b75feb8d6b1f9c04defdac152af1d7e7dc48a5a83cb1231b5dbeebc9470",
-      "bytes": 3324
+      "sha256": "97656cfbca5cce252c434d53d44bde16e0bf6b94ef6e49de98af2eb7ccbe9f63",
+      "bytes": 3330
     },
     {
       "path": "C3_powit_deadline.csv",
-      "sha256": "addea0bd293e70b496f79e3067ed0575a37dd37e2a640218f2b5596bbbc9dc03",
-      "bytes": 1097
+      "sha256": "71ab8f6bf8abc1e4e2b6e58b8f811d8e0d8a2aa5ff3e8d3b0dc89387c655f5a1",
+      "bytes": 1114
     },
     {
       "path": "C3_withholder.csv",
-      "sha256": "4d113dbe1988c7ee0c25356769cd4c6cec3dc9aa688704c268e48363252fa3ec",
-      "bytes": 952
+      "sha256": "8be431cb66d1b732e28870a0101f8bb0b9ad1f908815f191db8c92b7633383f4",
+      "bytes": 954
     },
     {
       "path": "C4_issuance_rate.csv",
-      "sha256": "01e5a5bdcadac2fab456f0d5b5bbbb6ffef378c2bc3531fb9772f67dd16c45ef",
-      "bytes": 2846
+      "sha256": "faf4bbdd1fdd9b14bb00395f093b8e2721dee18a3d9410e4cbedece2ff6e578b",
+      "bytes": 2849
     },
     {
       "path": "C5_honest_losses_by_region_device.csv",
-      "sha256": "ef11dfaac5df15b6fc8512725732d9f5a9d322b8f85fce017a081e8dd996f8e4",
-      "bytes": 25968
+      "sha256": "e4968dafa07fa47f7069f84052d8a645f41f3c47fc9b1672bd8422f3f91533fc",
+      "bytes": 25940
     },
     {
       "path": "C5_one_chance.csv",
-      "sha256": "c9dfe6b6eb18cc75e89bb77ac57f1d2a13fb292bf9ce06c204a8f8cac75f770f",
-      "bytes": 2639
+      "sha256": "0c317ef0abc956ab43d6951e6a4b2a4e1e19af63c12953db31dd1ba2abf9a406",
+      "bytes": 2641
     },
     {
       "path": "C6_clock_skew.csv",
-      "sha256": "1860a880c34162f8b2b9e118d7067ae597caa36b9ac554dbfad5d09448a51a47",
+      "sha256": "981879525ab14883643c4d63591b0e0b9803fe333f9c7234d291e31e8112c028",
       "bytes": 6985
     },
     {
       "path": "C7_quorum_liveness.csv",
-      "sha256": "f334b3e142097710d89f3d0ba8ce1a7fac0703aa82b68d07c37dbadbf7508f51",
-      "bytes": 1193
+      "sha256": "a1f01d2be4bcd2b82088ad2597f1b51beaba2fd9fce150230aa51475f66c4c45",
+      "bytes": 1195
     },
     {
       "path": "E1_criterion4.csv",
-      "sha256": "c1763bdec2f74db9be3e4f9fd4c8cf01ff27dcd8c1603b12fd417251c7d911c3",
-      "bytes": 12816
+      "sha256": "40bf370aae515f349ad0b14db739c7994b85ac9289ff3c1db01931a2a1738230",
+      "bytes": 12814
     },
     {
       "path": "E1_fork_choice.csv",
-      "sha256": "e5adfa6e313f975a5c572ce9f6433ea52f37729cc3072a215da1003680262d17",
-      "bytes": 4225
+      "sha256": "00f53c691b065c84ee79518cb10d452be1198ed912d05738ac97650dcef8c8a2",
+      "bytes": 4220
     },
     {
       "path": "E1_region_win_share.csv",
-      "sha256": "3e52b3b6d470eb1dd83b98bfa6e8ed3dee4946ac0c1db7399b3f51d094e25000",
-      "bytes": 11087
+      "sha256": "6e0cc8e653b48a15fb767f54097bd4ba2deda7f3a9885d6a7383f2c6ed82731e",
+      "bytes": 11064
+    },
+    {
+      "path": "E2_daily_curves.csv",
+      "sha256": "45d24f93e19e094b364d5a6f4ac520a3d9a35523a70b03f92c05b9bc555907b7",
+      "bytes": 6020
     },
     {
       "path": "E2_h5.csv",
@@ -123,33 +128,33 @@
     },
     {
       "path": "E2_issuance.csv",
-      "sha256": "bb2aed10b2ae59d7163906caf26d02c565e056673ced21be27dddf7486d6fa73",
-      "bytes": 17002
+      "sha256": "56a464fa0f9134a1484ecde00550322e6eaf096040f2912dce07ed8353cf43af",
+      "bytes": 16996
     },
     {
       "path": "E3_blackout_diagnosis.csv",
-      "sha256": "57e17ce3bf4353afe373d4a87f5d36a8e15dc0d8bcd69e659342ef089ee372b9",
-      "bytes": 40306
+      "sha256": "e4c97d56af2fe89103811c8d3ad287a7ebc8b89e40e0a3a996dc5f2f2f9905b5",
+      "bytes": 40279
     },
     {
       "path": "E3_blackout_gaps.csv",
-      "sha256": "4f00bdd20449c1d605aade7260919f3c8c8cbd34b90d58ae9605a912e1475287",
-      "bytes": 1543
+      "sha256": "165a46ca4129e5efa1c1b4c73d1c1fed978d8f371d96e18ffd38fc330cd09604",
+      "bytes": 1746
     },
     {
       "path": "E3_blackout_test.csv",
-      "sha256": "aad59d5ce35208d30725eebb4224e87ead1a0abd5fbde8b2ada007063073270c",
-      "bytes": 473
+      "sha256": "6005703e619390bbb77210f1274da3857149e55bdcbed8658eed393da225e20b",
+      "bytes": 476
     },
     {
       "path": "E3_liveness.csv",
-      "sha256": "532a7ecf3fb9eab3bc14a412744537ff813397dd8c7d447df3106a06630b68f1",
-      "bytes": 34967
+      "sha256": "ecf1e9068c72c79927ba6b659483c3be5edf315ad48bf5eec13979a72ace2e29",
+      "bytes": 34946
     },
     {
       "path": "E3_outages.csv",
-      "sha256": "ee2fb1bce696357df6ab633f9e3755d0fda91521a77e4fa47f4c7da446e1f51c",
-      "bytes": 64836
+      "sha256": "a131b8b140c624fa4fcc1822620e65eb04634afb280d5dece604f726e46cfc61",
+      "bytes": 64796
     },
     {
       "path": "E3_security.csv",
@@ -158,23 +163,23 @@
     },
     {
       "path": "E4_h7_by_region.csv",
-      "sha256": "19a53aa60ba5e0402b14e75dcce970f51c7802fd8180c973f36d273ea2d5de60",
-      "bytes": 3392
+      "sha256": "d1c3b094ccda92ff7147a6f8280e84b15c72ccc5e60856efdc078ee170c3b433",
+      "bytes": 3391
     },
     {
       "path": "E4_points_by_cause.csv",
-      "sha256": "16df2d983d530f8b195c4717f1924640017f221211ffb5393b8dd7b3bc369501",
+      "sha256": "c5e15d8f8f37c76686d3eb4637b1451a020157e5e7f66695cefcc88fd13df5c8",
       "bytes": 2558
     },
     {
       "path": "E4_points_by_region_device.csv",
-      "sha256": "81a72eacf9a1a3b780a7322ebd2dd645146981c63ae096a1e290c37313bf5627",
-      "bytes": 13858
+      "sha256": "9ca73666599133c38c23ba20bc56023717ffebd59925159e48d7f0c9f1829e6a",
+      "bytes": 13856
     },
     {
       "path": "SUMMARY.md",
-      "sha256": "7f0023778445ccaa858e09c73395c05d268a227b6d40945d3dda0670398c17f1",
-      "bytes": 41481
+      "sha256": "630a65943b06a22a2b85ba26130288329ddbe7788c487540b328bc95b10ccd3e",
+      "bytes": 41916
     },
     {
       "path": "V0_mode_agreement.csv",
@@ -218,28 +223,28 @@
     },
     {
       "path": "charts/C1_amplification.png",
-      "sha256": "5cc27ea6a13fb6fb3ed287f9e6da9a65047f38f62305f1ba07de3e70644c29d1",
-      "bytes": 67007
+      "sha256": "0fa1741f7614dff7913c4c7c268cdd2b49b72db895b0fe97a5d5feb1bb284d4b",
+      "bytes": 67315
     },
     {
       "path": "charts/C2_orphan_rate.png",
-      "sha256": "c6c67cb80b4fa0e5caa133ae859341d79a004b93f552d38d5ed5cd989faa33e9",
-      "bytes": 57330
+      "sha256": "f5807edf486c5a0673f483b6570df63c756b0ae0940a14e113a06265efe17061",
+      "bytes": 60558
     },
     {
       "path": "charts/C3_powit_deadline.png",
-      "sha256": "8a8b89d33a75cec2cc2c1bca30214d994df408f391eb771918a831aa45d430d9",
-      "bytes": 74645
+      "sha256": "b8d358f59ce4cf4632aa23a0a3e80db05f984d276a90dc5e0c0493a1d37d7457",
+      "bytes": 73044
     },
     {
       "path": "charts/C6_clock_skew.png",
-      "sha256": "ff89f442cfcb5c7c350e4cd069d566eba4a73268c4da90ee57c78e07d4227511",
-      "bytes": 68517
+      "sha256": "89da08da9ed4df0268b9645d6df326eefb5171096d29d0caadc6b2dcde316cba",
+      "bytes": 68672
     },
     {
       "path": "charts/E2_tradeoff.png",
-      "sha256": "bc3ee1fe221193e2f21528902c7dfd8077af733a4b44876059bb832a8a5cd2a7",
-      "bytes": 75442
+      "sha256": "eeaaad2c9d47d84960a40741d984df9a07017f28c94a9006308171fe0931f244",
+      "bytes": 76249
     },
     {
       "path": "charts/V1_time_to_threshold.png",
@@ -248,28 +253,28 @@
     },
     {
       "path": "charts/V3_hopping_gain.png",
-      "sha256": "31c55bca7f8ef074e8d487184452b5dd35ef2f35307da693a2c73f782334b894",
-      "bytes": 107099
+      "sha256": "a9ccc9d21282715def339273a1909aa41895fb20811da36dc296c221acf6aed5",
+      "bytes": 106686
     },
     {
       "path": "config.resolved.toml",
-      "sha256": "5109f41b81744e64f9ae6678444041f02c50c8c4c2f30460e87b00f0c60d7b59",
-      "bytes": 17345
+      "sha256": "fa7baeaa43d34d7a5d0cc20362d68f648bc03ecaa25f2c81ef4a3f7a911489a2",
+      "bytes": 17443
     },
     {
       "path": "perf/PERF.md",
-      "sha256": "0a7c5d3a7b332ee0f7ed273c8db3067c17d3037854fb576bb8880710e0c5ebde",
-      "bytes": 1993
+      "sha256": "9aaff72b4f966e0a25237390b70ccb671751e41373eaa816a89049e1a18abd52",
+      "bytes": 2047
     },
     {
       "path": "perf/perf.csv",
-      "sha256": "5aaca06cac3ae87331236576e3d04bd40ffae15c5ef3bfb44661a35c732e3aa4",
-      "bytes": 266161
+      "sha256": "616ee4e13416b60b90ee215ec67f947c2c89e19165f321c5491093863160f5e4",
+      "bytes": 265988
     },
     {
       "path": "validation.csv",
-      "sha256": "0942e61415d1c5f095e289198bf0f97adc6dbf328630a89bf114926482b766f6",
-      "bytes": 43351
+      "sha256": "82c4cf91f00b6f6a445d9e40b82e030f1ef14dd3417bb1110ba1fd763fa49a06",
+      "bytes": 43361
     }
   ]
 }
