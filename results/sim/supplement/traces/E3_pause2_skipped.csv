@@ -1,0 +1,2 @@
+miner,reason,skipped_since_blackout_start_s,able_since_blackout_start_s,left_since_blackout_start_s,rejoined_by,held_in_pause_s
+8898,not mining,386.59381000000576,630,1806.5938099999912,the pause's block (next round),1077.3000089999987

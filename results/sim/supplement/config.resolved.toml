@@ -242,12 +242,11 @@ status = "O"
 values = [1, 2, 5]
 
 [timing.powit_deadline_s]
-value = 10.0
 status = "D"
 
 [timing.powit_deadline_s.sweep]
 values = [10.0, 5.0, 30.0, 60.0]
-note = "10 s with the soft scope is the default (architect, 2026-10-22; the M3a.1 E1 criteria as written, at the final defaults); no deadline (the value unset) and 5, 30 and 60 s are comparisons"
+note = "no deadline is the default (architect, 2026-10-24; the M3a.1 E1 criteria as written, at the final defaults); 10 s with the soft scope is [P], for M3b's adversarial withholding; 5, 30 and 60 s are comparisons"
 
 [timing.powit_deadline_scope]
 value = "not_extended_only"
@@ -258,12 +257,12 @@ values = ["not_extended_only", "permanent"]
 note = "permanent is the comparison (architect, 2026-10-14)"
 
 [timing.early_block]
-value = "permanent"
+value = "reevaluate_later"
 status = "D"
 
 [timing.early_block.sweep]
-values = ["permanent", "reevaluate_later"]
-note = "re-evaluation is the comparison (architect, 2026-10-12)"
+values = ["reevaluate_later", "permanent"]
+note = "re-evaluation is the default (architect, 2026-10-24; M3a.1 C6: no validator split under clock skew); permanent rejection is the comparison"
 
 [timing.witness_signing]
 value = "on_time"

@@ -1,13 +1,13 @@
 {
-  "run_id": "20261023T200413Z_7cf4ff2_s20261005",
-  "created_utc": "2026-10-23T20:04:13Z",
+  "run_id": "20261026T170303Z_fdf6e2e_s20261005",
+  "created_utc": "2026-10-26T17:03:03Z",
   "analysis": "sim",
   "command_line": [
     "./target/release/gb",
     "sim"
   ],
   "seed": 20261005,
-  "git_commit": "7cf4ff2533969bd505cfe9da5de1c8d5f2a6808b",
+  "git_commit": "fdf6e2ee4b17bec255b4787017d9b6fff4176675",
   "git_dirty": false,
   "config_path": null,
   "config_sha256": "fa7baeaa43d34d7a5d0cc20362d68f648bc03ecaa25f2c81ef4a3f7a911489a2",
@@ -178,8 +178,8 @@
     },
     {
       "path": "SUMMARY.md",
-      "sha256": "630a65943b06a22a2b85ba26130288329ddbe7788c487540b328bc95b10ccd3e",
-      "bytes": 41916
+      "sha256": "5f7a42ff8e3c7eeb842444452617cc6fa6d3c9dffcd5db976352322bd51412c7",
+      "bytes": 42233
     },
     {
       "path": "V0_mode_agreement.csv",
@@ -238,8 +238,8 @@
     },
     {
       "path": "charts/C6_clock_skew.png",
-      "sha256": "89da08da9ed4df0268b9645d6df326eefb5171096d29d0caadc6b2dcde316cba",
-      "bytes": 68672
+      "sha256": "b7934fad28fb154d3f8433c15f0fa0a7809368e73c1aa69e44fd13dd1f9255ff",
+      "bytes": 66851
     },
     {
       "path": "charts/E2_tradeoff.png",
@@ -263,12 +263,12 @@
     },
     {
       "path": "perf/PERF.md",
-      "sha256": "9aaff72b4f966e0a25237390b70ccb671751e41373eaa816a89049e1a18abd52",
+      "sha256": "c6584bab003d393492363c93f2b63b4968db3cd48c49125f2abffccc90f82112",
       "bytes": 2047
     },
     {
       "path": "perf/perf.csv",
-      "sha256": "616ee4e13416b60b90ee215ec67f947c2c89e19165f321c5491093863160f5e4",
+      "sha256": "3583589401f3b7aa1e9bb8feb1df5b02105e9d43e3c07784306fa266fc6eae28",
       "bytes": 265988
     },
     {

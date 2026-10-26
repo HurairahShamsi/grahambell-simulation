@@ -1,6 +1,6 @@
 # M3a Tier 1 issuance simulator — summary
 
-- Git commit: `7cf4ff2533969bd505cfe9da5de1c8d5f2a6808b` (clean working tree)
+- Git commit: `fdf6e2ee4b17bec255b4787017d9b6fff4176675` (clean working tree)
 - Seed: 20261005
 - Configuration SHA-256: `fa7baeaa43d34d7a5d0cc20362d68f648bc03ecaa25f2c81ef4a3f7a911489a2`
 - Protocol version: 1
@@ -162,10 +162,10 @@ KWC switches take 451.0 s at the median ("a few minutes"). Entropy stalls and pe
 
 `C6_clock_skew.csv` covers skew σ × δ × signing time × early-block rule:
 
-- skew σ = 1 s, δ = 2 s, on time (default): 0.000 % of panel receptions early, 0 blocks early at the panel majority; no deadline: 0.000 % of blocks late at the panel majority, 0 panel nodes split for good (0 off the final chain at the end)
-- skew σ = 1 s, δ = 2 s, earliest within δ (P-4): 18.151 % of panel receptions early, 0 blocks early at the panel majority; no deadline: 0.000 % of blocks late at the panel majority, 37 panel nodes split for good (37 off the final chain at the end)
-- skew σ = 2 s, δ = 2 s, on time (default): 2.158 % of panel receptions early, 0 blocks early at the panel majority; no deadline: 0.000 % of blocks late at the panel majority, 16 panel nodes split for good (16 off the final chain at the end)
-- skew σ = 2 s, δ = 2 s, earliest within δ (P-4): 30.121 % of panel receptions early, 0 blocks early at the panel majority; no deadline: 0.000 % of blocks late at the panel majority, 39 panel nodes split for good (43 off the final chain at the end)
+- skew σ = 1 s, δ = 2 s, on time (default): 0.000 % of panel receptions early, 0 blocks early at the panel majority; no deadline: 0.000 % of blocks late at the panel majority; under re-evaluation (the default) 0 panel nodes split for good (0 off the final chain at the end), under permanent rejection (the comparison) 0
+- skew σ = 1 s, δ = 2 s, earliest within δ (P-4): 11.147 % of panel receptions early, 0 blocks early at the panel majority; no deadline: 0.000 % of blocks late at the panel majority; under re-evaluation (the default) 0 panel nodes split for good (0 off the final chain at the end), under permanent rejection (the comparison) 37
+- skew σ = 2 s, δ = 2 s, on time (default): 1.961 % of panel receptions early, 0 blocks early at the panel majority; no deadline: 0.000 % of blocks late at the panel majority; under re-evaluation (the default) 0 panel nodes split for good (0 off the final chain at the end), under permanent rejection (the comparison) 16
+- skew σ = 2 s, δ = 2 s, earliest within δ (P-4): 15.840 % of panel receptions early, 0 blocks early at the panel majority; no deadline: 0.000 % of blocks late at the panel majority; under re-evaluation (the default) 0 panel nodes split for good (0 off the final chain at the end), under permanent rejection (the comparison) 39
 
 ## C7 — quorum liveness under household profiles
 

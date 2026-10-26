@@ -1,88 +1,88 @@
 job,section,events,simulated_days,wall_s,events_per_s
-V0-real-32,V0,2488,0.17650462962962962,311.828465403,7.978745611900971
-V0-standin-32,V0,6838,0.7060185185185185,16.821326029,406.5077859029231
-V0-standin-1000,V0,3556,0.2,327.906691765,10.844548431931571
-V0-gap-1000,V0,64433,3.5,4.425018444,14561.069250991804
-V0-permin-1000,V0,64524,3.5,8.265109103,7806.7934973271695
-V0-gap-10,V0,62707,3.5,3.654741739,17157.710305724013
-V0-permin-10,V0,62803,3.5,3.28993295,19089.446792525057
-V0-audit,V0,337586,2.0,6.209685387,54364.428946229316
-V0-gap-r-1000,V0,67071,3.5,6.927185428,9682.28737300664
-V0-permin-r-1000,V0,69077,3.5,9.36439401,7376.558475245106
-E1-(r) first_seen literal D10-soft-withholder-s0-W1-as-reference,W1,3945245,11.0,117.661657613,33530.42171967586
-E1-(r) first_seen literal D10-soft-withholder-s1-W1-as-reference,W1,4240723,11.0,118.433287361,35806.85037538245
-E1-(r) first_seen literal D10-soft-withholder-s2-W1-as-reference,W1,3844344,11.0,120.48827075,31906.375417874442
-E1-(r) first_seen literal D10-soft-withholder-s3-W1-as-reference,W1,4268458,11.0,120.688900742,35367.444510285175
-E1-(r) first_seen literal D10-soft-withholder-s4-W1-as-reference,W1,3999794,11.0,121.334542204,32965.00672722809
-E1-(r) first_seen literal no-deadline-withholder-s0-W1-as-reference,W1,3963183,11.0,119.066500738,33285.45792003067
-E1-(r) first_seen literal no-deadline-withholder-s1-W1-as-reference,W1,4257484,11.0,116.060201785,36683.410286386825
-E1-(r) first_seen literal no-deadline-withholder-s2-W1-as-reference,W1,3839476,11.0,119.002604638,32263.79802088782
-E1-(r) first_seen literal no-deadline-withholder-s3-W1-as-reference,W1,4278542,11.0,119.582035136,35779.136850564864
-E1-(r) first_seen literal no-deadline-withholder-s4-W1-as-reference,W1,4023271,11.0,115.520131284,34827.44483824214
-C3-withholder-D10-not_extended_only-W1-as-reference,W1,4102717,11.0,122.842351573,33398.22909171459
-C3-withholder-Dnone-permanent-W1-as-reference,W1,4119520,11.0,117.283512704,35124.4595683013
-E1-(r) first_seen literal D10-soft-withholder-s0-W1-spread,W1,4014459,11.0,120.259938969,33381.51536094515
-E1-(r) first_seen literal D10-soft-withholder-s1-W1-spread,W1,4280484,11.0,120.09071346,35643.75526360537
-E1-(r) first_seen literal D10-soft-withholder-s2-W1-spread,W1,3870164,11.0,120.814178773,32034.021497358543
-E1-(r) first_seen literal D10-soft-withholder-s3-W1-spread,W1,4393084,11.0,122.837932699,35763.25246994134
-E1-(r) first_seen literal D10-soft-withholder-s4-W1-spread,W1,4087203,11.0,118.041158678,34625.236195362384
-E1-(r) first_seen literal no-deadline-withholder-s0-W1-spread,W1,4004270,11.0,115.725998789,34601.2999836007
-E1-(r) first_seen literal no-deadline-withholder-s1-W1-spread,W1,4323219,11.0,116.925002945,36974.290281040965
-E1-(r) first_seen literal no-deadline-withholder-s2-W1-spread,W1,3870379,11.0,117.836504339,32845.331094220455
-E1-(r) first_seen literal no-deadline-withholder-s3-W1-spread,W1,4399919,11.0,119.066594822,36953.429352520834
-E1-(r) first_seen literal no-deadline-withholder-s4-W1-spread,W1,4101207,11.0,113.716991966,36065.032402775934
-C3-withholder-D10-not_extended_only-W1-spread,W1,4113637,11.0,124.572644747,33021.99297730705
-C3-withholder-Dnone-permanent-W1-spread,W1,4125880,11.0,118.740326974,34747.08302684247
-E1-(r) first_seen literal D10-soft-withholder-s0-W1-oc,W1,3995778,11.0,122.672903162,32572.62114945821
-E1-(r) first_seen literal D10-soft-withholder-s1-W1-oc,W1,4256610,11.0,123.047246519,34593.29745621514
-E1-(r) first_seen literal D10-soft-withholder-s2-W1-oc,W1,3851610,11.0,122.459289312,31452.166851850037
-E1-(r) first_seen literal D10-soft-withholder-s3-W1-oc,W1,4382260,11.0,123.447241649,35499.051590477546
-E1-(r) first_seen literal D10-soft-withholder-s4-W1-oc,W1,4084883,11.0,122.366848466,33382.268573624315
-E1-(r) first_seen literal no-deadline-withholder-s0-W1-oc,W1,4015712,11.0,117.508734944,34173.731866943584
-E1-(r) first_seen literal no-deadline-withholder-s1-W1-oc,W1,4254131,11.0,117.361690763,36248.037774019336
-E1-(r) first_seen literal no-deadline-withholder-s2-W1-oc,W1,3839313,11.0,117.342786239,32718.78164014455
-E1-(r) first_seen literal no-deadline-withholder-s3-W1-oc,W1,4367210,11.0,119.370626438,36585.29849693206
-E1-(r) first_seen literal no-deadline-withholder-s4-W1-oc,W1,4083247,11.0,117.442626307,34768.015058912424
-C3-withholder-D10-not_extended_only-W1-oc,W1,4104972,11.0,125.708815924,32654.607155648893
-C3-withholder-Dnone-permanent-W1-oc,W1,4094469,11.0,121.233827094,33773.32134227939
-"E3-919-threshold 2n/3, no failover-W2",W2,18579318,9.5,77.736198903,239004.71417676925
-"E3-blackout-r0-s0-threshold 2n/3, no failover-W2",W2,486626,2.5,14.328648819,33961.75076569165
-"E3-blackout-r0-s1-threshold 2n/3, no failover-W2",W2,483326,2.5,14.992471313,32237.913944241278
-"E3-blackout-r0-s2-threshold 2n/3, no failover-W2",W2,452583,2.5,15.444305201,29304.199451503704
-"E3-blackout-r0-s3-threshold 2n/3, no failover-W2",W2,458385,2.5,15.45444758,29660.39372337112
-"E3-blackout-r0-s4-threshold 2n/3, no failover-W2",W2,441081,2.5,14.33199214,30775.972781129363
-"E3-blackout-r1-s0-threshold 2n/3, no failover-W2",W2,437723,2.5,14.843193443,29489.813070274893
-"E3-blackout-r1-s1-threshold 2n/3, no failover-W2",W2,439540,2.5,14.816467215,29665.641183008553
-"E3-blackout-r1-s2-threshold 2n/3, no failover-W2",W2,414582,2.5,15.532493387,26691.27162461801
-"E3-blackout-r1-s3-threshold 2n/3, no failover-W2",W2,421061,2.5,15.069507315,27941.258542731597
-"E3-blackout-r1-s4-threshold 2n/3, no failover-W2",W2,407887,2.5,14.275986201,28571.546249563373
-"E3-blackout-r2-s0-threshold 2n/3, no failover-W2",W2,483153,2.5,14.862198433,32508.851377411833
-"E3-blackout-r2-s1-threshold 2n/3, no failover-W2",W2,482003,2.5,14.499239013,33243.330878802444
-"E3-blackout-r2-s2-threshold 2n/3, no failover-W2",W2,441778,2.5,15.183165992,29096.566568051257
-"E3-blackout-r2-s3-threshold 2n/3, no failover-W2",W2,453159,2.5,15.304209239,29610.089154113663
-"E3-blackout-r2-s4-threshold 2n/3, no failover-W2",W2,439181,2.5,14.60759301,30065.25439881488
-"E3-blackout-r3-s0-threshold 2n/3, no failover-W2",W2,641019,2.5,15.12289545,42387.319420369335
-"E3-blackout-r3-s1-threshold 2n/3, no failover-W2",W2,624492,2.5,14.811288936,42163.244718163805
-"E3-blackout-r3-s2-threshold 2n/3, no failover-W2",W2,536715,2.5,15.259161308,35173.29617051847
-"E3-blackout-r3-s3-threshold 2n/3, no failover-W2",W2,578086,2.5,15.184738888,38070.196943382565
-"E3-blackout-r3-s4-threshold 2n/3, no failover-W2",W2,555333,2.5,14.335632475,38737.949020976135
-"E3-blackout-r4-s0-threshold 2n/3, no failover-W2",W2,531343,2.5,15.02928895,35353.834886513374
-"E3-blackout-r4-s1-threshold 2n/3, no failover-W2",W2,533078,2.5,14.957883822,35638.59743421398
-"E3-blackout-r4-s2-threshold 2n/3, no failover-W2",W2,504043,2.5,15.168461487,33229.67200279249
-"E3-blackout-r4-s3-threshold 2n/3, no failover-W2",W2,491568,2.5,15.118636728,32514.042690741207
-"E3-blackout-r4-s4-threshold 2n/3, no failover-W2",W2,473513,2.5,14.449444683,32770.32511547628
-"E3-blackout-r5-s0-threshold 2n/3, no failover-W2",W2,709074,2.5,15.155589071,46786.30416001466
-"E3-blackout-r5-s1-threshold 2n/3, no failover-W2",W2,669118,2.5,14.796569506,45221.15749388215
-"E3-blackout-r5-s2-threshold 2n/3, no failover-W2",W2,574742,2.5,15.232324757,37731.73229751932
-"E3-blackout-r5-s3-threshold 2n/3, no failover-W2",W2,635351,2.5,15.257294798,41642.44110189736
-"E3-blackout-r5-s4-threshold 2n/3, no failover-W2",W2,661341,2.5,14.487730187,45648.35149907944
-"E3-blackout-r6-s0-threshold 2n/3, no failover-W2",W2,10331378,2.5,24.531608407,421145.5616196768
-"E3-blackout-r6-s1-threshold 2n/3, no failover-W2",W2,10973286,2.5,22.442304697,488955.3968789518
-"E3-blackout-r6-s2-threshold 2n/3, no failover-W2",W2,9648896,2.5,23.423835804,411926.38476198225
-"E3-blackout-r6-s3-threshold 2n/3, no failover-W2",W2,9508964,2.5,21.112825119,450388.0435898002
-"E3-blackout-r6-s4-threshold 2n/3, no failover-W2",W2,9471847,2.5,21.687432008000002,436743.5940090118
-"E3-blackout-r7-s0-threshold 2n/3, no failover-W2",W2,421556,2.5,14.678429569,28719.421108256844
-"E3-blackout-r7-s1-threshold 2n/3, no failover-W2",W2,422748,2.5,14.261294075,29643.032236539864
-"E3-blackout-r7-s2-threshold 2n/3, no failover-W2",W2,405746,2.5,15.137476196,26804.071877398976
-"E3-blackout-r7-s3-threshold 2n/3, no failover-W2",W2,413933,2.5,14.12786249,29299.05357537211
-"E3-blackout-r7-s4-threshold 2n/3, no failover-W2",W2,401600,2.5,13.552975784000001,29631.86877926174
+V0-real-32,V0,2488,0.17650462962962962,324.087480957,7.676939549325289
+V0-standin-32,V0,6838,0.7060185185185185,13.699355749,499.1475603149548
+V0-standin-1000,V0,3556,0.2,341.423162865,10.415227748932944
+V0-gap-1000,V0,64433,3.5,3.893823357,16547.48921369727
+V0-permin-1000,V0,64524,3.5,6.898439585,9353.419596556487
+V0-gap-10,V0,62707,3.5,2.6392600440000002,23759.31092601347
+V0-permin-10,V0,62803,3.5,2.760884395,22747.42112119475
+V0-audit,V0,337586,2.0,5.478073265,61624.951633428
+V0-gap-r-1000,V0,67071,3.5,5.743221103,11678.289725771681
+V0-permin-r-1000,V0,69077,3.5,8.025282466,8607.42289042814
+E1-(r) first_seen literal D10-soft-withholder-s0-W1-as-reference,W1,3960246,11.0,225.319024118,17576.172342757938
+E1-(r) first_seen literal D10-soft-withholder-s1-W1-as-reference,W1,4236453,11.0,225.548601775,18782.883009073797
+E1-(r) first_seen literal D10-soft-withholder-s2-W1-as-reference,W1,3837323,11.0,229.073355719,16751.502975785505
+E1-(r) first_seen literal D10-soft-withholder-s3-W1-as-reference,W1,4256556,11.0,232.193404384,18331.941905466592
+E1-(r) first_seen literal D10-soft-withholder-s4-W1-as-reference,W1,4002728,11.0,236.628163134,16915.687241054642
+E1-(r) first_seen literal no-deadline-withholder-s0-W1-as-reference,W1,3968992,11.0,228.534214294,17367.167591343907
+E1-(r) first_seen literal no-deadline-withholder-s1-W1-as-reference,W1,4247099,11.0,224.449222736,18922.315471751448
+E1-(r) first_seen literal no-deadline-withholder-s2-W1-as-reference,W1,3836886,11.0,226.629200352,16930.236677535624
+E1-(r) first_seen literal no-deadline-withholder-s3-W1-as-reference,W1,4290310,11.0,193.192470199,22207.43901447463
+E1-(r) first_seen literal no-deadline-withholder-s4-W1-as-reference,W1,4020368,11.0,187.496813078,21442.32712012816
+C3-withholder-D10-not_extended_only-W1-as-reference,W1,4108797,11.0,197.776172919,20774.98486980418
+C3-withholder-Dnone-permanent-W1-as-reference,W1,4116687,11.0,187.240107452,21986.138846108784
+E1-(r) first_seen literal D10-soft-withholder-s0-W1-spread,W1,4006200,11.0,170.463671539,23501.781721763695
+E1-(r) first_seen literal D10-soft-withholder-s1-W1-spread,W1,4299354,11.0,173.037807603,24846.327282786613
+E1-(r) first_seen literal D10-soft-withholder-s2-W1-spread,W1,3871978,11.0,172.472628783,22449.811470500685
+E1-(r) first_seen literal D10-soft-withholder-s3-W1-spread,W1,4387141,11.0,179.744335419,24407.67320857809
+E1-(r) first_seen literal D10-soft-withholder-s4-W1-spread,W1,4096657,11.0,224.814291859,18222.40466175237
+E1-(r) first_seen literal no-deadline-withholder-s0-W1-spread,W1,4007118,11.0,218.129155826,18370.39154544039
+E1-(r) first_seen literal no-deadline-withholder-s1-W1-spread,W1,4317268,11.0,223.684636574,19300.690767699412
+E1-(r) first_seen literal no-deadline-withholder-s2-W1-spread,W1,3863954,11.0,221.948906012,17409.20498067735
+E1-(r) first_seen literal no-deadline-withholder-s3-W1-spread,W1,4411153,11.0,185.460285681,23784.892726776994
+E1-(r) first_seen literal no-deadline-withholder-s4-W1-spread,W1,4116153,11.0,179.588837664,22919.871042882278
+C3-withholder-D10-not_extended_only-W1-spread,W1,4125139,11.0,190.693741454,21632.272609193547
+C3-withholder-Dnone-permanent-W1-spread,W1,4121111,11.0,177.232221577,23252.605893728807
+E1-(r) first_seen literal D10-soft-withholder-s0-W1-oc,W1,3995685,11.0,151.640030762,26349.803412208832
+E1-(r) first_seen literal D10-soft-withholder-s1-W1-oc,W1,4261910,11.0,153.023823202,27851.284269469867
+E1-(r) first_seen literal D10-soft-withholder-s2-W1-oc,W1,3850838,11.0,149.94483084,25681.698918378
+E1-(r) first_seen literal D10-soft-withholder-s3-W1-oc,W1,4383773,11.0,152.312637794,28781.413436808645
+E1-(r) first_seen literal D10-soft-withholder-s4-W1-oc,W1,4101942,11.0,171.622760912,23900.92070656806
+E1-(r) first_seen literal no-deadline-withholder-s0-W1-oc,W1,3991764,11.0,165.461931781,24124.96915171623
+E1-(r) first_seen literal no-deadline-withholder-s1-W1-oc,W1,4259090,11.0,172.15212686,24740.269421496243
+E1-(r) first_seen literal no-deadline-withholder-s2-W1-oc,W1,3855305,11.0,169.149733351,22792.261764905747
+E1-(r) first_seen literal no-deadline-withholder-s3-W1-oc,W1,4370922,11.0,205.499894257,21269.70437529124
+E1-(r) first_seen literal no-deadline-withholder-s4-W1-oc,W1,4072883,11.0,202.433304017,20119.629128110097
+C3-withholder-D10-not_extended_only-W1-oc,W1,4112831,11.0,215.831034672,19055.7905921653
+C3-withholder-Dnone-permanent-W1-oc,W1,4121031,11.0,208.042929554,19808.56070828563
+"E3-919-threshold 2n/3, no failover-W2",W2,18512993,9.5,120.861271347,153175.56065456304
+"E3-blackout-r0-s0-threshold 2n/3, no failover-W2",W2,489713,2.5,24.101571745,20318.716355151966
+"E3-blackout-r0-s1-threshold 2n/3, no failover-W2",W2,486767,2.5,23.709852367,20530.157356757532
+"E3-blackout-r0-s2-threshold 2n/3, no failover-W2",W2,447602,2.5,24.234826848,18469.37066261477
+"E3-blackout-r0-s3-threshold 2n/3, no failover-W2",W2,457459,2.5,23.665425935000002,19330.266915814966
+"E3-blackout-r0-s4-threshold 2n/3, no failover-W2",W2,447721,2.5,22.632170053,19782.5042385033
+"E3-blackout-r1-s0-threshold 2n/3, no failover-W2",W2,436296,2.5,23.023709624,18949.856783513438
+"E3-blackout-r1-s1-threshold 2n/3, no failover-W2",W2,441939,2.5,22.75881379,19418.36705892746
+"E3-blackout-r1-s2-threshold 2n/3, no failover-W2",W2,415190,2.5,25.493888323,16285.86407611369
+"E3-blackout-r1-s3-threshold 2n/3, no failover-W2",W2,420025,2.5,25.390632025,16542.51849998996
+"E3-blackout-r1-s4-threshold 2n/3, no failover-W2",W2,407196,2.5,24.433524104,16665.463330905186
+"E3-blackout-r2-s0-threshold 2n/3, no failover-W2",W2,476425,2.5,26.053555441,18286.371742194493
+"E3-blackout-r2-s1-threshold 2n/3, no failover-W2",W2,484279,2.5,25.61273323,18907.74388079628
+"E3-blackout-r2-s2-threshold 2n/3, no failover-W2",W2,445693,2.5,26.832814789,16609.998000758012
+"E3-blackout-r2-s3-threshold 2n/3, no failover-W2",W2,455754,2.5,23.743713539,19194.7228158479
+"E3-blackout-r2-s4-threshold 2n/3, no failover-W2",W2,440081,2.5,22.869638604,19243.023802003936
+"E3-blackout-r3-s0-threshold 2n/3, no failover-W2",W2,645768,2.5,23.162998342,27879.292242967946
+"E3-blackout-r3-s1-threshold 2n/3, no failover-W2",W2,623629,2.5,23.02897539,27080.188737828168
+"E3-blackout-r3-s2-threshold 2n/3, no failover-W2",W2,543635,2.5,23.786294019,22854.96847746671
+"E3-blackout-r3-s3-threshold 2n/3, no failover-W2",W2,575713,2.5,23.676332887,24315.96999196221
+"E3-blackout-r3-s4-threshold 2n/3, no failover-W2",W2,558593,2.5,22.377216352,24962.577615248145
+"E3-blackout-r4-s0-threshold 2n/3, no failover-W2",W2,524233,2.5,22.818640262,22973.89300943615
+"E3-blackout-r4-s1-threshold 2n/3, no failover-W2",W2,537527,2.5,23.085789932,23283.890288498013
+"E3-blackout-r4-s2-threshold 2n/3, no failover-W2",W2,497222,2.5,23.837612608,20858.716356231507
+"E3-blackout-r4-s3-threshold 2n/3, no failover-W2",W2,494655,2.5,23.842172016,20747.06111792361
+"E3-blackout-r4-s4-threshold 2n/3, no failover-W2",W2,472977,2.5,23.076782274,20495.79505427369
+"E3-blackout-r5-s0-threshold 2n/3, no failover-W2",W2,714944,2.5,24.574098262,29093.397136185016
+"E3-blackout-r5-s1-threshold 2n/3, no failover-W2",W2,653363,2.5,24.243916288,26949.565088351454
+"E3-blackout-r5-s2-threshold 2n/3, no failover-W2",W2,634113,2.5,24.737824507,25633.337313900283
+"E3-blackout-r5-s3-threshold 2n/3, no failover-W2",W2,639655,2.5,24.493681157,26115.102744251828
+"E3-blackout-r5-s4-threshold 2n/3, no failover-W2",W2,662670,2.5,23.589374362,28091.885347645828
+"E3-blackout-r6-s0-threshold 2n/3, no failover-W2",W2,10118944,2.5,37.463284181,270102.9613717624
+"E3-blackout-r6-s1-threshold 2n/3, no failover-W2",W2,10625149,2.5,35.494273726,299348.2577505719
+"E3-blackout-r6-s2-threshold 2n/3, no failover-W2",W2,9550804,2.5,35.389219472,269878.91065403714
+"E3-blackout-r6-s3-threshold 2n/3, no failover-W2",W2,9598937,2.5,34.984983838,274373.05800821393
+"E3-blackout-r6-s4-threshold 2n/3, no failover-W2",W2,9421158,2.5,33.760842768,279055.7707561075
+"E3-blackout-r7-s0-threshold 2n/3, no failover-W2",W2,420479,2.5,25.502106698,16488.010382019773
+"E3-blackout-r7-s1-threshold 2n/3, no failover-W2",W2,427869,2.5,25.294488211,16915.50334724422
+"E3-blackout-r7-s2-threshold 2n/3, no failover-W2",W2,404221,2.5,25.311198887,15970.045583562247
+"E3-blackout-r7-s3-threshold 2n/3, no failover-W2",W2,411506,2.5,21.813488988,18864.749248796328
+"E3-blackout-r7-s4-threshold 2n/3, no failover-W2",W2,399236,2.5,20.589922804,19389.873570698404

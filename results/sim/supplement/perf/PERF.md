@@ -4,23 +4,23 @@ Machine: Intel(R) Core(TM) i5-8257U CPU @ 1.40GHz (macos x86_64), 8 logical core
 
 | section | runs | CPU seconds | events | simulated days | events per second |
 |---|---|---|---|---|---|
-| V0 | 10 | 698.7 | 741083 | 24.08 | 1061 |
-| W1 | 36 | 4306.6 | 147796857 | 396.00 | 34319 |
-| W2 | 41 | 710.6 | 86040156 | 109.50 | 121080 |
+| V0 | 10 | 714.6 | 741083 | 24.08 | 1037 |
+| W1 | 36 | 7028.5 | 147883645 | 396.00 | 21041 |
+| W2 | 41 | 1135.4 | 85422133 | 109.50 | 75238 |
 
-Total CPU time 5716 s over 87 runs.
+Total CPU time 8878 s over 87 runs.
 
 ## Slowest runs
 
 | run | seconds | events | simulated days |
 |---|---|---|---|
-| V0-standin-1000 | 327.9 | 3556 | 0.20 |
-| V0-real-32 | 311.8 | 2488 | 0.18 |
-| C3-withholder-D10-not_extended_only-W1-oc | 125.7 | 4104972 | 11.00 |
-| C3-withholder-D10-not_extended_only-W1-spread | 124.6 | 4113637 | 11.00 |
-| E1-(r) first_seen literal D10-soft-withholder-s3-W1-oc | 123.4 | 4382260 | 11.00 |
-| E1-(r) first_seen literal D10-soft-withholder-s1-W1-oc | 123.0 | 4256610 | 11.00 |
-| C3-withholder-D10-not_extended_only-W1-as-reference | 122.8 | 4102717 | 11.00 |
-| E1-(r) first_seen literal D10-soft-withholder-s3-W1-spread | 122.8 | 4393084 | 11.00 |
-| E1-(r) first_seen literal D10-soft-withholder-s0-W1-oc | 122.7 | 3995778 | 11.00 |
-| E1-(r) first_seen literal D10-soft-withholder-s2-W1-oc | 122.5 | 3851610 | 11.00 |
+| V0-standin-1000 | 341.4 | 3556 | 0.20 |
+| V0-real-32 | 324.1 | 2488 | 0.18 |
+| E1-(r) first_seen literal D10-soft-withholder-s4-W1-as-reference | 236.6 | 4002728 | 11.00 |
+| E1-(r) first_seen literal D10-soft-withholder-s3-W1-as-reference | 232.2 | 4256556 | 11.00 |
+| E1-(r) first_seen literal D10-soft-withholder-s2-W1-as-reference | 229.1 | 3837323 | 11.00 |
+| E1-(r) first_seen literal no-deadline-withholder-s0-W1-as-reference | 228.5 | 3968992 | 11.00 |
+| E1-(r) first_seen literal no-deadline-withholder-s2-W1-as-reference | 226.6 | 3836886 | 11.00 |
+| E1-(r) first_seen literal D10-soft-withholder-s1-W1-as-reference | 225.5 | 4236453 | 11.00 |
+| E1-(r) first_seen literal D10-soft-withholder-s0-W1-as-reference | 225.3 | 3960246 | 11.00 |
+| E1-(r) first_seen literal D10-soft-withholder-s4-W1-spread | 224.8 | 4096657 | 11.00 |

@@ -1,0 +1,4 @@
+miner,reason,skipped_since_blackout_start_s,able_since_blackout_start_s,left_since_blackout_start_s,rejoined_by,held_in_pause_s
+1538,no entropy,739.6100080000033,1800,2291.6100079999887,the pause's block (next round),325.2114650000003
+743,no entropy,1312.6100080000033,1800,2291.6100079999887,the pause's block (next round),325.2114650000003
+6830,no entropy,1375.6100080000033,1800,2291.6100079999887,the pause's block (next round),325.2114650000003

@@ -38,4 +38,4 @@ V0,V0-invariants,allocation and counter invariants (all V0 runs),0.0,0.0,0.0,exa
 V0,V0-horizon-audit,"candidates past the normal horizon that were broadcast, under loss, partitions, skew and D = 5 s (must be 0)",0.0,0.0,0.0,exact,0,true,pass
 ALL,ALL-invariants,"cached active list, seats, WC, miner and KWC counters equal a recount, daily and at the end (87 runs)",0.0,0.0,0.0,exact,0,true,pass
 ALL,ALL-self-validation,every broadcast block passes validate_facts at its own miner (87 runs),0.0,0.0,0.0,exact,0,true,pass
-ALL,ALL-deep-reorgs,reorgs of the network chain below a confirmed ID (87 runs),0.0,1.0,0.0,exact,0,false,fail
+ALL,ALL-deep-reorgs,reorgs of the network chain below a confirmed ID (87 runs),0.0,0.0,0.0,exact,0,true,pass
