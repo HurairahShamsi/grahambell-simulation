@@ -11,6 +11,12 @@
 
 **Stage 1** tests whether PoIE's claims hold under realistic and adversarial conditions, and publishes the results whether they confirm or refute the model. The rules under test are in [`docs/SPEC.md`](docs/SPEC.md), the single source of truth.
 
+**Running a witness node.** Every registered ID must witness, on an always-on device; an unregistered miner cannot witness until it mints an ID. At full watch load (1,000 watched miners) a witness node needs about 9 % of one core, under 1 MB of per-round state plus the ID registry (about 0.26 GB at genesis), about 22 kB/s (57 GB a month) before transport overhead, and to stay online. These figures are calculated from measured cryptographic timings, not yet benchmarked on real devices; M5 replaces them with measured figures ([details](docs/PROTOCOL_OVERVIEW.md#running-a-witness-node)). Mining alone runs on any device: one hash per second.
+
+## Status and disclaimer
+
+GrahamBell is under active research and testing. Nothing in this repository is a guarantee of security, performance or future behaviour. Every result describes the specific protocol version and simulation settings it was produced with (see each run’s configuration and SPEC version). As testing continues, rules and parameters will change, and new results may differ from earlier ones, better or worse. When that happens, the change and its reason are recorded in the SPEC changelog and ASSUMPTIONS, and earlier results stay in the repository history, so nothing is quietly replaced. Requirements marked “calculated” or “estimated” are not yet measured. This is research, not a product, an offering or financial advice.
+
 ## What is in this repository
 
 | Milestone | Status | Contents |

@@ -37,7 +37,7 @@ They come from the supplementary section W2, which reruns E3's blackout runs wit
 
 ## The three pauses
 
-In a deliberate stress test, an entire region holding about 38% of witnesses loses power for about 11 hours. Issuance pauses at the blackout's start while difficulty catches up with the miners who remain: across 100 simulated blackouts, the median pause was about 7.6 minutes, over 10 minutes in 41%, over 30 minutes in 6%, and the longest 49 minutes. Block production then resumes automatically at ~30 s. This is protocol behaviour, not a simulator artefact. (The 100 blackouts are the supplementary section W3, in [`../../supplement-w3/`](../../supplement-w3/); the three pauses below are the longest of E3's 41.)
+In a deliberate stress test, an entire region holding about 38% of witnesses loses power for about 11 hours. Issuance pauses at the blackout's start while difficulty catches up with the miners who remain: across 100 simulated blackouts, the median pause was about 7.6 minutes, over 10 minutes in 41%, over 30 minutes in 6%, and the longest 49 minutes. Block production then resumes automatically at ~30 s on average; in about a third of the blackouts a second gap of over 10 minutes followed later in the blackout (longest 39 minutes). This is protocol behaviour, not a simulator artefact. (The 100 blackouts are the supplementary section W3, in [`../../supplement-w3/`](../../supplement-w3/); the three pauses below are the longest of E3's 41.)
 
 | Pause | Run | Start, from the blackout's start | Length | Round's count | Miners able | Expected wait | Skip rule |
 |---|---|---|---|---|---|---|---|

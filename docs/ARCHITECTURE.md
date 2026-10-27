@@ -120,7 +120,7 @@ Each M1 table becomes a check that a later simulator must pass.
 
 **[P] proposals recorded in SPEC v0.4 §12 and where they are tested:**
 
-- separate PoWit validity from payment (any 27 of 40 is valid; an unsigned leader member's share is never generated): M4 against 7 + 21, on liveness (H), leaders' incentives and issuance per block;
+- separate PoWit validity from payment (any 27 of 40 is valid; an unsigned Sultan-WC member's share is never generated): M4 against 7 + 21, on liveness (H), Sultan-WC members' incentives and issuance per block;
 - the split rule, a lower PoWit-only quorum: M4 (G2 maps it);
 - larger KWCs: M2 and M5 (I maps them);
 - threshold BLS entropy: M2 measures the key-setup cost;
@@ -153,11 +153,11 @@ Each M1 table becomes a check that a later simulator must pass.
 - **M5, cost model:**
   - *Per-slot load:* connections per slot (one per KWC member, 40), bytes per round (about 12 KB per slot per 30 s, estimated) and CPU per round, split into protocol-forced work (header signing 0.379 ms, sequential SHA-256 steps 0.969 µs each, and transport security on 40 witness connections: TLS/QUIC handshakes, keepalives and encryption of every message, to be benchmarked) and optional work (verifying the entropy aggregate, 4.397 ms at 40 members); timings from `results/crypto/reference/bench/K4_timings.csv`. The attacker is priced at the forced minimum, the optional work reported separately. Derive the cores, the memory for 4M+ connections, the servers and the monthly cost alongside bandwidth for 10k, 100k, 1M and 10M attacker slots (10M slots means 400M witness connections, close to the usable unregistered capacity, so report what happens when the attacker alone would nearly fill admission: honest miners crowded out, or the attacker blocked by the cap).
   - *Competition:* the attacker needs s/(1 − s) × H slots to win share s against H honest slots (registered IDs that keep mining included in H). Report the monthly and total cost for s ∈ {10, 25, 33, 40, 51} % against H ∈ {100k, 1M, 10M}, sustained over the time-floor horizon. Honest competition over time is an assumption with a sweep (growth, flat, decline), reporting how the attacker's cost and time to threshold change in each.
-  - *Capacity:* from the SPEC defaults, 2.9M genesis IDs give 290,000 WCs × 50 unregistered per leader WC = 14.5M unregistered places, about 10.9M usable at the +33 % spare-capacity target; capacity grows with registered IDs (every 10 new IDs form a WC, adding room for 50 unregistered miners). Genesis is swept over {1M, 2.9M, 10M} (1M gives 5M places). When admission is full, report who is admitted and whether an attacker can crowd out honest miners.
+  - *Capacity:* from the SPEC defaults, 2.9M genesis IDs give 290,000 WCs × 50 unregistered per Sultan WC = 14.5M unregistered places, about 10.9M usable at the +33 % spare-capacity target; capacity grows with registered IDs (every 10 new IDs form a WC, adding room for 50 unregistered miners). Genesis is swept over {1M, 2.9M, 10M} (1M gives 5M places). When admission is full, report who is admitted and whether an attacker can crowd out honest miners.
   - *Full grid:* attacker slots A ∈ {10k, 100k, 1M, 10M} × honest fill h ∈ {0, 10, …, 100} % of usable capacity × genesis {1M, 2.9M, 10M} × honest online fraction f ∈ {1.0, 0.8, 0.5} (attacker online 100 %). Per cell, never dropped: whether A fits and what admission does if it does not; the attacker's share of new IDs s; the time to 33, 51 and 67 % of active IDs, t = T·f·G / (R·(s·(1 − T) − T·f·(1 − s))) or "never" when the denominator is not positive (M1's realistic variant; t = T·G / (R·(s − T)) at f = 1, the C2 formula at s = 1; check cell s = 40 %, f = 0.5, G = 2.9M, T = 51 %: 16.4 years); the monthly cost and the total cost to each threshold; the load on honest witnesses (verify and sign per watched miner) and how capacity limits bound it. One table per A and a chart of time to 51 % and total cost against h; weak (low-h) cells are shown as prominently as strong ones.
   - *Fixed attacker budget* (architect, 2026-10-21; from a Reddit review): hold the attacker's slots constant and sweep the honest online fraction f, including the measured daily trough by UTC hour (SIM-50); report the attacker's share of new IDs and its time to threshold, so the gain from honest outages alone is visible.
   - *Cost per point of influence* (same source): in every cell, the monthly cost ÷ the attacker's share of new IDs, and the total cost per percentage point at each threshold, so cells compare across attacker sizes.
-  - *Witness hardware* (architect, 2026-10-21): benchmark a witness node at full watch load (1,000 watched miners) on a mini PC, an old desktop, a modern laptop and a current phone; report CPU, RAM, bandwidth per month, and whether each can stay online (sleep, background limits, NAT). Publish the results as a "Hardware requirements" README section.
+  - *Witness hardware* (architect, 2026-10-21): benchmark a witness node at full watch load (1,000 watched miners) on a mini PC, an old desktop, a modern laptop and a current phone; report CPU, RAM, bandwidth per month, and whether each can stay online (sleep, background limits, NAT). Publish the results in "Running a witness node" (the README and `docs/PROTOCOL_OVERVIEW.md`), replacing the figures calculated from the M2 timings in ASSUMPTIONS section N.
   - *Honest multi-slotting,* an assumption with a sweep: {1, 10, 50} % of households × {1, 4, 16, 256} slots per household.
   - *Admission granularity,* compared: pacing per /64, /56 and /48, each with and without per-provider or ASN caps (tunnel brokers that hand out free /48s, identified by ASN); report slots per household, slots per free /48 for an attacker, and the honest households hurt (shared ISPs, CGNAT, mobile /64).
 
@@ -229,7 +229,7 @@ The architect adopted this algorithm on 2026-10-06 (SPEC v0.3 §4.2, with the re
 SPEC §4.2 requires allocation to be deterministic and publicly recomputable, with placement unknown to an ID's owner at minting time. SPEC §2 requires:
 
 - every WC to have exactly 10 members;
-- each WC to lead exactly one KWC and be a subordinate in exactly three;
+- each WC to be the Sultan WC of exactly one KWC and a Wazir WC in exactly three;
 - no mutual monitoring pairs.
 
 The earlier SPEC gave no algorithm that met all of these at once. Because the inside-out shuffle keeps every assignment uniformly random, M1's uniform-partition model of seats remains exact under the adopted rule.
@@ -248,12 +248,12 @@ The earlier SPEC gave no algorithm that met all of these at once. Because the in
 
 ### 8.2 KWCs: a Golomb-ruler ring
 
-For `W ≥ 13` active WCs, KWC `w` has leader WC `w` and subordinate WCs `(w + 1)`, `(w + 4)` and `(w + 6)`, all mod `W`.
+For `W ≥ 13` active WCs, KWC `w` has Sultan (leading) WC `w` and Wazir (subordinate) WCs `(w + 1)`, `(w + 4)` and `(w + 6)`, all mod `W`.
 
-- **Each WC leads exactly one KWC and is a subordinate in exactly three:** the KWCs led by `w − 1`, `w − 4` and `w − 6`.
+- **Each WC is the Sultan WC of exactly one KWC and a Wazir WC in exactly three:** the KWCs whose Sultan WCs are `w − 1`, `w − 4` and `w − 6`.
 - **No mutual monitoring pairs.** WC `j` monitors WC `i` exactly when `(j − i) mod W ∈ {1, 4, 6}`. A mutual pair would need `d₁ + d₂ ≡ 0 (mod W)` for some `d₁, d₂ ∈ {1, 4, 6}`, but every such sum is at most 12, which is less than `W`.
 - **Any two KWCs share at most one WC.** `{0, 1, 4, 6}` is a Golomb ruler: its 12 nonzero pairwise differences, ±1 to ±6, are distinct mod `W` for `W ≥ 13`. So each KWC overlaps exactly 12 others, each in one WC. That is the overlap degree M1 uses for its structure-free bound.
-- **30-node comparison.** Use marks `{0, 1, 3}`, so subordinates are `(w + 1)` and `(w + 3)`, and `W ≥ 7`.
+- **30-node comparison.** Use marks `{0, 1, 3}`, so the Wazir WCs are `(w + 1)` and `(w + 3)`, and `W ≥ 7`.
 
 Everything depends only on chain data: the ID order, the beacons and the removal record. Anyone can recompute it. The CAC attests a hash of the resulting assignment but cannot choose it.
 
@@ -277,7 +277,7 @@ Insertion keeps every WC's composition at the population share, so the section B
 ### 8.5 Cost: composition changes
 
 - **Seat changes:** each new ID changes one existing WC, and so 4 KWC compositions (a WC sits in 4 KWCs). That is 40 per new WC.
-- **Ring relinks:** each new active WC adds its own KWC and relinks the 6 KWCs whose subordinate offsets wrap around the ring. That is 7 per new WC.
+- **Ring relinks:** each new active WC adds its own KWC and relinks the 6 KWCs whose Wazir offsets wrap around the ring. That is 7 per new WC.
 - **Total:** about 47 composition changes per new WC (4.7 per new ID), against 1 for append-only. A removal changes about 4.6, so an absence that vacates a seat and ends in a re-insertion changes about 9.3.
 - **Effect on the H6 count:** counting every composition as an independent draw, the adopted rule raises the count about 43-fold over ten years from 100,000 KWCs (section B4). Most changed compositions differ from their predecessor by one seat, so the changes are correlated: at p = 25% a one-seat change enters the sign-capable state with about 0.43 to 0.46 times the probability of a fresh draw. Since SPEC v0.4 the primary measure is the number of distinct episodes, which is about half the composition count at p = 25% (0.476 against 0.926 for the unregistered quorum).
 - **Effect of the v0.4 seat rule:** under v0.3 every absence that deactivated an ID cost about 9.3 compositions. Under v0.4 only absences longer than L do; with the illustrative inputs (4 absences per ID per year, Lomax durations) that leaves 3.6% of the v0.3 count at L = 30 days (section B5). The price is liveness: absent IDs keep their seats, which needs more honest uptime (section H).

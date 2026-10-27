@@ -1,5 +1,7 @@
 # results/
 
+Results describe the SPEC version and settings they were run with; see the disclaimer in [README.md](../README.md#status-and-disclaimer).
+
 Generated outputs. Everything in this folder is ignored by git except this README and the reference runs. The M1 **reference run** is in [`analytic/reference/`](analytic/reference/). The reference run is committed so that the repository contains the tables, charts, summary and cross-check verdicts behind the public brief; start with its [`SUMMARY.md`](analytic/reference/SUMMARY.md). Its `run.json` records the commit it was produced from and a SHA-256 of every file. New runs stay ignored. Regenerate outputs with the `gb` tool rather than editing them.
 
 Each analysis writes one directory per run, `results/<analysis>/<run-id>/`. The run id is `YYYYMMDDTHHMMSSZ_<commit>_s<seed>`. Each run directory contains:

@@ -1,5 +1,7 @@
 # How GrahamBell works
 
+> **Status and disclaimer.** GrahamBell is under active research and testing. Nothing in this repository is a guarantee of security, performance or future behaviour. Every result describes the specific protocol version and simulation settings it was produced with (see each run’s configuration and SPEC version). As testing continues, rules and parameters will change, and new results may differ from earlier ones, better or worse. When that happens, the change and its reason are recorded in the SPEC changelog and ASSUMPTIONS, and earlier results stay in the repository history, so nothing is quietly replaced. Requirements marked “calculated” or “estimated” are not yet measured. This is research, not a product, an offering or financial advice.
+
 A one-page overview of the protocol that Stage 1 simulates. [SPEC.md](SPEC.md) (v0.7) is the authoritative description and [ASSUMPTIONS.md](ASSUMPTIONS.md) records every modelling choice; each rule below links to its SPEC section and carries its status there: **[D]** decided by the protocol architect, **[P]** proposed and still being compared, **[O]** open and swept in the simulations.
 
 ## What GrahamBell is
@@ -18,16 +20,31 @@ A round runs from one identity-issuance (PoW-ID) block to the next, 30 seconds o
 
 ## Issuance, fork choice and difficulty
 
-- **Pacing:** one hash per second per admitted /64 (per ID for registered miners), one session per /64, one PoW-ID block per 30 s (about 1.05M IDs a year). [D] ([§2](SPEC.md#2-parameters), [§3.1](SPEC.md#31-admission-lifecycle-d), [§3.9](SPEC.md#39-issuance-rate-d-default-p-variant))
+- **Pacing:** one hash per second per admitted /64 (per ID for registered miners), one session per /64, one PoW-ID block per 30 s, about 1.04M IDs a year (30.23 s mean interval at the v0.7 defaults). [D] ([§2](SPEC.md#2-parameters), [§3.1](SPEC.md#31-admission-lifecycle-d), [§3.9](SPEC.md#39-issuance-rate-d-default-p-variant))
 - **Fork choice:** the longest valid chain; at the same height, the block a node saw first, then the lower hash. [D] ([§3.7](SPEC.md#37-global-validation-d))
 - **Difficulty:** each hash wins with probability factor ÷ (N × 30 s), where N counts the miners whose KWC issued entropy for the round and the factor (P2, bounded ×0.9–×1.1) corrects from the last 144 block times. [D] ([§3.8](SPEC.md#38-difficulty-d))
 
 ## Witness chains and penalties
 
-- **Hardware:** witness nodes are meant to run at home on an always-on device; mining runs on anything. Measured hardware and bandwidth requirements will be published after the M5 household benchmarks.
-- **Seats:** every registered ID is a witness in one Witness Chain (WC) of 10; a KWC is a leading WC and three subordinate WCs, with no two WCs watching each other. Seats come from a deterministic shuffle seeded by a later block, so nobody chooses where an ID lands. [D] ([§4.1](SPEC.md#41-duty-d), [§4.2](SPEC.md#42-allocation-d))
+- **Duty:** only registered IDs can be witnesses; an unregistered miner (no ID yet) cannot witness until it mints an ID. Witness duty is mandatory for every registered ID, on an always-on device. [D] ([§4.1](SPEC.md#41-duty-d)) What a witness node needs is below.
+- **Seats:** every registered ID is a witness in one Witness Chain (WC) of 10; a KWC is a leading Sultan WC and three subordinate Wazir WCs, with no two WCs watching each other. Seats come from a deterministic shuffle seeded by a later block, so nobody chooses where an ID lands. [D] ([§4.1](SPEC.md#41-duty-d), [§4.2](SPEC.md#42-allocation-d))
 - **One Chance:** a member that does not sign is asked again; one that cannot be reached is recorded offline, never banned ("unreachable is not refusal"). Bans need verifiable evidence, such as two conflicting signatures. [D] ([§4.5](SPEC.md#45-one-chance-d), [§4.6](SPEC.md#46-ban-principle-d))
 - **Offline:** a long absence leads to deactivation, never a ban. Every offline period of 24 hours or more earns points, and at 20 points a member loses its seat for 30 days [D]. ([§4.7](SPEC.md#47-offline-handling-d-rules-o-values), [§4.8](SPEC.md#48-penalties-d))
+
+## Running a witness node
+
+**Calculated from measured cryptographic timings, not yet benchmarked on real devices; M5 replaces these with measured figures on a mini PC, old desktop, laptop and phone.** The arithmetic is in [ASSUMPTIONS](ASSUMPTIONS.md#n-witness-node-requirements-calculated), section N.
+
+At full watch load, 1,000 watched miners ([§2](SPEC.md#2-parameters)), each on a 30-second round:
+
+- **CPU:** about 9 % of one core. Per watched miner per round: one verify of its header signature, two threshold signature shares (its entropy and its start time), one verify of the KWC's group signature and 30 chain steps, 2.8 ms on the 2019 laptop core of the M2 timings.
+- **RAM:** under 1 MB of per-round protocol state, plus the ID registry every node keeps (about 88 bytes per ID: about 0.26 GB at 2.9M genesis IDs, growing by about 0.09 GB a year) and the connection state for 1,000 miners, which depends on the transport (M5).
+- **Bandwidth:** about 22 kB/s (176 kbit/s) of protocol messages, about 57 GB a month, before transport overhead.
+- **Uptime:** always on. An outage under 24 hours costs nothing; each one of 24 hours or more earns points, and 20 points lose the seat for 30 days ([§4.7](SPEC.md#47-offline-handling-d-rules-o-values)).
+
+Full load is the design ceiling: network-wide a node averages at most 40 registered miners (§2, footnote ²), so its load is usually far lower. The 800 registered miners of a full load mine PoW-Tx rounds, whose interval is still open ([§12](SPEC.md#12-open-questions)): at 5-second rounds the CPU and bandwidth above rise about fivefold.
+
+**Mining only:** any device; one hash per second, about 0.1 s of CPU per 30-s round (signing its header and combining its KWC's shares) and about 0.9 kB/s with its 40 witnesses.
 
 ## Network and threat model in the simulations
 
@@ -42,7 +59,7 @@ PoIE does not prove that one person holds one ID; it bounds how fast IDs can acc
 
 - **Subnet and provider concentration:** a /48 holds 65,536 /64s, and a few providers serve many households. Admission caps per /48 and per provider are planned (M3b), with their cost in M5.
 - **Sleeper accumulation:** an attacker that gathers IDs quietly for years, then switches behaviour at once (M3b).
-- **Regional blackouts beyond a third of a KWC:** they stall issuance, and M3a.1's E3 measures them. In a deliberate stress test, an entire region holding about 38% of witnesses loses power for about 11 hours. Issuance pauses at the blackout's start while difficulty catches up with the miners who remain: across 100 simulated blackouts, the median pause was about 7.6 minutes, over 10 minutes in 41%, over 30 minutes in 6%, and the longest 49 minutes. Block production then resumes automatically at ~30 s. This is protocol behaviour, not a simulator artefact. (The figures are the supplementary section W3, reproducible with `gb sim --only W3`: [results](../results/sim/supplement-w3/).) A threshold of 21 of 40 kept every gap under 9.4 minutes, at a security cost ([§3.4](SPEC.md#34-entropy-lock-d), [§12](SPEC.md#12-open-questions)). M3b tests within-round difficulty relaxation, which would cap such pauses; M4 continues with the witness layer.
+- **Regional blackouts beyond a third of a KWC:** they stall issuance, and M3a.1's E3 measures them. In a deliberate stress test, an entire region holding about 38% of witnesses loses power for about 11 hours. Issuance pauses at the blackout's start while difficulty catches up with the miners who remain: across 100 simulated blackouts, the median pause was about 7.6 minutes, over 10 minutes in 41%, over 30 minutes in 6%, and the longest 49 minutes. Block production then resumes automatically at ~30 s on average; in about a third of the blackouts a second gap of over 10 minutes followed later in the blackout (longest 39 minutes). This is protocol behaviour, not a simulator artefact. (The figures are the supplementary section W3, reproducible with `gb sim --only W3`: [results](../results/sim/supplement-w3/).) A threshold of 21 of 40 kept every gap under 9.4 minutes, at a security cost ([§3.4](SPEC.md#34-entropy-lock-d), [§12](SPEC.md#12-open-questions)). M3b tests within-round difficulty relaxation, which would cap such pauses; M4 continues with the witness layer.
 - **Threshold entropy, both sides:** 14 members refusing or unreachable stop a KWC's entropy at the default threshold of 27, and 27 colluding members produce it alone; M4 measures both (scenario S31), and backdated starts at both thresholds.
 - **Rotation of IDs:** an attacker that deactivates and re-activates a pool of IDs around committee lotteries and seat beacons, to inflate its share at the moments that count (M3b).
 - **Threshold-BLS share theft over time:** a 30-day share refresh is proposed [P] and costed in M4 ([§12](SPEC.md#12-open-questions)).
