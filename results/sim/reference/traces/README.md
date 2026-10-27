@@ -37,7 +37,7 @@ They come from the supplementary section W2, which reruns E3's blackout runs wit
 
 ## The three pauses
 
-This is a deliberate stress test: an entire region holding about 38 % of witnesses losing power at once for about 11 hours. At the final defaults, a 10.9-hour blackout of the largest region (about 38 % of witnesses) paused issuance for up to 35.5 minutes, each time at the blackout's start. This is protocol behaviour, not a simulator artefact: the round under way keeps the difficulty set for about 9,200 miners while only 460–690 can still get entropy, and the three longest lasted 2.3–4 times their expected wait, mostly by chance. The simulator's skip rule accounts for none of it.
+In a deliberate stress test, an entire region holding about 38% of witnesses loses power for about 11 hours. Issuance pauses at the blackout's start while difficulty catches up with the miners who remain: across 100 simulated blackouts, the median pause was about 7.6 minutes, over 10 minutes in 41%, over 30 minutes in 6%, and the longest 49 minutes. Block production then resumes automatically at ~30 s. This is protocol behaviour, not a simulator artefact. (The 100 blackouts are the supplementary section W3, in [`../../supplement-w3/`](../../supplement-w3/); the three pauses below are the longest of E3's 41.)
 
 | Pause | Run | Start, from the blackout's start | Length | Round's count | Miners able | Expected wait | Skip rule |
 |---|---|---|---|---|---|---|---|
@@ -45,7 +45,7 @@ This is a deliberate stress test: an entire region holding about 38 % of witness
 | 2 | blackout of as_east, seed 3 | −1 s | 1,708 s (28.5 min) | 9,223 | 599–690 | 431 s | 0 % (1 slot, 0.004 expected blocks) |
 | 3 | blackout of as_east, seed 2 | −17 s | 1,227 s (20.5 min) | 9,149 | 536–583 | 527 s | 0 % (none) |
 
-In detail, all three are the difficulty lag: the round in progress when the blackout began keeps the difficulty set from the miners counted before it, while only about 5–7 % of them can still get entropy, and every sample is "difficulty too high". They lasted 2.3 to 4 times their expected wait, mostly by chance (in the longest, about two draws reached able miners where about four were expected), and the skip rule accounts for none of it. An isolation run (ASSUMPTIONS SIM-52) found that the PoWit deadline does not affect these pauses and that the default early-block rule, re-evaluation, lengthens the typical one modestly; over 100 seeds of this blackout, a pause over 30 minutes came in 4–7 % of runs under every rule.
+In detail, all three are the difficulty lag: the round in progress when the blackout began keeps the difficulty set from the miners counted before it, while only about 5–7 % of them can still get entropy, and every sample is "difficulty too high". They lasted 2.3 to 4 times their expected wait, mostly by chance (in the longest, about two draws reached able miners where about four were expected), and the skip rule accounts for none of it. An isolation run (W3; ASSUMPTIONS SIM-52) found that the PoWit deadline does not affect these pauses and that the default early-block rule, re-evaluation, lengthens the typical one modestly; over 100 seeds of this blackout, a pause over 30 minutes came in 4–7 % of runs under every rule.
 
 ## Regenerating them
 
