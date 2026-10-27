@@ -55,6 +55,8 @@ Full load is the design ceiling: network-wide a node averages at most 40 registe
 
 PoIE does not prove that one person holds one ID; it bounds how fast IDs can accumulate. This repository does not cover throughput (TPS), the Single Chain Architecture (SCA), the Shamsi Operating System (SOS) VM and smart contracts, the software Block Processing Unit and Block Validation Unit, rewards and token economics, or storage. Those are separate designs, not tested in Stage 1 ([§0, in scope and out of scope](SPEC.md#in-scope)).
 
+GrahamBell runs two parallel proof-of-work chains, PoW-ID (identity issuance) and PoW-Transaction. Stage 1 simulates PoW-ID in full; PoW-Transaction is modelled only where it affects issuance. Their parallel operation is tested in a later milestone.
+
 ## Known open risks and where they are tested
 
 - **Subnet and provider concentration:** a /48 holds 65,536 /64s, and a few providers serve many households. Admission caps per /48 and per provider are planned (M3b), with their cost in M5.
