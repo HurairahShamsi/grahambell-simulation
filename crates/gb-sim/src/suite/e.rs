@@ -1114,6 +1114,8 @@ fn e3_name(c: &(EntropySigners, Option<u32>)) -> String {
 /// day 8.738735 to 9.192047, which a bug made region-wide (ASSUMPTIONS SIM-35); E3 replays it
 /// as a regional blackout, and gives the scripted blackouts of every region its length.
 pub(crate) const EVENT_919: (usize, f64, f64) = (6, 8.738_735, 39_166.0);
+/// The replicate of E3's scripted blackout runs for seed 0 (seed `s` is this plus `s`).
+pub(crate) const E3_BLACKOUT_REP: u64 = 4_000;
 const E3_DEPARTURES: [f64; 3] = [0.0, 0.1, 0.25];
 
 fn e3_seeds(ctx: &Ctx<'_>) -> u64 {
@@ -1173,7 +1175,7 @@ pub(crate) fn e3_jobs(ctx: &Ctx<'_>) -> Vec<JobSpec> {
                     ctx,
                     &format!("E3-blackout-r{region}-s{s}-{}", e3_name(&c)),
                     E3,
-                    4_000 + s,
+                    E3_BLACKOUT_REP + s,
                     ctx.pick(10_000, 300),
                     ctx.pick(29_000, 2_900),
                     1.0,

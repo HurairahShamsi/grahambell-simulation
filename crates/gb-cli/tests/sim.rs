@@ -131,7 +131,7 @@ fn the_supplementary_sections_run_when_named_and_write_their_tables() {
         &SuiteOptions {
             profile: Profile::Quick,
             threads: 2,
-            only: vec!["W1".to_string(), "W2".to_string()],
+            only: vec!["W1".to_string(), "W2".to_string(), "W3".to_string()],
             control: RunControl::default(),
         },
     )
@@ -155,9 +155,23 @@ fn the_supplementary_sections_run_when_named_and_write_their_tables() {
             assert!(path.exists(), "missing {}", path.display());
         }
     }
+    // W3: the pause at each blackout's start, per seed and per setting (six settings, two seeds
+    // each in the quick profile).
+    let seeds = std::fs::read_to_string(dir.path().join("W3_blackout_seeds.csv")).unwrap();
+    assert_eq!(seeds.lines().count(), 1 + 6 * 2, "{seeds}");
+    let cells = std::fs::read_to_string(dir.path().join("W3_blackout_cells.csv")).unwrap();
+    assert_eq!(cells.lines().count(), 1 + 6, "{cells}");
+    assert!(
+        cells.lines().any(
+            |l| l.starts_with("\"re-evaluation, no deadline\",re-evaluation,none,true,true,2,")
+        ),
+        "{cells}"
+    );
+    let comparisons = std::fs::read_to_string(dir.path().join("W3_comparisons.csv")).unwrap();
+    assert_eq!(comparisons.lines().count(), 1 + 3 + 4 * 2, "{comparisons}");
     let summary = std::fs::read_to_string(dir.path().join("SUMMARY.md")).unwrap();
     assert!(
-        summary.contains("## W1") && summary.contains("## W2"),
+        summary.contains("## W1") && summary.contains("## W2") && summary.contains("## W3"),
         "{summary}"
     );
 }

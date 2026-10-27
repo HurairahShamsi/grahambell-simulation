@@ -84,6 +84,7 @@ cargo run --release -p gb-cli -- sim                    # every section, in resu
 cargo run --release -p gb-cli -- sim --only C2,C3       # V0 (always) and the named sections
 cargo run --release -p gb-cli -- sim --only W1          # the supplementary withholder placements
 cargo run --release -p gb-cli -- sim --only W2          # traces of E3's longest blackout pauses
+cargo run --release -p gb-cli -- sim --only W3          # the pause at a blackout's start, 100 seeds
 cargo run --release -p gb-cli -- sim --profile quick    # tiny sizes, for tests; not results
 ```
 

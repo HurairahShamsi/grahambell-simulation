@@ -67,11 +67,11 @@ pub const SIM_CHARTS: &[&str] = &[
     "C6_clock_skew.png",
 ];
 
-/// Sections of the suite, in the order they run (V0 always runs: it gates the others). W1 and
-/// W2 are supplementary, not part of a full run: each runs only when named.
+/// Sections of the suite, in the order they run (V0 always runs: it gates the others). W1, W2
+/// and W3 are supplementary, not part of a full run: each runs only when named.
 pub const SECTIONS: &[&str] = &[
     "V0", "V1", "V2", "V3", "V4", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "A6", "E1", "E2", "E3",
-    "E4", "W1", "W2",
+    "E4", "W1", "W2", "W3",
 ];
 
 /// Colours of series that share a panel, in fixed order: the first three are the M1 charts'
