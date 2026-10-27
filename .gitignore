@@ -11,5 +11,6 @@
 /results/sim/*
 !/results/sim/reference/
 !/results/sim/supplement/
+!/results/sim/supplement-w3/
 /.history/
 .DS_Store

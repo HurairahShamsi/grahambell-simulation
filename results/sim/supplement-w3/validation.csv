@@ -1,0 +1,41 @@
+section,check,description,reference,value,tolerance,tolerance_kind,samples,passed,status
+V0,"V0-c6-winning-step distribution, real entropy vs stand-in (two-sample χ², 10 bins)","M2 C6 rerun: winning-step distribution, real entropy vs stand-in (two-sample χ², 10 bins) (real BLS entropy vs the 32-byte stand-in)",0.001,0.3689224117423321,0.0,lower bound (value ≥ reference − tolerance),4000,true,pass
+V0,V0-c6-real entropy uniform (KS on the top 53 bits),M2 C6 rerun: real entropy uniform (KS on the top 53 bits) (real BLS entropy vs the 32-byte stand-in),0.001,0.3727704814599919,0.0,lower bound (value ≥ reference − tolerance),4000,true,pass
+V0,V0-c6-stand-in entropy uniform (KS on the top 53 bits),M2 C6 rerun: stand-in entropy uniform (KS on the top 53 bits) (real BLS entropy vs the 32-byte stand-in),0.001,0.36633387617938734,0.0,lower bound (value ≥ reference − tolerance),4000,true,pass
+V0,V0-real-vs-standin-steps,"each slot's first winning step: real BLS entropy vs stand-in entropy (two-sample χ², K-11 bins)",0.001,0.01725892441363631,0.0,lower bound (value ≥ reference − tolerance),35552,true,pass
+V0,V0-validate-equivalence,real blocks: validate() and validate_facts give the same verdict (two receptions each),0.0,0.0,0.0,exact,0,true,pass
+V0,V0-validate-compared,real blocks were compared by validate() and validate_facts,1.0,668.0,0.0,lower bound (value ≥ reference − tolerance),668,true,pass
+V0,V0-r-sampler-interval,"start rule (r), real latency: mean interval, gap sampler vs per-miner sampler",31.672401132906746,33.77980521661256,9.033264585975028,absolute (k standard errors + stated allowance),8933,true,pass
+V0,V0-r-sampler-orphans,"start rule (r), real latency: orphan rate, gap sampler vs per-miner sampler",0.014161334312388545,0.015896115526698756,0.008966138093970247,absolute (k standard errors + stated allowance),8933,true,pass
+V0,V0-r-late-starts,"start rule (r), real latency: some chains start after the round's rule (a) start",1.0,2028.0,0.0,lower bound (value ≥ reference − tolerance),2028,true,pass
+V0,V0-standin-1000-nmin-law,"earliest winning step of each round vs Geometric(1 − (1 − p)^r) (randomised PIT, KS)",0.001,0.9013590691968192,0.0,lower bound (value ≥ reference − tolerance),545,true,pass
+V0,V0-standin-1000-hash-uniform,block hashes uniform (KS on the top 53 bits),0.001,0.7511520367872987,0.0,lower bound (value ≥ reference − tolerance),546,true,pass
+V0,V0-standin-1000-winners-uniform,blocks per slot uniform (χ² goodness of fit),0.001,0.5847574020901465,0.0,lower bound (value ≥ reference − tolerance),546,true,pass
+V0,V0-standin-1000-tie-rate,"same-step tie rate vs M1 tie_probability(1000, 30 s)",0.016557959603462714,0.01834862385321101,0.027330623998180967,absolute (k standard errors + stated allowance),545,true,pass
+V0,V0-gap-1000-nmin-law,"earliest winning step of each round vs Geometric(1 − (1 − p)^r) (randomised PIT, KS)",0.001,0.45152567917477743,0.0,lower bound (value ≥ reference − tolerance),10036,true,pass
+V0,V0-gap-1000-hash-uniform,block hashes uniform (KS on the top 53 bits),0.001,0.5469267637173874,0.0,lower bound (value ≥ reference − tolerance),10057,true,pass
+V0,V0-gap-1000-winners-uniform,blocks per slot uniform (χ² goodness of fit),0.001,0.5852776794736974,0.0,lower bound (value ≥ reference − tolerance),10057,true,pass
+V0,V0-gap-1000-tie-rate,"same-step tie rate vs M1 tie_probability(1000, 30 s)",0.016557959603462714,0.01654045436428856,0.006368944614555087,absolute (k standard errors + stated allowance),10036,true,pass
+V0,V0-permin-1000-nmin-law,"earliest winning step of each round vs Geometric(1 − (1 − p)^r) (randomised PIT, KS)",0.001,0.23681923359884563,0.0,lower bound (value ≥ reference − tolerance),10021,true,pass
+V0,V0-permin-1000-hash-uniform,block hashes uniform (KS on the top 53 bits),0.001,0.9738925837550666,0.0,lower bound (value ≥ reference − tolerance),10036,true,pass
+V0,V0-permin-1000-winners-uniform,blocks per slot uniform (χ² goodness of fit),0.001,0.575003442830846,0.0,lower bound (value ≥ reference − tolerance),10036,true,pass
+V0,V0-permin-1000-tie-rate,"same-step tie rate vs M1 tie_probability(1000, 30 s)",0.016557959603462714,0.015367727771679473,0.0063737095305171606,absolute (k standard errors + stated allowance),10021,true,pass
+V0,V0-gap-10-nmin-law,"earliest winning step of each round vs Geometric(1 − (1 − p)^r) (randomised PIT, KS)",0.001,0.3729682613604037,0.0,lower bound (value ≥ reference − tolerance),10047,true,pass
+V0,V0-gap-10-hash-uniform,block hashes uniform (KS on the top 53 bits),0.001,0.49707510423291434,0.0,lower bound (value ≥ reference − tolerance),10068,true,pass
+V0,V0-gap-10-winners-uniform,blocks per slot uniform (χ² goodness of fit),0.001,0.5884301251932555,0.0,lower bound (value ≥ reference − tolerance),10068,true,pass
+V0,V0-gap-10-tie-rate,"same-step tie rate vs M1 tie_probability(10, 30 s)",0.014958042078526437,0.014929829799940281,0.006055033403748675,absolute (k standard errors + stated allowance),10047,true,pass
+V0,V0-permin-10-nmin-law,"earliest winning step of each round vs Geometric(1 − (1 − p)^r) (randomised PIT, KS)",0.001,0.8747145440555782,0.0,lower bound (value ≥ reference − tolerance),10101,true,pass
+V0,V0-permin-10-hash-uniform,block hashes uniform (KS on the top 53 bits),0.001,0.005738903041613105,0.0,lower bound (value ≥ reference − tolerance),10112,true,pass
+V0,V0-permin-10-winners-uniform,blocks per slot uniform (χ² goodness of fit),0.001,0.8507345043998095,0.0,lower bound (value ≥ reference − tolerance),10112,true,pass
+V0,V0-permin-10-tie-rate,"same-step tie rate vs M1 tie_probability(10, 30 s)",0.014958042078526437,0.014355014355014356,0.006038826593825386,absolute (k standard errors + stated allowance),10101,true,pass
+V0,V0-V0-standin-1000-vs-V0-gap-1000-nmin,"earliest winning step, stand-in vs fast (two-sample χ²)",0.001,0.2732313909612361,0.0,lower bound (value ≥ reference − tolerance),10581,true,pass
+V0,V0-V0-gap-1000-vs-V0-permin-1000-nmin,"earliest winning step, gap vs per-miner sampler (1,000 slots) (two-sample χ²)",0.001,0.2980274115643675,0.0,lower bound (value ≥ reference − tolerance),20057,true,pass
+V0,V0-V0-gap-1000-vs-V0-permin-1000-ties,"winners at the earliest step, gap vs per-miner sampler (1,000 slots) (two-sample χ²)",0.001,0.28600026513143884,0.0,lower bound (value ≥ reference − tolerance),20057,true,pass
+V0,V0-V0-gap-10-vs-V0-permin-10-nmin,"earliest winning step, gap vs per-miner sampler (10 slots) (two-sample χ²)",0.001,0.9604730191804551,0.0,lower bound (value ≥ reference − tolerance),20148,true,pass
+V0,V0-V0-gap-10-vs-V0-permin-10-ties,"winners at the earliest step, gap vs per-miner sampler (10 slots) (two-sample χ²)",0.001,0.3332272769084138,0.0,lower bound (value ≥ reference − tolerance),20148,true,pass
+V0,V0-self-validation,every broadcast block passes validate_facts at its own miner (all V0 runs),0.0,0.0,0.0,exact,0,true,pass
+V0,V0-invariants,allocation and counter invariants (all V0 runs),0.0,0.0,0.0,exact,0,true,pass
+V0,V0-horizon-audit,"candidates past the normal horizon that were broadcast, under loss, partitions, skew and D = 5 s (must be 0)",0.0,0.0,0.0,exact,0,true,pass
+ALL,ALL-invariants,"cached active list, seats, WC, miner and KWC counters equal a recount, daily and at the end (530 runs)",0.0,0.0,0.0,exact,0,true,pass
+ALL,ALL-self-validation,every broadcast block passes validate_facts at its own miner (530 runs),0.0,0.0,0.0,exact,0,true,pass
+ALL,ALL-deep-reorgs,reorgs of the network chain below a confirmed ID (530 runs),0.0,0.0,0.0,exact,0,true,pass

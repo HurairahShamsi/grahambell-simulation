@@ -1,0 +1,12 @@
+comparison,statistic,value,runs
+re-evaluation: no deadline against D = 10 s,seeds with the same pause,99,100
+permanent rejection: no deadline against D = 10 s,seeds with the same pause,100,100
+no badly synchronised clocks: re-evaluation against permanent rejection,seeds with the same pause,20,20
+"re-evaluation against permanent rejection, no deadline","rank test p, pauses",0.014354178641596578,200
+"re-evaluation against permanent rejection, no deadline","rank test p, ratios",0.06868174186739888,163
+"re-evaluation against permanent rejection, D = 10 s","rank test p, pauses",0.009328740902654911,200
+"re-evaluation against permanent rejection, D = 10 s","rank test p, ratios",0.06329939904077295,164
+re-evaluation against no badly synchronised clocks,"rank test p, pauses",0.0599162432990399,200
+re-evaluation against no badly synchronised clocks,"rank test p, ratios",0.01661736670110081,170
+permanent rejection against no badly synchronised clocks,"rank test p, pauses",0.8107550263168223,200
+permanent rejection against no badly synchronised clocks,"rank test p, ratios",0.4291433550078819,163
